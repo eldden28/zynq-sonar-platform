@@ -1,0 +1,60 @@
+# Vendor tools and generated hardware products
+.Xil/
+*.jou
+*.log
+*.str
+*.xpr.zip
+*.xsa
+*.bit
+*.bin
+*.ltx
+
+# Vivado generated directories
+*.cache/
+*.gen/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+
+# PetaLinux and Yocto build products
+petalinux/build/
+petalinux/images/
+petalinux/components/
+petalinux/.petalinux/
+petalinux/*/build/
+petalinux/*/images/
+petalinux/*/components/
+petalinux/*/.petalinux/
+build/
+downloads/
+sstate-cache/
+
+# CMake and compiled products
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+*.o
+*.so
+*.a
+
+# Python and editor state
+__pycache__/
+*.py[cod]
+.venv/
+.vscode/
+.idea/
+*~
+
+# Local reports and configuration
+reports/
+.env
+local.env
+
+# Reproducibly fetched third-party source trees
+third_party/digilent-vivado-boards/
+software/petalinux/*/build/
+software/petalinux/*/images/
+software/petalinux/*/components/plnx_workspace/
+software/petalinux/*/.petalinux/

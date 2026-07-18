@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/fpga-gnu-radio/platform-manifest.schema.json",
+  "title": "FPGA platform bundle manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "platform",
+    "device",
+    "identity",
+    "toolchain",
+    "source",
+    "artifacts",
+    "accelerators"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "platform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "numeric_id", "design_revision", "board_revision"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "numeric_id": { "type": "string", "pattern": "^0x[0-9a-fA-F]{8}$" },
+        "design_revision": { "type": "integer", "minimum": 1 },
+        "board_revision": { "type": ["string", "null"] }
+      }
+    },
+    "device": { "type": "string", "minLength": 1 },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_address", "identity_abi", "register_abi", "data_abi", "build_id"],
+      "properties": {
+        "base_address": { "type": ["string", "null"], "pattern": "^0x[0-9a-fA-F]+$" },
+        "identity_abi": { "type": "integer", "minimum": 1 },
+        "register_abi": { "type": "integer", "minimum": 1 },
+        "data_abi": { "type": "integer", "minimum": 1 },
+        "build_id": { "type": ["string", "null"], "pattern": "^[0-9a-fA-F]{32}$" }
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vivado"],
+      "properties": {
+        "vivado": { "type": "string", "minLength": 1 },
+        "vitis": { "type": ["string", "null"] },
+        "petalinux": { "type": ["string", "null"] }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["git_commit", "dirty"],
+      "properties": {
+        "git_commit": { "type": ["string", "null"], "pattern": "^[0-9a-fA-F]{40,64}$" },
+        "dirty": { "type": "boolean" }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "path", "sha256"],
+        "properties": {
+          "role": { "enum": ["bitstream", "xsa", "dtb", "image", "rootfs"] },
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": ["string", "null"], "pattern": "^[0-9a-fA-F]{64}$" }
+        }
+      }
+    },
+    "accelerators": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "instance", "version", "base_address"],
+        "properties": {
+          "type": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$" },
+          "instance": { "type": "integer", "minimum": 0 },
+          "version": { "type": "integer", "minimum": 1 },
+          "base_address": { "type": "string", "pattern": "^0x[0-9a-fA-F]+$" }
+        }
+      }
+    }
+  }
+}
+

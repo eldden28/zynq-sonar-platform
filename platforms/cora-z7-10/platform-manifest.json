@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "platform": {
+    "name": "cora-z7-10",
+    "numeric_id": "0x00010001",
+    "design_revision": 1,
+    "board_revision": "B.0"
+  },
+  "device": "xc7z010clg400-1",
+  "identity": {
+    "base_address": null,
+    "identity_abi": 1,
+    "register_abi": 1,
+    "data_abi": 1,
+    "build_id": null
+  },
+  "toolchain": {
+    "vivado": "2025.1",
+    "vitis": null,
+    "petalinux": null
+  },
+  "source": {
+    "git_commit": null,
+    "dirty": true
+  },
+  "artifacts": [
+    {
+      "role": "xsa",
+      "path": "hardware/export/cora-z7-10/cora_z7_10_base.xsa",
+      "sha256": "a7eb0e57830e1544a5b197207a6f389645e46b78d83fce6a8cb2f43b83fc9f85"
+    }
+  ],
+  "accelerators": []
+}
