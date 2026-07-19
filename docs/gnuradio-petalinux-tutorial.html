@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>GNU Radio on PetaLinux — Cora Z7-10 Bring-up Tutorial</title>
+  <style>
+    :root {
+      --page: #08111f;
+      --surface: #101c2c;
+      --surface-2: #162438;
+      --text: #edf4ff;
+      --muted: #a9b8ca;
+      --line: #2c3e55;
+      --accent: #65d6ad;
+      --accent-2: #6cb7ff;
+      --warning: #ffca6c;
+      --danger: #ff8f8f;
+      --code: #07101b;
+      --shadow: 0 18px 45px rgb(0 0 0 / 28%);
+      --radius: 14px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 85% 8%, rgb(52 130 185 / 18%), transparent 30rem),
+        radial-gradient(circle at 15% 35%, rgb(60 181 139 / 12%), transparent 26rem),
+        var(--page);
+      line-height: 1.65;
+    }
+
+    a { color: var(--accent-2); }
+    code, pre { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+    code { color: #b8e7ff; }
+    h1, h2, h3 { line-height: 1.2; letter-spacing: -.025em; }
+    h2 { margin-top: 0; font-size: clamp(1.55rem, 3vw, 2.15rem); }
+    h3 { margin-top: 1.8rem; color: #d8e8fb; }
+    p { max-width: 76ch; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 920px);
+      gap: 2rem;
+      width: min(1260px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 2rem 0 5rem;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 1rem;
+      align-self: start;
+      max-height: calc(100vh - 2rem);
+      overflow: auto;
+      padding: 1.2rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgb(16 28 44 / 88%);
+      backdrop-filter: blur(12px);
+    }
+
+    .sidebar strong { display: block; margin-bottom: .75rem; color: var(--accent); }
+    .sidebar a {
+      display: block;
+      padding: .38rem .55rem;
+      border-radius: 7px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .93rem;
+    }
+    .sidebar a:hover { color: var(--text); background: var(--surface-2); }
+
+    main { min-width: 0; }
+    .hero {
+      padding: clamp(2rem, 6vw, 4.5rem);
+      border: 1px solid var(--line);
+      border-radius: calc(var(--radius) + 6px);
+      background: linear-gradient(145deg, rgb(19 38 57 / 96%), rgb(12 25 40 / 96%));
+      box-shadow: var(--shadow);
+    }
+    .eyebrow {
+      margin: 0 0 .6rem;
+      color: var(--accent);
+      font-weight: 750;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      font-size: .76rem;
+    }
+    .hero h1 { margin: 0; font-size: clamp(2.25rem, 7vw, 4.7rem); max-width: 12ch; }
+    .hero .lede { margin: 1.25rem 0 0; color: var(--muted); font-size: 1.12rem; }
+    .badges { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1.4rem; }
+    .badge {
+      padding: .35rem .7rem;
+      border: 1px solid #39516d;
+      border-radius: 999px;
+      color: #d6e8fa;
+      background: #132338;
+      font-size: .84rem;
+    }
+
+    section {
+      margin-top: 1.6rem;
+      padding: clamp(1.35rem, 4vw, 2.5rem);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgb(16 28 44 / 90%);
+      box-shadow: 0 10px 32px rgb(0 0 0 / 14%);
+      scroll-margin-top: 1rem;
+    }
+
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .card {
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--surface-2);
+    }
+    .card strong { color: var(--accent); }
+    .card p { margin: .4rem 0 0; color: var(--muted); }
+
+    .callout {
+      margin: 1.1rem 0;
+      padding: 1rem 1.1rem;
+      border-left: 4px solid var(--accent-2);
+      border-radius: 7px;
+      background: #13253a;
+    }
+    .callout.warning { border-left-color: var(--warning); }
+    .callout.danger { border-left-color: var(--danger); }
+    .callout p { margin: 0; }
+
+    pre {
+      position: relative;
+      margin: 1rem 0;
+      padding: 1rem 1.1rem;
+      overflow: auto;
+      border: 1px solid #253a50;
+      border-radius: 10px;
+      color: #d7efff;
+      background: var(--code);
+      font-size: .88rem;
+      line-height: 1.55;
+      tab-size: 4;
+    }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .92rem; }
+    th, td { padding: .8rem; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--accent); background: #102137; }
+    tr:nth-child(even) td { background: rgb(22 36 56 / 55%); }
+    .status { color: var(--accent); font-weight: 750; }
+
+    .steps { counter-reset: step; padding: 0; list-style: none; }
+    .steps > li { position: relative; margin: 1.4rem 0; padding-left: 3.2rem; }
+    .steps > li::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: -.1rem;
+      display: grid;
+      width: 2.2rem;
+      height: 2.2rem;
+      place-items: center;
+      border-radius: 50%;
+      color: #06141c;
+      background: var(--accent);
+      font-weight: 850;
+    }
+    .steps h3 { margin: 0 0 .4rem; }
+
+    .footer { margin-top: 1.6rem; color: var(--muted); text-align: center; font-size: .9rem; }
+
+    @media (max-width: 900px) {
+      .layout { display: block; width: min(100% - 1rem, 920px); padding-top: .5rem; }
+      .sidebar { position: static; max-height: none; margin-bottom: 1rem; }
+      .sidebar nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      :root { --page: white; --surface: white; --surface-2: #f4f6f8; --text: #111827; --muted: #4b5563; --line: #cbd5e1; --code: #f1f5f9; }
+      body { background: white; }
+      .layout { display: block; width: 100%; padding: 0; }
+      .sidebar { display: none; }
+      .hero, section { box-shadow: none; break-inside: avoid; }
+      pre { color: #111827; white-space: pre-wrap; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" aria-label="Tutorial navigation">
+      <strong>Bring-up map</strong>
+      <nav>
+        <a href="#outcome">1. Outcome</a>
+        <a href="#architecture">2. Architecture</a>
+        <a href="#prerequisites">3. Prerequisites</a>
+        <a href="#integration">4. GNU Radio integration</a>
+        <a href="#build">5. Build the image</a>
+        <a href="#sd-card">6. Write the SD card</a>
+        <a href="#first-boot">7. First boot</a>
+        <a href="#network">8. Ethernet and SSH</a>
+        <a href="#smoke-test">9. Smoke test</a>
+        <a href="#hiccups">10. Hiccups and fixes</a>
+        <a href="#recovery">11. U-Boot recovery</a>
+        <a href="#next">12. Next milestone</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <p class="eyebrow">Cora Z7-10 · PetaLinux 2025.1</p>
+        <h1>GNU Radio on embedded Zynq</h1>
+        <p class="lede">
+          A reproducible, field-tested path from a PS-only Cora baseline to a
+          bootable ext4 SD image running a headless GNU Radio flowgraph over SSH.
+        </p>
+        <div class="badges" aria-label="Validated components">
+          <span class="badge">Linux 6.12.10-xilinx</span>
+          <span class="badge">GNU Radio 3.10.12</span>
+          <span class="badge">VOLK 3.2.0</span>
+          <span class="badge">Python 3.12</span>
+          <span class="badge">Static Ethernet</span>
+          <span class="badge">Smoke test passed</span>
+        </div>
+      </header>
+
+      <section id="outcome">
+        <h2>1. What we achieved</h2>
+        <div class="grid">
+          <div class="card"><strong>Boot</strong><p>U-Boot loads a Linux kernel and a persistent ext4 root filesystem from microSD partition 2.</p></div>
+          <div class="card"><strong>GNU Radio</strong><p>A headless ARMv7 build includes runtime, blocks, analog, digital, FFT, filter, network, Python, and VOLK.</p></div>
+          <div class="card"><strong>Access</strong><p>The board uses <code>192.168.10.2/24</code>; the directly connected Ubuntu host uses <code>192.168.10.1/24</code>.</p></div>
+          <div class="card"><strong>Proof</strong><p>A vector source, multiply block, and vector sink produced <code>[2, 4, 6, 8]</code> on the Cortex-A9.</p></div>
+        </div>
+        <p>
+          This is the software baseline for later FPGA acceleration. GNU Radio
+          Companion stays on the Ubuntu development host; the embedded image is
+          deliberately headless to fit the Cora Z7-10's 512 MiB DDR.
+        </p>
+      </section>
+
+      <section id="architecture">
+        <h2>2. Current architecture</h2>
+        <pre><code>Ubuntu development host                    Cora Z7-10 target
+┌─────────────────────────────┐            ┌───────────────────────────┐
+│ Vivado / PetaLinux 2025.1   │  Ethernet  │ Zynq-7000 Cortex-A9       │
+│ GNU Radio Companion (future)├───────────►│ PetaLinux + GNU Radio     │
+│ Image build + SD writer     │ .10.1/.10.2│ Headless Python flowgraph │
+└─────────────────────────────┘            └───────────────────────────┘</code></pre>
+        <p>
+          The hardware export is currently PS-only. It validates DDR, SD, UART,
+          and Ethernet before an AXI accelerator, DMA path, device-tree node, and
+          GNU Radio out-of-tree block are introduced.
+        </p>
+      </section>
+
+      <section id="prerequisites">
+        <h2>3. Reproduction prerequisites</h2>
+        <table>
+          <thead><tr><th>Item</th><th>Working baseline</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Host</td><td>Ubuntu 22.04 x86_64</td><td>Use the host dependency notes in <code>docs/build-host.md</code>.</td></tr>
+            <tr><td>Board</td><td>Digilent Cora Z7-10 Rev. B</td><td>XC7Z010-1CLG400C, 512 MiB DDR.</td></tr>
+            <tr><td>AMD tools</td><td>Vivado + PetaLinux 2025.1</td><td>Default repository path expects <code>/tools/Xilinx/2025.1</code>.</td></tr>
+            <tr><td>SD card</td><td>4 GiB or larger</td><td>The WIC is about 2.5 GiB: 512 MiB boot + 2 GiB rootfs.</td></tr>
+            <tr><td>Connections</td><td>USB-UART and Ethernet</td><td>Serial is 115200 baud, 8N1.</td></tr>
+          </tbody>
+        </table>
+        <pre><code>cd /path/to/test-project
+scripts/check-host.sh
+source scripts/activate-tools.sh</code></pre>
+        <div class="callout warning"><p><strong>Tool version matters.</strong> The compatibility work in this repository targets PetaLinux 2025.1 / Yocto Scarthgap. A different release may need different recipe overrides.</p></div>
+      </section>
+
+      <section id="integration">
+        <h2>4. Integrate GNU Radio</h2>
+        <ol class="steps">
+          <li>
+            <h3>Fetch the pinned layer</h3>
+            <p><code>meta-sdr</code> is reproducibly fetched rather than vendored into Git.</p>
+            <pre><code>scripts/fetch-meta-sdr.sh</code></pre>
+            <p>The script checks out commit <code>563727209e5d8c7cdebc35157bab4dc07e8fb235</code>, marks it Scarthgap-compatible, and disables its GUI-oriented default before BitBake parses the recipe.</p>
+          </li>
+          <li>
+            <h3>Apply the project configuration</h3>
+            <pre><code>source scripts/activate-tools.sh
+petalinux-config \
+  --project software/petalinux/cora-z7-10-baseline \
+  --silentconfig
+petalinux-config \
+  --project software/petalinux/cora-z7-10-baseline \
+  --component rootfs \
+  --silentconfig</code></pre>
+            <p>The project selects GNU Radio, the external layer, ext4 root-on-SD, OpenSSH, static networking, and stable <code>eth0</code> naming.</p>
+          </li>
+          <li>
+            <h3>Understand the local recipe fixes</h3>
+            <p><code>gnuradio_%.bbappend</code> enables the useful headless modules, adds the real <code>python3-pyyaml</code> runtime dependency, and sets the Git checkout directory explicitly. <code>volk_%.bbappend</code> removes two stale test-related patches and applies the same source-directory compatibility fix.</p>
+          </li>
+        </ol>
+        <div class="callout"><p><strong>Why edit the fetched recipe?</strong> <code>cmake_qt5</code> is inherited while the base recipe is parsed. Replacing <code>PACKAGECONFIG</code> later in a <code>.bbappend</code> does not remove that already-inherited dependency, so the fetch script changes the pinned checkout deterministically.</p></div>
+      </section>
+
+      <section id="build">
+        <h2>5. Build and package the image</h2>
+        <pre><code>source scripts/activate-tools.sh
+scripts/build-petalinux-baseline.sh
+
+petalinux-package wic \
+  --project software/petalinux/cora-z7-10-baseline \
+  --size 512M,2G
+
+(cd software/petalinux/cora-z7-10-baseline &amp;&amp; \
+  sha256sum -c images/linux/SHA256SUMS)</code></pre>
+        <p>The deployable artifact is:</p>
+        <pre><code>software/petalinux/cora-z7-10-baseline/images/linux/petalinux-sdimage.wic</code></pre>
+        <p>The image directory and fetched third-party layer are intentionally ignored by Git. The project configuration, fetch script, and compatibility <code>.bbappend</code> files are the reproducible source.</p>
+        <div class="callout"><p><strong>Validated image snapshot (2026-07-19):</strong> 2,684,358,656 bytes, SHA-256 <code>a04ee0ceef17ff2dad6cc229b94440b2429f367727017e7a4ca99a075ca79ad3</code>. A new build may produce a different checksum.</p></div>
+      </section>
+
+      <section id="sd-card">
+        <h2>6. Write the microSD card</h2>
+        <h3>Recommended GUI</h3>
+        <pre><code>scripts/write-sd-image-gui</code></pre>
+        <p>The helper only offers removable drives, verifies capacity, requires typing <code>ERASE</code>, unmounts partitions, and uses the normal desktop authorization prompt.</p>
+        <h3>Command-line alternative</h3>
+        <pre><code>lsblk -p -o NAME,SIZE,MODEL,TRAN,MOUNTPOINTS
+sudo umount /dev/sdX1 /dev/sdX2
+sudo dd \
+  if="$PWD/software/petalinux/cora-z7-10-baseline/images/linux/petalinux-sdimage.wic" \
+  of=/dev/sdX bs=4M status=progress conv=fsync
+sync</code></pre>
+        <div class="callout danger"><p><strong>Destructive operation:</strong> replace <code>/dev/sdX</code> with the whole removable card, never a partition and never the Ubuntu system disk.</p></div>
+      </section>
+
+      <section id="first-boot">
+        <h2>7. First boot</h2>
+        <ol>
+          <li>Set the Cora boot-mode jumper for SD boot.</li>
+          <li>Connect USB-UART and Ethernet, insert the card, then power on.</li>
+          <li>Open the correct serial node at 115200 baud, 8N1.</li>
+        </ol>
+        <pre><code>picocom --baud 115200 /dev/ttyUSB1</code></pre>
+        <p>The final kernel command line must contain:</p>
+        <pre><code>root=/dev/mmcblk0p2 rootfstype=ext4 ro rootwait net.ifnames=0</code></pre>
+        <p><code>mmcblk0p1</code> is the FAT boot partition; <code>mmcblk0p2</code> is the persistent ext4 root filesystem.</p>
+        <div class="callout warning"><p>If the console appears to pause after <code>CAN device driver interface</code>, wait. That line was merely the last visible message while later drivers initialized; the actual failing image continued and eventually printed the root-filesystem panic.</p></div>
+      </section>
+
+      <section id="network">
+        <h2>8. Ethernet and SSH</h2>
+        <h3>Configure the Ubuntu side</h3>
+        <pre><code>ip link
+sudo ip address flush dev HOST_ETHERNET_INTERFACE
+sudo ip address add 192.168.10.1/24 dev HOST_ETHERNET_INTERFACE
+sudo ip link set HOST_ETHERNET_INTERFACE up
+ping -c 3 192.168.10.2</code></pre>
+        <h3>Connect to the target</h3>
+        <pre><code>ssh petalinux@192.168.10.2</code></pre>
+        <p>The bring-up credential used during validation was username <code>petalinux</code>, password <code>root</code>. Change it before using an untrusted network. The password for the <code>petalinux</code> account is not necessarily the root account's <code>su</code> password.</p>
+        <p>On the board, verify:</p>
+        <pre><code>ip link show eth0
+ip address show eth0
+ip route
+cat /sys/class/net/eth0/carrier</code></pre>
+      </section>
+
+      <section id="smoke-test">
+        <h2>9. Run the GNU Radio smoke test</h2>
+        <p>Copy the checked-in script rather than pasting a multiline heredoc into the serial terminal:</p>
+        <pre><code>scp scripts/gnuradio-smoke-test.py petalinux@192.168.10.2:/tmp/
+ssh petalinux@192.168.10.2 python3 /tmp/gnuradio-smoke-test.py</code></pre>
+        <p>Expected result:</p>
+        <pre><code>Result: [2.0, 4.0, 6.0, 8.0]
+GNU Radio smoke test: PASS</code></pre>
+        <p>The test constructs a vector source, multiplies every float by 2, captures the output, and asserts the exact result. It exercises Python bindings, the scheduler, <code>gr-blocks</code>, and VOLK without requiring FPGA hardware or a radio peripheral.</p>
+        <div class="callout"><p>During validation, <code>vmcircbuf</code> emitted shared-memory warnings but the flowgraph completed and passed. Treat those warnings as a future performance/configuration item, not a failure of this basic functional test.</p></div>
+      </section>
+
+      <section id="hiccups">
+        <h2>10. Hiccups we hit—and durable fixes</h2>
+        <table>
+          <thead><tr><th>Symptom</th><th>Root cause</th><th>Durable fix</th></tr></thead>
+          <tbody>
+            <tr><td>Qt/GRC dependencies entered a headless target build.</td><td>The base <code>meta-sdr</code> recipe inherited <code>cmake_qt5</code> during parsing.</td><td>The pinned fetch script changes the upstream default before parsing; the local append also keeps <code>PACKAGECONFIG</code> empty.</td></tr>
+            <tr><td>VOLK failed in <code>do_patch</code>.</td><td>Two upstream ptest/compiler-flag patches no longer matched VOLK 3.2 and were irrelevant with tests disabled.</td><td>Remove those patch URIs in <code>volk_%.bbappend</code>.</td></tr>
+            <tr><td>GNU Radio/VOLK source was not found during configuration.</td><td>Scarthgap's Git fetch layout differed from the newer recipe's assumption.</td><td>Set <code>S = "${WORKDIR}/git"</code> explicitly in both appends.</td></tr>
+            <tr><td><code>ModuleNotFoundError: No module named 'yaml'</code></td><td><code>gr-blocks</code> imports <code>variable_save_restore.py</code>, even in a headless build.</td><td>Add <code>python3-pyyaml</code> to GNU Radio runtime dependencies.</td></tr>
+            <tr><td><code>module 'yaml' has no attribute 'SafeDumper'</code></td><td>A placeholder/stub <code>yaml</code> module satisfied the import name but was not PyYAML.</td><td>Remove the stub and install the real PyYAML package through the image recipe.</td></tr>
+            <tr><td>Shell showed <code>&gt;</code> prompts or Python reported <code>unexpected indent</code>.</td><td>Multiline heredocs were pasted with indentation/typos over serial.</td><td>Copy and run <code>scripts/gnuradio-smoke-test.py</code>.</td></tr>
+            <tr><td><code>No such file or directory</code> writing under <code>/root</code>.</td><td>The session was the unprivileged <code>petalinux</code> user; <code>/root</code> was inaccessible or absent in its view.</td><td>Use <code>/tmp</code> for the smoke test; root privileges are unnecessary.</td></tr>
+            <tr><td>Kernel panic mounting <code>/dev/ram0</code>.</td><td>The device tree still carried initrd bootargs although the WIC contained a valid ext4 partition.</td><td>Select EXT4 rootfs, set <code>/dev/mmcblk0p2</code>, rebuild boot artifacts, and rewrite the card.</td></tr>
+            <tr><td><code>eth0</code> did not exist; interface was <code>enx000a35001e53</code>.</td><td>Predictable interface naming used the MAC address while <code>/etc/network/interfaces</code> configured <code>eth0</code>.</td><td>Add <code>net.ifnames=0</code> to persistent bootargs.</td></tr>
+            <tr><td><code>RTNETLINK answers: Operation not permitted</code>.</td><td>The serial shell lacked network-administration privileges.</td><td>Fix networking in the image, or use an authenticated administrative shell; do not rely on runtime commands as the permanent solution.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="recovery">
+        <h2>11. Inspect a bad boot in U-Boot</h2>
+        <p>Press any key during the countdown to reach the <code>Zynq&gt;</code> prompt. Confirm the ext4 root filesystem is present:</p>
+        <pre><code>ext4ls mmc 0:2 /</code></pre>
+        <p>A valid root partition shows directories such as <code>bin</code>, <code>etc</code>, <code>lib</code>, <code>usr</code>, and <code>var</code>. Inspect the loaded device tree:</p>
+        <pre><code>fdt addr 0x00100000
+fdt print /chosen</code></pre>
+        <p>If it reports <code>root=/dev/ram0</code>, the boot metadata is wrong—not the ext4 filesystem.</p>
+        <div class="callout warning"><p><strong>Why the one-off <code>fdt set</code> did not stick:</strong> no FDT address was configured at the first prompt, and then <code>boot</code> executed <code>boot.scr</code>, which loaded its own kernel/device-tree flow. Correct the PetaLinux configuration and regenerate the card for a persistent fix.</p></div>
+      </section>
+
+      <section id="next">
+        <h2>12. Where the overall project stands</h2>
+        <table>
+          <thead><tr><th>Milestone</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Host tools and Cora hardware baseline</td><td class="status">Complete</td></tr>
+            <tr><td>PetaLinux ext4 SD boot, UART, Ethernet, and SSH</td><td class="status">Complete</td></tr>
+            <tr><td>Headless GNU Radio + VOLK target build</td><td class="status">Complete</td></tr>
+            <tr><td>On-board software flowgraph smoke test</td><td class="status">Complete</td></tr>
+            <tr><td>Reusable FPGA accelerator hardware and DMA</td><td>Next</td></tr>
+            <tr><td>Linux driver / userspace accelerator runtime</td><td>Planned</td></tr>
+            <tr><td>GNU Radio OOT block and host-to-board remote backend</td><td>Planned</td></tr>
+            <tr><td>Correctness and performance benchmarks</td><td>Planned</td></tr>
+          </tbody>
+        </table>
+        <p>The next clean milestone is a tiny deterministic accelerator—multiply or FIR—behind AXI control plus a DMA data path. Test it first with a standalone target utility, then wrap the common API in a GNU Radio out-of-tree block.</p>
+      </section>
+
+      <p class="footer">Validated on Digilent Cora Z7-10 Rev. B · Tutorial snapshot: 2026-07-19</p>
+    </main>
+  </div>
+</body>
+</html>
