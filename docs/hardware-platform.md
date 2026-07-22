@@ -1,5 +1,9 @@
 # Cora Z7-10 Base Hardware Platform
 
+The DMA-to-PWM successor is documented in
+[`axis-pwm-platform.md`](axis-pwm-platform.md). This page retains the original
+PS-only baseline description.
+
 ## Scope
 
 The first hardware platform contains only the Zynq-7000 processing system,
@@ -55,4 +59,3 @@ These values come directly from Digilent's Cora Z7-10 B.0 `preset.xml`; they
 were not introduced by the project generator. Do not suppress or alter them
 without board-specific evidence. DDR remains unverified until a memory test or
 Linux workload runs successfully on the physical board.
-

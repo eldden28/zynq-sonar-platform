@@ -1,0 +1,1 @@
+KERNEL=="cora-pwm*", GROUP="petalinux", MODE="0660"

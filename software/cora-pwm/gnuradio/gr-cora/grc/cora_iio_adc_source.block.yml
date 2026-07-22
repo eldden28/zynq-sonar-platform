@@ -1,0 +1,46 @@
+id: cora_iio_adc_source
+label: Cora IIO ADC Source
+category: '[Cora]'
+flags: [python]
+
+templates:
+  imports: from gnuradio import cora
+  make: cora.iio_adc_source(${device_path}, ${channel}, ${full_scale_volts}, ${poll_period_ms}, ${scale_multiplier})
+
+parameters:
+- id: device_path
+  label: IIO Device Path
+  dtype: string
+  default: /sys/bus/iio/devices/iio:device0
+- id: channel
+  label: Channel
+  dtype: string
+  default: auto
+  hide: part
+- id: full_scale_volts
+  label: Full Scale (V)
+  dtype: real
+  default: '3.3'
+- id: poll_period_ms
+  label: Poll Period (ms)
+  dtype: int
+  default: '100'
+- id: scale_multiplier
+  label: Scale Multiplier
+  dtype: real
+  default: '3.3'
+  hide: part
+
+outputs:
+- domain: stream
+  dtype: float
+  label: normalized
+  optional: false
+
+documentation: |-
+  Reads a Linux IIO voltage channel and emits normalized float samples.
+  0 V maps to -1.0 and Full Scale maps to +1.0. Linux IIO scale is in mV;
+  the default multiplier compensates Cora A0's 3.3:1 analog divider. Each IIO
+  measurement is held until the next poll, allowing a slow XADC measurement
+  to feed a faster PWM stream. Cora shield A0 is VAUX[1]. Use `auto` to select
+  the first enabled generic auxiliary channel; it is voltage8 currently.

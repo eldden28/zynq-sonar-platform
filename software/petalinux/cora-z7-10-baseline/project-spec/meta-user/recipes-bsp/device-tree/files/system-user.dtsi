@@ -1,3 +1,27 @@
 /include/ "system-conf.dtsi"
 / {
 };
+
+&axis_pwm_s16_0 {
+	compatible = "eldden28,cora-pwm-1.0";
+	dmas = <&axi_dma_0 0>;
+	dma-names = "tx";
+	status = "okay";
+};
+
+/*
+ * Shield A0 is the Cora Z7's single-ended XADC VAUX[1] input.  The board
+ * scales 0..3.3 V at A0 down to the XADC's 0..1.0 V range.  The XADC driver
+ * publishes the first enabled auxiliary channel as an unnamed IIO voltage
+ * input (in_voltage8_* in the current kernel image).
+ */
+&adc {
+	status = "okay";
+	xlnx,channels {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		channel@2 {
+			reg = <2>; /* VAUX[1] = shield A0 */
+		};
+	};
+};

@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""Drive Cora PWM from an IIO ADC today or a future signed-16 DMA ADC."""
+
+import argparse
+import time
+from pathlib import Path
+
+from gnuradio import blocks, cora, gr
+
+
+def discover_xadc() -> str:
+    for candidate in sorted(Path("/sys/bus/iio/devices").glob("iio:device*")):
+        try:
+            name = (candidate / "name").read_text(encoding="ascii").strip().lower()
+        except FileNotFoundError:
+            continue
+        if "xadc" in name:
+            return str(candidate)
+    raise RuntimeError("no XADC IIO device found; pass --adc-device explicitly")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--backend", choices=("iio", "dma-s16"), default="iio",
+                        help="ADC transport: XADC/IIO now, DMA for an external converter later")
+    parser.add_argument("--adc-device", help="IIO directory or DMA character device")
+    parser.add_argument("--channel", default="auto",
+                        help="IIO channel for A0 (default: auto-detect)")
+    parser.add_argument("--full-scale-volts", type=float, default=3.3)
+    parser.add_argument("--scale-multiplier", type=float, default=3.3,
+                        help="board analog-divider gain (default: 3.3 for shield A0)")
+    parser.add_argument("--poll-period-ms", type=int, default=100,
+                        help="IIO measurement interval; each value is held between polls")
+    parser.add_argument("--dma-scale", type=float, default=1.0 / 32768.0,
+                        help="normalization factor for DMA signed-16 samples")
+    parser.add_argument("--pwm-device", default="/dev/cora-pwm0")
+    parser.add_argument("--period-ticks", type=int, default=2000)
+    parser.add_argument("--invert", action="store_true")
+    parser.add_argument("--no-dither", action="store_true")
+    parser.add_argument("--seconds", type=float, default=0.0,
+                        help="run duration (0 means until Ctrl-C)")
+    args = parser.parse_args()
+
+    if args.seconds < 0:
+        parser.error("--seconds must not be negative")
+    if args.backend == "iio":
+        source = cora.adc_source(
+            "iio",
+            device_path=args.adc_device or discover_xadc(),
+            channel=args.channel,
+            full_scale_volts=args.full_scale_volts,
+            poll_period_ms=args.poll_period_ms,
+            scale_multiplier=args.scale_multiplier,
+        )
+    else:
+        source = cora.adc_source(
+            "dma-s16",
+            device_path=args.adc_device or "/dev/cora-adc0",
+            scale=args.dma_scale,
+        )
+
+    flowgraph = gr.top_block()
+    convert = blocks.float_to_short(1, 32767.0)
+    sink = cora.pwm_sink(
+        args.pwm_device, args.period_ticks, args.invert, not args.no_dither
+    )
+    flowgraph.connect(source, convert, sink)
+
+    print(
+        f"ADC ({args.backend}) -> PWM ({args.pwm_device}), "
+        "Ctrl-C to stop"
+    )
+    flowgraph.start()
+    try:
+        if args.seconds:
+            time.sleep(args.seconds)
+        else:
+            while True:
+                time.sleep(1)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        flowgraph.stop()
+        flowgraph.wait()
+        print("Cora ADC-to-PWM flowgraph stopped.")
+
+
+if __name__ == "__main__":
+    main()

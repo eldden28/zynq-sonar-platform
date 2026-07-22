@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""Run a short repeating signed-16 waveform through the Cora PWM sink."""
+
+import argparse
+import time
+
+from gnuradio import blocks, cora, gr
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--device", default="/dev/cora-pwm0")
+    parser.add_argument("--seconds", type=float, default=1.0)
+    parser.add_argument("--period-ticks", type=int, default=2000)
+    parser.add_argument("--invert", action="store_true")
+    parser.add_argument("--no-dither", action="store_true")
+    args = parser.parse_args()
+
+    if args.seconds <= 0:
+        parser.error("--seconds must be positive")
+
+    flowgraph = gr.top_block()
+    source = blocks.vector_source_s([-32768, -16384, 0, 16384, 32767], True)
+    sink = cora.pwm_sink(
+        args.device, args.period_ticks, args.invert, not args.no_dither
+    )
+    flowgraph.connect(source, sink)
+
+    print(
+        f"Streaming to {args.device} for {args.seconds:g} s "
+        f"with period_ticks={args.period_ticks}"
+    )
+    flowgraph.start()
+    try:
+        time.sleep(args.seconds)
+    finally:
+        flowgraph.stop()
+        flowgraph.wait()
+    print("Cora PWM GNU Radio smoke test: PASS")
+
+
+if __name__ == "__main__":
+    main()
