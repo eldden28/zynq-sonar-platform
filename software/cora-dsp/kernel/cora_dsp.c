@@ -174,9 +174,14 @@ static int cora_dsp_release(struct inode *inode, struct file *file)
 {
 	struct cora_dsp_dev *dsp = file->private_data;
 
+	/*
+	 * cora_dsp_write() is synchronous: it does not return until both DMA
+	 * directions have completed, or until its error path has terminated
+	 * them.  Resetting the AXI DMA channels again here can disturb their
+	 * completed-descriptor cleanup and leave the next opener unable to
+	 * start its first transfer.
+	 */
 	mutex_lock(&dsp->lock);
-	dmaengine_terminate_sync(dsp->tx_chan);
-	dmaengine_terminate_sync(dsp->rx_chan);
 	dsp->result_ready = false;
 	mutex_unlock(&dsp->lock);
 	atomic_set(&dsp->opened, 0);
