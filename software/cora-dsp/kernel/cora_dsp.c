@@ -21,6 +21,11 @@
 #define DSP_LOW_BIN 0x00
 #define DSP_HIGH_BIN 0x04
 #define DSP_COMMAND 0x08
+#define DSP_STATUS_BIN 0x0c
+#define DSP_FRAMES_LO 0x10
+#define DSP_FRAMES_HI 0x14
+#define DSP_SAMPLES_LO 0x18
+#define DSP_SAMPLES_HI 0x1c
 #define DSP_FILTERED_BINS_LO 0x20
 #define DSP_FILTERED_BINS_HI 0x24
 #define DSP_CORE_ID_REG 0x28
@@ -140,6 +145,27 @@ static int cora_dsp_process(struct cora_dsp_dev *dsp)
 	if (!ret)
 		ret = cora_dsp_wait(dsp, &dsp->tx_complete);
 	if (ret) {
+		enum dma_status tx_status;
+		enum dma_status rx_status;
+		u64 hardware_frames;
+		u64 hardware_samples;
+
+		tx_status = dmaengine_tx_status(
+			dsp->tx_chan, tx_cookie, NULL);
+		rx_status = dmaengine_tx_status(
+			dsp->rx_chan, rx_cookie, NULL);
+		hardware_frames = cora_dsp_read_counter(
+			dsp, DSP_FRAMES_LO, DSP_FRAMES_HI);
+		hardware_samples = cora_dsp_read_counter(
+			dsp, DSP_SAMPLES_LO, DSP_SAMPLES_HI);
+		dev_err(dsp->dev,
+			"transaction failed %d: tx_completion=%d tx_status=%d "
+			"rx_completion=%d rx_status=%d filter_bin=%u "
+			"filter_frames=%llu filter_samples=%llu\n",
+			ret, completion_done(&dsp->tx_complete), tx_status,
+			completion_done(&dsp->rx_complete), rx_status,
+			readl(dsp->regs + DSP_STATUS_BIN),
+			hardware_frames, hardware_samples);
 		dmaengine_terminate_sync(dsp->tx_chan);
 		dmaengine_terminate_sync(dsp->rx_chan);
 		dsp->failed_frames++;
