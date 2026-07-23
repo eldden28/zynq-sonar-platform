@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""Benchmark the Cora FPGA FFT/filter/IFFT against the ARM CPU NumPy FFT."""
+
+import argparse
+import time
+
+import numpy
+from gnuradio.cora.dsp import FFT_LENGTH, HwFftFilterDevice
+
+
+def spectral_mask(low_bin: int, high_bin: int) -> numpy.ndarray:
+    mask = numpy.zeros(FFT_LENGTH, dtype=numpy.float64)
+    mask[low_bin : high_bin + 1] = 1.0
+    if low_bin == 0:
+        if high_bin:
+            mask[FFT_LENGTH - high_bin :] = 1.0
+    else:
+        mask[FFT_LENGTH - high_bin : FFT_LENGTH - low_bin + 1] = 1.0
+    return mask
+
+
+def cpu_process(frame: numpy.ndarray, mask: numpy.ndarray) -> numpy.ndarray:
+    return numpy.fft.ifft(numpy.fft.fft(frame) * mask).real
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--device", default="/dev/cora-dsp0")
+    parser.add_argument("--frames", type=int, default=200)
+    parser.add_argument("--low-bin", type=int, default=8)
+    parser.add_argument("--high-bin", type=int, default=24)
+    args = parser.parse_args()
+
+    if args.frames <= 0:
+        parser.error("--frames must be positive")
+    if not 0 <= args.low_bin <= args.high_bin <= 256:
+        parser.error("filter bins must satisfy 0 <= low <= high <= 256")
+
+    sample_index = numpy.arange(FFT_LENGTH, dtype=numpy.float64)
+    source = (
+        0.45 * numpy.sin(2.0 * numpy.pi * 12.0 * sample_index / FFT_LENGTH)
+        + 0.20 * numpy.sin(2.0 * numpy.pi * 96.0 * sample_index / FFT_LENGTH)
+    )
+    source_i16 = numpy.rint(source * 32767.0).astype("<i2")
+    quantized_source = source_i16.astype(numpy.float64) / 32768.0
+    mask = spectral_mask(args.low_bin, args.high_bin)
+
+    for _ in range(5):
+        cpu_process(quantized_source, mask)
+    cpu_start = time.perf_counter_ns()
+    for _ in range(args.frames):
+        cpu_result = cpu_process(quantized_source, mask)
+    cpu_ns = time.perf_counter_ns() - cpu_start
+
+    with HwFftFilterDevice(
+        args.device, args.low_bin, args.high_bin
+    ) as accelerator:
+        accelerator.process_i16(source_i16)
+        accelerator.clear_stats()
+        hardware_start = time.perf_counter_ns()
+        for _ in range(args.frames):
+            hardware_i16 = accelerator.process_i16(source_i16)
+        hardware_ns = time.perf_counter_ns() - hardware_start
+        hardware_status = accelerator.status()
+
+    hardware_result = hardware_i16.astype(numpy.float64) / 32768.0
+    error = hardware_result - cpu_result
+    cpu_per_frame = cpu_ns / args.frames
+    hardware_per_frame = hardware_ns / args.frames
+    accelerator_per_frame = (
+        hardware_status["accelerator_time_ns"] / args.frames
+    )
+
+    source_spectrum = numpy.abs(numpy.fft.fft(quantized_source))
+    output_spectrum = numpy.abs(numpy.fft.fft(hardware_result))
+    stop_ratio = output_spectrum[96] / max(source_spectrum[96], 1e-15)
+    attenuation_db = 20.0 * numpy.log10(max(stop_ratio, 1e-15))
+
+    print("Cora 512-point FFT -> spectral mask -> IFFT benchmark")
+    print(f"Filter bins:         {args.low_bin}..{args.high_bin} + mirror")
+    print(f"Frames:              {args.frames}")
+    print(f"CPU NumPy latency:   {cpu_per_frame / 1000.0:9.2f} us/frame")
+    print(f"FPGA end-to-end:     {hardware_per_frame / 1000.0:9.2f} us/frame")
+    print(f"FPGA DMA/core only:  {accelerator_per_frame / 1000.0:9.2f} us/frame")
+    print(f"End-to-end speedup:  {cpu_per_frame / hardware_per_frame:9.2f} x")
+    print(f"RMSE vs CPU:         {numpy.sqrt(numpy.mean(error * error)):.7f}")
+    print(f"Maximum error:       {numpy.max(numpy.abs(error)):.7f}")
+    print(f"Bin 96 attenuation:  {attenuation_db:.2f} dB")
+    print(f"DMA failures:        {hardware_status['failed_frames']}")
+
+
+if __name__ == "__main__":
+    main()

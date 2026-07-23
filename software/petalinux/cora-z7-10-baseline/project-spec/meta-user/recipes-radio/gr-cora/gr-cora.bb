@@ -5,7 +5,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-3.0-only;md5=c79ff39f19dfec
 inherit cmake pkgconfig python3native python3-dir
 
 DEPENDS = "gnuradio python3 python3-pybind11-native"
-RDEPENDS:${PN} = "gnuradio python3-core python3-numpy cora-pwm"
+RDEPENDS:${PN} = "gnuradio python3-core python3-numpy cora-pwm cora-dsp"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/../../../../../../cora-pwm:"
 SRC_URI = " \
@@ -25,5 +25,6 @@ FILES:${PN}:append = " \
     ${PYTHON_SITEPACKAGES_DIR}/gnuradio/cora \
     ${datadir}/gnuradio/grc/blocks/cora_pwm_sink.block.yml \
     ${datadir}/gnuradio/grc/blocks/cora_iio_adc_source.block.yml \
+    ${datadir}/gnuradio/grc/blocks/cora_hw_fft_filter.block.yml \
     ${datadir}/gnuradio/grc/blocks/cora_tcp_float_sink.block.yml \
 "

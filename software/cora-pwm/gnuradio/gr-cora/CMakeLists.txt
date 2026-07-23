@@ -78,12 +78,14 @@ install(TARGETS cora_python
 install(FILES
     python/cora/__init__.py
     python/cora/adc.py
+    python/cora/dsp.py
     python/cora/remote.py
     DESTINATION ${GR_PYTHON_DIR}/gnuradio/cora
 )
 install(FILES
     grc/cora_pwm_sink.block.yml
     grc/cora_iio_adc_source.block.yml
+    grc/cora_hw_fft_filter.block.yml
     grc/cora_tcp_float_sink.block.yml
     DESTINATION ${CMAKE_INSTALL_DATADIR}/gnuradio/grc/blocks
 )
@@ -91,6 +93,8 @@ install(PROGRAMS
     examples/cora-pwm-smoke
     examples/cora-adc-smoke
     examples/cora-adc-to-pwm
+    examples/cora-adc-fft-pwm
+    examples/cora-dsp-benchmark
     examples/cora-remote-io
     DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

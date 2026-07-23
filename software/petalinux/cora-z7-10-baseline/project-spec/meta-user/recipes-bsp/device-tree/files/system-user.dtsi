@@ -9,6 +9,13 @@
 	status = "okay";
 };
 
+&axis_spectral_filter_0 {
+	compatible = "eldden28,cora-dsp-1.0";
+	dmas = <&axi_dma_dsp 0>, <&axi_dma_dsp 1>;
+	dma-names = "tx", "rx";
+	status = "okay";
+};
+
 /*
  * The Cora Z7 Ethernet PHY is an RTL8211E at MDIO address 0.  Describing it
  * explicitly prevents the MACB driver from scanning all 32 MDIO addresses,

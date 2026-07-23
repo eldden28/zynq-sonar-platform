@@ -51,3 +51,17 @@ cora-pwm-smoke
 ```
 
 Use `cora-pwm-smoke --help` for the device, duration, and period options.
+
+## Spectral accelerator
+
+The platform also includes a separate 512-point
+FFT → symmetric bin mask → IFFT accelerator. Run the live A0-to-PWM flowgraph
+with:
+
+```sh
+cora-adc-fft-pwm --low-bin 0 --high-bin 64
+```
+
+Run `cora-dsp-benchmark` for a repeatable ARM CPU versus FPGA latency and
+fixed-point-accuracy comparison. See `docs/cora-spectral-accelerator.md` for
+the numeric format, architecture, and full command reference.

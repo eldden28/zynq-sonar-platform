@@ -7,6 +7,7 @@ set report_directory [file join $repository_root build reports cora-z7-10-pwm]
 set ip_project_directory [file join $output_directory ip_packager]
 set ip_repository [file join $output_directory ip_repository]
 set pwm_ip_directory [file join $ip_repository axis_pwm_s16]
+set spectral_filter_ip_directory [file join $ip_repository axis_spectral_filter]
 
 set build_mode build
 if {$argc > 1} {
@@ -28,6 +29,8 @@ set device_part xc7z010clg400-1
 
 set pwm_core_file [file join $repository_root hardware rtl axis_pwm_s16 axis_pwm_s16.sv]
 set pwm_axi_file [file join $repository_root hardware rtl axis_pwm_s16 axis_pwm_s16_axi.sv]
+set spectral_filter_core_file [file join $repository_root hardware rtl axis_spectral_filter axis_spectral_filter.sv]
+set spectral_filter_axi_file [file join $repository_root hardware rtl axis_spectral_filter axis_spectral_filter_axi.sv]
 set constraint_file [file join $repository_root hardware constraints cora-z7-10-axis-pwm.xdc]
 
 if {![file isdirectory $board_repository]} {
@@ -69,6 +72,32 @@ set pwm_memory_map [ipx::add_memory_map S_AXI $packaged_core]
 set pwm_address_block [ipx::add_address_block Reg $pwm_memory_map]
 set_property range 65536 $pwm_address_block
 set_property width 32 $pwm_address_block
+set_property slave_memory_map_ref S_AXI \
+    [ipx::get_bus_interfaces S_AXI -of_objects $packaged_core]
+ipx::save_core $packaged_core
+close_project
+
+# Package the configurable frequency-domain bin mask used between the two
+# Xilinx FFT cores.
+create_project -force axis_spectral_filter_ip_packager $ip_project_directory -part $device_part
+set_property target_language Verilog [current_project]
+add_files -norecurse [list $spectral_filter_core_file $spectral_filter_axi_file]
+set_property top axis_spectral_filter_axi [current_fileset]
+update_compile_order -fileset sources_1
+
+ipx::package_project -root_dir $spectral_filter_ip_directory \
+    -vendor eldden28.dev -library fpga -taxonomy /UserIP \
+    -import_files -set_current true
+set packaged_core [ipx::current_core]
+set_property name axis_spectral_filter $packaged_core
+set_property display_name {512-bin AXI-stream spectral filter} $packaged_core
+set_property description {Configurable symmetric frequency-bin mask for Q1.15 FFT streams} $packaged_core
+set_property version 1.0 $packaged_core
+
+set filter_memory_map [ipx::add_memory_map S_AXI $packaged_core]
+set filter_address_block [ipx::add_address_block Reg $filter_memory_map]
+set_property range 65536 $filter_address_block
+set_property width 32 $filter_address_block
 set_property slave_memory_map_ref S_AXI \
     [ipx::get_bus_interfaces S_AXI -of_objects $packaged_core]
 ipx::save_core $packaged_core
@@ -127,9 +156,9 @@ connect_bd_net [get_bd_pins processing_system7_0/FCLK_CLK1] \
     [get_bd_pins reset_200/slowest_sync_clk]
 
 set control_interconnect [create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:* control_interconnect]
-set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI {2}] $control_interconnect
+set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI {4}] $control_interconnect
 set data_interconnect [create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:* data_interconnect]
-set_property -dict [list CONFIG.NUM_SI {2} CONFIG.NUM_MI {1}] $data_interconnect
+set_property -dict [list CONFIG.NUM_SI {4} CONFIG.NUM_MI {1}] $data_interconnect
 
 set dma [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:* axi_dma_0]
 set_property -dict [list \
@@ -142,6 +171,51 @@ set_property -dict [list \
     CONFIG.c_mm2s_burst_size {16} \
     CONFIG.c_sg_length_width {26} \
 ] $dma
+
+set dsp_dma [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:* axi_dma_dsp]
+set_property -dict [list \
+    CONFIG.c_include_sg {0} \
+    CONFIG.c_include_mm2s {1} \
+    CONFIG.c_include_s2mm {1} \
+    CONFIG.c_include_mm2s_dre {1} \
+    CONFIG.c_include_s2mm_dre {1} \
+    CONFIG.c_m_axi_mm2s_data_width {64} \
+    CONFIG.c_m_axi_s2mm_data_width {64} \
+    CONFIG.c_m_axis_mm2s_tdata_width {32} \
+    CONFIG.c_s_axis_s2mm_tdata_width {32} \
+    CONFIG.c_mm2s_burst_size {16} \
+    CONFIG.c_s2mm_burst_size {16} \
+    CONFIG.c_sg_length_width {26} \
+] $dsp_dma
+
+set fft_forward [create_bd_cell -type ip -vlnv xilinx.com:ip:xfft:* fft_forward]
+set fft_inverse [create_bd_cell -type ip -vlnv xilinx.com:ip:xfft:* fft_inverse]
+foreach fft_core [list $fft_forward $fft_inverse] {
+    set_property -dict [list \
+        CONFIG.transform_length {512} \
+        CONFIG.implementation_options {pipelined_streaming_io} \
+        CONFIG.input_width {16} \
+        CONFIG.phase_factor_width {16} \
+        CONFIG.data_format {fixed_point} \
+        CONFIG.scaling_options {scaled} \
+        CONFIG.output_ordering {natural_order} \
+        CONFIG.throttle_scheme {nonrealtime} \
+        CONFIG.aresetn {true} \
+        CONFIG.xk_index {false} \
+        CONFIG.ovflo {false} \
+        CONFIG.target_clock_frequency {100} \
+    ] $fft_core
+}
+
+# Forward transform: shift a total of nine bits (2+2+2+2+1), so its
+# fixed-point output is FFT(x)/512. The inverse transform applies no shifts;
+# together the pair has approximately unity gain.
+set fft_forward_config [create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:* fft_forward_config]
+set_property -dict [list CONFIG.CONST_WIDTH {16} CONFIG.CONST_VAL {0x0355}] $fft_forward_config
+set fft_inverse_config [create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:* fft_inverse_config]
+set_property -dict [list CONFIG.CONST_WIDTH {16} CONFIG.CONST_VAL {0x0000}] $fft_inverse_config
+
+set spectral_filter [create_bd_cell -type ip -vlnv eldden28.dev:fpga:axis_spectral_filter:1.0 axis_spectral_filter_0]
 
 set stream_clock_converter [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_clock_converter:* stream_clock_converter]
 set_property -dict [list \
@@ -166,7 +240,7 @@ set_property -dict [list \
 ] $pwm
 
 set interrupt_concat [create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:* interrupt_concat]
-set_property CONFIG.NUM_PORTS {1} $interrupt_concat
+set_property CONFIG.NUM_PORTS {3} $interrupt_concat
 
 connect_bd_intf_net [get_bd_intf_pins processing_system7_0/M_AXI_GP0] \
     [get_bd_intf_pins control_interconnect/S00_AXI]
@@ -176,6 +250,10 @@ connect_bd_intf_net [get_bd_intf_pins control_interconnect/M01_AXI] \
     [get_bd_intf_pins control_clock_converter/S_AXI]
 connect_bd_intf_net [get_bd_intf_pins control_clock_converter/M_AXI] \
     [get_bd_intf_pins axis_pwm_s16_0/S_AXI]
+connect_bd_intf_net [get_bd_intf_pins control_interconnect/M02_AXI] \
+    [get_bd_intf_pins axi_dma_dsp/S_AXI_LITE]
+connect_bd_intf_net [get_bd_intf_pins control_interconnect/M03_AXI] \
+    [get_bd_intf_pins axis_spectral_filter_0/S_AXI]
 
 connect_bd_intf_net [get_bd_intf_pins axi_dma_0/M_AXI_MM2S] \
     [get_bd_intf_pins data_interconnect/S00_AXI]
@@ -183,10 +261,30 @@ connect_bd_intf_net [get_bd_intf_pins axi_dma_0/M_AXI_SG] \
     [get_bd_intf_pins data_interconnect/S01_AXI]
 connect_bd_intf_net [get_bd_intf_pins data_interconnect/M00_AXI] \
     [get_bd_intf_pins processing_system7_0/S_AXI_HP0]
+connect_bd_intf_net [get_bd_intf_pins axi_dma_dsp/M_AXI_MM2S] \
+    [get_bd_intf_pins data_interconnect/S02_AXI]
+connect_bd_intf_net [get_bd_intf_pins axi_dma_dsp/M_AXI_S2MM] \
+    [get_bd_intf_pins data_interconnect/S03_AXI]
 connect_bd_intf_net [get_bd_intf_pins axi_dma_0/M_AXIS_MM2S] \
     [get_bd_intf_pins stream_clock_converter/S_AXIS]
 connect_bd_intf_net [get_bd_intf_pins stream_clock_converter/M_AXIS] \
     [get_bd_intf_pins axis_pwm_s16_0/S_AXIS]
+connect_bd_intf_net [get_bd_intf_pins axi_dma_dsp/M_AXIS_MM2S] \
+    [get_bd_intf_pins fft_forward/S_AXIS_DATA]
+connect_bd_intf_net [get_bd_intf_pins fft_forward/M_AXIS_DATA] \
+    [get_bd_intf_pins axis_spectral_filter_0/S_AXIS]
+connect_bd_intf_net [get_bd_intf_pins axis_spectral_filter_0/M_AXIS] \
+    [get_bd_intf_pins fft_inverse/S_AXIS_DATA]
+connect_bd_intf_net [get_bd_intf_pins fft_inverse/M_AXIS_DATA] \
+    [get_bd_intf_pins axi_dma_dsp/S_AXIS_S2MM]
+
+connect_bd_net [get_bd_pins fft_forward_config/dout] \
+    [get_bd_pins fft_forward/s_axis_config_tdata]
+connect_bd_net [get_bd_pins fft_inverse_config/dout] \
+    [get_bd_pins fft_inverse/s_axis_config_tdata]
+connect_bd_net [get_bd_pins constant_one/dout] \
+    [get_bd_pins fft_forward/s_axis_config_tvalid] \
+    [get_bd_pins fft_inverse/s_axis_config_tvalid]
 
 connect_bd_net [get_bd_pins processing_system7_0/FCLK_CLK0] \
     [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] \
@@ -196,6 +294,12 @@ connect_bd_net [get_bd_pins processing_system7_0/FCLK_CLK0] \
     [get_bd_pins axi_dma_0/s_axi_lite_aclk] \
     [get_bd_pins axi_dma_0/m_axi_mm2s_aclk] \
     [get_bd_pins axi_dma_0/m_axi_sg_aclk] \
+    [get_bd_pins axi_dma_dsp/s_axi_lite_aclk] \
+    [get_bd_pins axi_dma_dsp/m_axi_mm2s_aclk] \
+    [get_bd_pins axi_dma_dsp/m_axi_s2mm_aclk] \
+    [get_bd_pins fft_forward/aclk] \
+    [get_bd_pins fft_inverse/aclk] \
+    [get_bd_pins axis_spectral_filter_0/aclk] \
     [get_bd_pins stream_clock_converter/s_axis_aclk] \
     [get_bd_pins control_clock_converter/s_axi_aclk]
 
@@ -208,6 +312,10 @@ connect_bd_net [get_bd_pins reset_100/peripheral_aresetn] \
     [get_bd_pins control_interconnect/aresetn] \
     [get_bd_pins data_interconnect/aresetn] \
     [get_bd_pins axi_dma_0/axi_resetn] \
+    [get_bd_pins axi_dma_dsp/axi_resetn] \
+    [get_bd_pins fft_forward/aresetn] \
+    [get_bd_pins fft_inverse/aresetn] \
+    [get_bd_pins axis_spectral_filter_0/aresetn] \
     [get_bd_pins stream_clock_converter/s_axis_aresetn] \
     [get_bd_pins control_clock_converter/s_axi_aresetn]
 connect_bd_net [get_bd_pins reset_200/peripheral_aresetn] \
@@ -217,6 +325,10 @@ connect_bd_net [get_bd_pins reset_200/peripheral_aresetn] \
 
 connect_bd_net [get_bd_pins axi_dma_0/mm2s_introut] \
     [get_bd_pins interrupt_concat/In0]
+connect_bd_net [get_bd_pins axi_dma_dsp/mm2s_introut] \
+    [get_bd_pins interrupt_concat/In1]
+connect_bd_net [get_bd_pins axi_dma_dsp/s2mm_introut] \
+    [get_bd_pins interrupt_concat/In2]
 connect_bd_net [get_bd_pins interrupt_concat/dout] \
     [get_bd_pins processing_system7_0/IRQ_F2P]
 
@@ -229,9 +341,19 @@ assign_bd_address -offset 0x40400000 -range 64K \
 assign_bd_address -offset 0x43c00000 -range 64K \
     -target_address_space [get_bd_addr_spaces processing_system7_0/Data] \
     [get_bd_addr_segs axis_pwm_s16_0/S_AXI/Reg]
+assign_bd_address -offset 0x40410000 -range 64K \
+    -target_address_space [get_bd_addr_spaces processing_system7_0/Data] \
+    [get_bd_addr_segs axi_dma_dsp/S_AXI_LITE/Reg]
+assign_bd_address -offset 0x43c10000 -range 64K \
+    -target_address_space [get_bd_addr_spaces processing_system7_0/Data] \
+    [get_bd_addr_segs axis_spectral_filter_0/S_AXI/Reg]
 assign_bd_address -target_address_space [get_bd_addr_spaces axi_dma_0/Data_MM2S] \
     [get_bd_addr_segs processing_system7_0/S_AXI_HP0/HP0_DDR_LOWOCM]
 assign_bd_address -target_address_space [get_bd_addr_spaces axi_dma_0/Data_SG] \
+    [get_bd_addr_segs processing_system7_0/S_AXI_HP0/HP0_DDR_LOWOCM]
+assign_bd_address -target_address_space [get_bd_addr_spaces axi_dma_dsp/Data_MM2S] \
+    [get_bd_addr_segs processing_system7_0/S_AXI_HP0/HP0_DDR_LOWOCM]
+assign_bd_address -target_address_space [get_bd_addr_spaces axi_dma_dsp/Data_S2MM] \
     [get_bd_addr_segs processing_system7_0/S_AXI_HP0/HP0_DDR_LOWOCM]
 
 validate_bd_design
@@ -241,6 +363,9 @@ puts "DMA_CONTROL_BASE=0x40400000"
 puts "DMA_SCATTER_GATHER=1"
 puts "PWM_CONTROL_BASE=0x43c00000"
 puts "PWM_OUTPUT=JA1/Y18/LVCMOS33"
+puts "DSP_DMA_CONTROL_BASE=0x40410000"
+puts "SPECTRAL_FILTER_CONTROL_BASE=0x43c10000"
+puts "DSP_FFT_LENGTH=512"
 
 if {$build_mode eq "validate"} {
     puts "PWM_BLOCK_DESIGN_VALID=1"
