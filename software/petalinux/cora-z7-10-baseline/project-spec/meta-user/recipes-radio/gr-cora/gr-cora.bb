@@ -25,4 +25,5 @@ FILES:${PN}:append = " \
     ${PYTHON_SITEPACKAGES_DIR}/gnuradio/cora \
     ${datadir}/gnuradio/grc/blocks/cora_pwm_sink.block.yml \
     ${datadir}/gnuradio/grc/blocks/cora_iio_adc_source.block.yml \
+    ${datadir}/gnuradio/grc/blocks/cora_tcp_float_sink.block.yml \
 "

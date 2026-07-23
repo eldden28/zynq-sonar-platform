@@ -1,0 +1,5 @@
+# Cora dashboard listens on the dedicated board Ethernet interface by default.
+# The development image seeds the password as "root". Check it with:
+#   cat /var/lib/cora-dashboard/token
+# The HTTP username is "cora".
+DASHBOARD_ARGS="--bind 0.0.0.0 --port 8080 --web-root /usr/share/cora-dashboard --token-file /var/lib/cora-dashboard/token --auth-user cora --terminal-user petalinux --max-terminals 2"

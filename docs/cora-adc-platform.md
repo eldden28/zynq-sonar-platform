@@ -1,8 +1,21 @@
 # Cora Z7-10 ADC input platform
 
-The initial ADC input is shield header **A0**. On the Cora Z7-10, A0 is XADC
-auxiliary channel **VAUX[1]**. The board divides its 0–3.3 V range to the
-XADC's 0–1.0 V input range, so do not apply more than 3.3 V to A0.
+The Cora Z7-10 exposes ten user-facing XADC inputs. A0-A5 are single-ended
+0–3.3 V inputs with board-level scaling, A6-A11 form three differential
+0–1.0 V pairs, and VP/VN is the dedicated differential 0–1.0 V input.
+
+| Header input | Physical XADC channel | Mode |
+|---|---|---|
+| A0 | VAUX1 | single-ended |
+| A1 | VAUX9 | single-ended |
+| A2 | VAUX6 | single-ended |
+| A3 | VAUX15 | single-ended |
+| A4 | VAUX5 | single-ended |
+| A5 | VAUX13 | single-ended |
+| A6-A7 | VAUX12 | differential/bipolar |
+| A8-A9 | VAUX0 | differential/bipolar |
+| A10-A11 | VAUX8 | differential/bipolar |
+| VP-VN | VP/VN | differential/bipolar |
 
 ## Common source contract
 
@@ -29,13 +42,17 @@ added.
 
 ## XADC device tree mapping
 
-The device tree enables the XADC child `reg = <2>`, which is VAUX[1]. Linux's
-Xilinx XADC driver publishes the enabled auxiliary channel as an unnamed
-generic IIO voltage input. The current kernel image calls A0
-`in_voltage8_raw` and `in_voltage8_scale`; the numeric suffix is
-kernel-dependent. The smoke tools default to `channel=auto`, which selects
-the first enabled generic auxiliary channel. This is an IIO filename
-convention, not the physical VAUX number.
+The XADC driver always publishes its dedicated VP/VN input as
+`in_voltage8_raw`. It appends the device-tree-configured channels in the
+table's order beginning at `in_voltage9_raw`: voltage9 is A0, voltage10 is A1,
+through voltage18 for the explicitly configured bipolar VP/VN view. The
+dashboard applies the board labels and plots the underlying 12-bit codes from
+0 through 4095. Bipolar channels have signed IIO values; the dashboard masks
+those values to their 12-bit two's-complement representation for a consistent
+raw-code plot.
+
+The smoke and GNU Radio tools still default to `channel=auto`, which selects
+A0 as the first external channel.
 
 Linux reports XADC `scale` in millivolts per raw count. The ADC module converts
 that to volts, and the A0 tools' default `scale_multiplier=3.3` compensates
@@ -50,6 +67,16 @@ ground, then run:
 ```sh
 cora-adc-smoke
 ```
+
+When regenerating the SD image, use the project wrapper:
+
+```sh
+./package-wic.sh
+```
+
+It includes `system.dtb` in the FAT boot partition and uses the standard
+512 MiB boot plus 2 GiB root layout. The PetaLinux 2025.1 packaging defaults
+omit the external DTB and allocate oversized 2 GiB plus 4 GiB partitions.
 
 It redraws a vertical history every 0.1 seconds, with oldest samples at the
 top and the most recent at the bottom. To capture a finite, line-oriented

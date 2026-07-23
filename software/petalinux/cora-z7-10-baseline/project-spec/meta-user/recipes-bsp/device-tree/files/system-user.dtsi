@@ -10,10 +10,33 @@
 };
 
 /*
- * Shield A0 is the Cora Z7's single-ended XADC VAUX[1] input.  The board
- * scales 0..3.3 V at A0 down to the XADC's 0..1.0 V range.  The XADC driver
- * publishes the first enabled auxiliary channel as an unnamed IIO voltage
- * input (in_voltage8_* in the current kernel image).
+ * The Cora Z7 Ethernet PHY is an RTL8211E at MDIO address 0.  Describing it
+ * explicitly prevents the MACB driver from scanning all 32 MDIO addresses,
+ * where each absent address can consume the one-second controller timeout.
+ */
+&gem0 {
+	phy-handle = <&ethernet_phy>;
+
+	mdio {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		ethernet_phy: ethernet-phy@0 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <0>;
+		};
+	};
+};
+
+/*
+ * Cora Z7 user-accessible XADC inputs.  Keep this order synchronized with
+ * CORA_XADC_USER_CHANNELS in cora_dashboard.py: Linux numbers external IIO
+ * voltage channels in device-tree order, beginning at in_voltage9.
+ *
+ * A0-A5 are single-ended 0..3.3 V inputs with board-level scaling.
+ * A6-A11 form three differential 0..1.0 V pairs.  VP/VN is the dedicated
+ * differential input.  Bipolar channels report signed sysfs raw values; the
+ * dashboard also exposes their underlying 12-bit two's-complement code.
  */
 &adc {
 	status = "okay";
@@ -21,7 +44,38 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		channel@2 {
-			reg = <2>; /* VAUX[1] = shield A0 */
+			reg = <2>;  /* VAUX1  = A0 */
+		};
+		channel@a {
+			reg = <10>; /* VAUX9  = A1 */
+		};
+		channel@7 {
+			reg = <7>;  /* VAUX6  = A2 */
+		};
+		channel@10 {
+			reg = <16>; /* VAUX15 = A3 */
+		};
+		channel@6 {
+			reg = <6>;  /* VAUX5  = A4 */
+		};
+		channel@e {
+			reg = <14>; /* VAUX13 = A5 */
+		};
+		channel@d {
+			reg = <13>; /* VAUX12 = A6-A7 */
+			xlnx,bipolar;
+		};
+		channel@1 {
+			reg = <1>;  /* VAUX0  = A8-A9 */
+			xlnx,bipolar;
+		};
+		channel@9 {
+			reg = <9>;  /* VAUX8  = A10-A11 */
+			xlnx,bipolar;
+		};
+		channel@0 {
+			reg = <0>;  /* dedicated VP/VN */
+			xlnx,bipolar;
 		};
 	};
 };

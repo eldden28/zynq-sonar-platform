@@ -55,9 +55,9 @@ class IioAdc:
         """Resolve ``auto`` to the first generic XADC auxiliary voltage input.
 
         XADC's built-in telemetry channels have descriptive names such as
-        ``in_voltage0_vccint_raw``. Device-tree-selected VAUX channels use
-        the generic ``in_voltageN_raw`` form, but N differs across kernel
-        versions (the current Cora image exposes A0 as voltage8).
+        ``in_voltage0_vccint_raw``. Its dedicated VP/VN input is the generic
+        ``in_voltage8_raw`` channel. Device-tree-selected inputs are appended
+        starting at ``in_voltage9_raw``; A0 is first in the Cora device tree.
         """
         channel = channel.removeprefix("in_")
         if channel != "auto":
@@ -68,10 +68,18 @@ class IioAdc:
             stem = raw_path.name.removesuffix("_raw").removeprefix("in_")
             if stem.startswith("voltage") and stem[7:].isdigit():
                 candidates.append(stem)
+        device_name_path = self.device_path / "name"
+        try:
+            device_name = device_name_path.read_text(encoding="ascii").strip().lower()
+        except OSError:
+            device_name = ""
+        if device_name == "xadc":
+            # voltage8 is the dedicated VP/VN input, not shield A0.
+            candidates = [item for item in candidates if int(item[7:]) >= 9]
         if not candidates:
             raise RuntimeError(
-                f"no generic IIO voltage input found below {self.device_path}; "
-                "pass --channel with the desired IIO channel"
+                f"no configured IIO auxiliary voltage input found below "
+                f"{self.device_path}; pass --channel with the desired IIO channel"
             )
         return min(candidates, key=lambda item: int(item[7:]))
 

@@ -43,4 +43,7 @@ documentation: |-
   the default multiplier compensates Cora A0's 3.3:1 analog divider. Each IIO
   measurement is held until the next poll, allowing a slow XADC measurement
   to feed a faster PWM stream. Cora shield A0 is VAUX[1]. Use `auto` to select
-  the first enabled generic auxiliary channel; it is voltage8 currently.
+  the first enabled generic auxiliary channel. A0 is voltage9 in this image;
+  voltage8 is the XADC's separate dedicated VP/VN input.
+
+file_format: 1

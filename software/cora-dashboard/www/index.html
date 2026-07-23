@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cora Z7 Control Deck</title>
+  <style>
+    :root { color-scheme: dark; --bg:#081018; --panel:#101d28; --panel2:#142635; --line:#294153;
+      --text:#e8f1f5; --muted:#8fa8b6; --cyan:#4ee4d2; --green:#7bea8b; --amber:#ffc857;
+      --red:#ff6577; --blue:#62a8ff; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:radial-gradient(circle at 10% 0,#153446 0,transparent 34%),
+      linear-gradient(145deg,#071018,#0b151f 60%,#0c1822); color:var(--text);
+      font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:18px 24px;
+      border-bottom:1px solid var(--line); background:#07121bd9; position:sticky; top:0; z-index:5;
+      backdrop-filter:blur(12px); }
+    .brand { display:flex; align-items:center; gap:13px; }
+    .mark { width:36px; height:36px; border:2px solid var(--cyan); border-radius:10px; display:grid;
+      place-items:center; color:var(--cyan); font-weight:800; box-shadow:0 0 24px #4ee4d244; }
+    h1 { margin:0; font-size:18px; letter-spacing:.04em; } .subtitle,.muted { color:var(--muted); }
+    .statusline { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .pill { border:1px solid var(--line); border-radius:999px; padding:5px 10px; color:var(--muted); }
+    .pill.good { border-color:#356f50; color:var(--green); } .pill.bad { border-color:#743a48; color:var(--red); }
+    main { max-width:1500px; margin:auto; padding:22px; }
+    .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:14px; }
+    .card { grid-column:span 3; background:linear-gradient(145deg,var(--panel),#0e1a24); border:1px solid var(--line);
+      border-radius:14px; padding:16px; box-shadow:0 10px 28px #0004; min-width:0; }
+    .wide { grid-column:span 6; } .full { grid-column:1/-1; }
+    .card h2 { margin:0 0 12px; font-size:12px; text-transform:uppercase; letter-spacing:.13em; color:var(--muted); }
+    .big { font:600 25px/1.1 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .row { display:flex; justify-content:space-between; gap:14px; padding:5px 0; border-bottom:1px solid #1c303d; }
+    .row:last-child { border:0; } .value { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; text-align:right; }
+    .meter { height:9px; background:#071018; border-radius:10px; overflow:hidden; margin:9px 0 3px; border:1px solid #203746; }
+    .meter span { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--cyan),var(--blue)); transition:width .25s; }
+    table { width:100%; border-collapse:collapse; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:12px; }
+    th,td { text-align:left; border-bottom:1px solid #1c303d; padding:7px 8px; } th { color:var(--muted); }
+    .adc-chart-wrap { position:relative; min-height:320px; border:1px solid #243b4a; border-radius:10px;
+      background:#060d13; overflow:hidden; }
+    #adc-chart { display:block; width:100%; height:320px; }
+    .adc-legend { display:flex; flex-wrap:wrap; gap:7px 14px; margin:11px 0 5px; font:12px ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .adc-legend span { display:inline-flex; align-items:center; gap:6px; }
+    .adc-swatch { width:18px; height:3px; border-radius:3px; }
+    .table-scroll { overflow-x:auto; }
+    button { appearance:none; border:1px solid #38576a; background:#173044; color:var(--text); border-radius:8px;
+      padding:9px 13px; font-weight:650; cursor:pointer; } button:hover { border-color:var(--cyan); }
+    button.danger { background:#3d1720; border-color:#743a48; } button.warn { background:#3b2c12; border-color:#765d25; }
+    .controls { display:flex; flex-wrap:wrap; gap:9px; }
+    #notice { min-height:22px; margin-top:10px; color:var(--cyan); }
+    .terminal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    #terminal { margin:0; min-height:340px; max-height:58vh; overflow:auto; padding:13px; border-radius:9px;
+      border:1px solid #243b4a; background:#020609; color:#b9f9cf; outline:none; white-space:pre-wrap;
+      word-break:break-all; font:13px/1.35 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    #terminal:focus { border-color:var(--cyan); box-shadow:0 0 0 2px #4ee4d222; }
+    .hint { margin-top:8px; font-size:12px; color:var(--muted); }
+    @media(max-width:1000px){.card{grid-column:span 6}.wide{grid-column:1/-1}}
+    @media(max-width:620px){header{align-items:flex-start}.statusline{display:none}main{padding:12px}.card{grid-column:1/-1}.big{font-size:20px}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="mark">CZ</div><div><h1>Cora Z7 Control Deck</h1><div class="subtitle">Hardware telemetry and service control</div></div></div>
+  <div class="statusline"><span id="live" class="pill">Connecting</span><span id="link" class="pill">Ethernet</span><span id="remote" class="pill">Remote I/O</span></div>
+</header>
+<main>
+  <div class="grid">
+    <section class="card"><h2>System</h2><div id="hostname" class="big">—</div><div class="row"><span>Uptime</span><span id="uptime" class="value">—</span></div><div class="row"><span>Load</span><span id="load" class="value">—</span></div></section>
+    <section class="card"><h2>Processor</h2><div id="cpu" class="big">—</div><div class="meter"><span id="cpu-meter"></span></div><div class="row"><span>Temperature</span><span id="temperature" class="value">—</span></div></section>
+    <section class="card"><h2>Memory</h2><div id="memory" class="big">—</div><div class="meter"><span id="memory-meter"></span></div><div class="row"><span>Available</span><span id="memory-free" class="value">—</span></div></section>
+    <section class="card"><h2>FPGA</h2><div id="fpga" class="big">—</div><div class="row"><span>Manager</span><span id="fpga-name" class="value">—</span></div><div class="row"><span>Dashboard</span><span id="version" class="value">—</span></div></section>
+    <section class="card wide"><h2>Gigabit Ethernet</h2><div id="network">Waiting for interface…</div></section>
+    <section class="card wide"><h2>PWM DMA</h2><div id="pwm-state" class="big">—</div><div class="meter"><span id="pwm-meter"></span></div><div id="pwm-details"></div></section>
+    <section class="card full"><h2>User Analog Inputs · Raw 12-bit History</h2>
+      <div class="adc-chart-wrap"><canvas id="adc-chart" aria-label="Live raw 12-bit ADC history"></canvas></div>
+      <div id="adc-legend" class="adc-legend"></div>
+      <div id="iio-user" class="table-scroll">Waiting for user ADC channels…</div>
+      <div class="hint">Latest samples are at the right. Range is fixed at 0–4095; differential channels display their raw 12-bit two's-complement code.</div>
+    </section>
+    <section class="card wide"><h2>FPGA XADC Monitors</h2><div id="iio-system" class="table-scroll">Waiting for IIO…</div></section>
+    <section class="card wide"><h2>Controls</h2><div class="controls">
+      <button data-action="remote_start">Start Remote I/O</button><button data-action="remote_stop" class="warn">Stop Remote I/O</button>
+      <button data-action="pwm_stop" class="danger">Emergency PWM Stop</button><button data-action="pwm_clear_stats">Clear PWM Stats</button>
+      <button data-action="reboot" data-confirm="Reboot the Cora board?" class="warn">Reboot</button>
+      <button data-action="poweroff" data-confirm="Shut down the Cora board?" class="danger">Power Off</button>
+    </div><div id="notice"></div><div class="hint">System and PWM controls require this authenticated session and same-origin requests.</div></section>
+    <section class="card full"><div class="terminal-head"><h2 style="margin:0">Virtual terminal · petalinux user</h2><div><button id="term-open">Open terminal</button> <button id="term-close">Close</button></div></div>
+      <pre id="terminal" tabindex="0">Terminal disconnected. Click “Open terminal”, then click here to type.</pre>
+      <div class="hint">PTY-backed shell. Basic ANSI control sequences are simplified; use SSH for full-screen programs.</div>
+    </section>
+  </div>
+</main>
+<script>
+const byId=id=>document.getElementById(id);
+const bytes=n=>{if(!Number.isFinite(n))return '—';const u=['B','KiB','MiB','GiB'];let i=0;while(n>=1024&&i<u.length-1){n/=1024;i++}return `${n.toFixed(i?1:0)} ${u[i]}`};
+const duration=s=>{s=Math.max(0,Math.floor(s));const d=Math.floor(s/86400);s%=86400;const h=Math.floor(s/3600);s%=3600;const m=Math.floor(s/60);return `${d?d+'d ':''}${h}h ${m}m`};
+const pill=(el,ok,text)=>{el.textContent=text;el.className='pill '+(ok?'good':'bad')};
+const adcColors=['#4ee4d2','#ffc857','#ff6577','#62a8ff','#7bea8b','#d38cff','#ff9f68','#70d6ff','#f7aef8','#b8f2e6'];
+const adcHistory=new Map();const ADC_POINTS=120;let lastAdcChannels=[];
+function adcKey(c){return `${c.label}:${c.physical_channel}`}
+function drawAdcChart(){
+  const canvas=byId('adc-chart'),rect=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio||1;
+  const width=Math.max(320,Math.round(rect.width)),height=320;
+  if(canvas.width!==Math.round(width*ratio)||canvas.height!==Math.round(height*ratio)){canvas.width=Math.round(width*ratio);canvas.height=Math.round(height*ratio)}
+  const ctx=canvas.getContext('2d');ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,width,height);ctx.fillStyle='#060d13';ctx.fillRect(0,0,width,height);
+  const left=48,right=14,top=14,bottom=28,plotW=width-left-right,plotH=height-top-bottom;
+  ctx.font='11px ui-monospace, monospace';ctx.textAlign='right';ctx.textBaseline='middle';
+  for(const value of [0,1024,2048,3072,4095]){const y=top+plotH-(value/4095)*plotH;ctx.strokeStyle='#1e3544';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(width-right,y);ctx.stroke();ctx.fillStyle='#8fa8b6';ctx.fillText(String(value),left-7,y)}
+  for(const seconds of [0,30,60,90,120]){const x=width-right-(seconds/120)*plotW;ctx.strokeStyle='#142a37';ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,top+plotH);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='top';ctx.fillStyle='#718b99';ctx.fillText(seconds?`-${seconds}s`:'now',x,top+plotH+7)}
+  lastAdcChannels.forEach((channel,index)=>{const values=adcHistory.get(adcKey(channel))||[];if(!values.length)return;ctx.strokeStyle=adcColors[index%adcColors.length];ctx.lineWidth=1.7;ctx.beginPath();values.forEach((value,i)=>{const slot=ADC_POINTS-values.length+i;const x=left+(slot/(ADC_POINTS-1))*plotW;const y=top+plotH-(Math.max(0,Math.min(4095,value))/4095)*plotH;if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y)});ctx.stroke()});
+}
+function updateAdcChart(channels){
+  lastAdcChannels=channels;
+  channels.forEach(channel=>{const key=adcKey(channel),values=adcHistory.get(key)||[];values.push(Number(channel.raw_12bit)||0);if(values.length>ADC_POINTS)values.splice(0,values.length-ADC_POINTS);adcHistory.set(key,values)});
+  byId('adc-legend').innerHTML=channels.map((c,i)=>`<span><i class="adc-swatch" style="background:${adcColors[i%adcColors.length]}"></i>${c.label} <span class="muted">${c.physical_channel}</span></span>`).join('');
+  drawAdcChart();
+}
+function render(s){
+  byId('hostname').textContent=s.system.hostname; byId('uptime').textContent=duration(s.system.uptime_seconds);
+  byId('load').textContent=s.system.load_average.join(' / '); const cpu=s.system.cpu.percent;
+  byId('cpu').textContent=`${cpu.toFixed(1)}%`;byId('cpu-meter').style.width=`${Math.min(100,cpu)}%`;
+  byId('temperature').textContent=s.system.thermal.length?`${s.system.thermal[0].celsius.toFixed(1)} °C`:'Unavailable';
+  const mem=s.system.memory;byId('memory').textContent=`${mem.used_percent.toFixed(1)}%`;
+  byId('memory-meter').style.width=`${mem.used_percent}%`;byId('memory-free').textContent=bytes(mem.available_bytes);
+  byId('fpga').textContent=s.fpga.state;byId('fpga-name').textContent=s.fpga.name;byId('version').textContent=`v${s.version}`;
+  const net=s.network[0];
+  if(net){byId('network').innerHTML=`<div class="row"><span>${net.name} · ${net.address||'no IPv4'}</span><span class="value">${net.speed_mbps||'—'} Mb/s</span></div><div class="row"><span>Link / MAC</span><span class="value">${net.state} · ${net.mac}</span></div><div class="row"><span>Receive</span><span class="value">${bytes(net.rx_bytes_per_second)}/s · ${bytes(net.rx_bytes)} total</span></div><div class="row"><span>Transmit</span><span class="value">${bytes(net.tx_bytes_per_second)}/s · ${bytes(net.tx_bytes)} total</span></div>`;pill(byId('link'),net.carrier,`${net.speed_mbps||'?'} Mb/s ${net.state}`)}
+  const p=s.pwm;if(!p.present){byId('pwm-state').textContent='Not detected';byId('pwm-details').innerHTML='';byId('pwm-meter').style.width='0'}else{
+    byId('pwm-state').textContent=p.running?'RUNNING':(p.faulted?'FAULTED':'IDLE');byId('pwm-meter').style.width=`${Math.min(100,p.duty_percent||0)}%`;
+    byId('pwm-details').innerHTML=`<div class="row"><span>Duty</span><span class="value">${p.duty_percent}% (${p.active_duty}/${p.active_period})</span></div><div class="row"><span>FIFO / queued</span><span class="value">${p.fifo_level} / ${p.queued_periods}</span></div><div class="row"><span>Samples</span><span class="value">${p.accepted_samples}</span></div><div class="row"><span>Underruns</span><span class="value">HW ${p.pwm_underruns} · driver ${p.driver_underruns}</span></div>`}
+  const userChannels=[],systemChannels=[];
+  for(const dev of s.iio){for(const c of dev.channels){if(c.user_accessible)userChannels.push(c);else systemChannels.push(c)}}
+  const userRows=userChannels.map(c=>`<tr><td>${c.label}</td><td>${c.physical_channel}</td><td>${c.raw_12bit}</td><td>${c.bipolar?'differential · signed':'single-ended · unsigned'}</td></tr>`).join('');
+  byId('iio-user').innerHTML=userRows?`<table><thead><tr><th>Input</th><th>XADC channel</th><th>Raw 12-bit</th><th>Mode</th></tr></thead><tbody>${userRows}</tbody></table>`:'No user-accessible XADC channels detected';
+  const systemRows=systemChannels.map(c=>`<tr><td>${c.label}</td><td>${c.raw}</td><td>${c.scale||'—'}</td></tr>`).join('');
+  byId('iio-system').innerHTML=systemRows?`<table><thead><tr><th>Monitor</th><th>Raw</th><th>Scale</th></tr></thead><tbody>${systemRows}</tbody></table>`:'No internal XADC monitors detected';
+  updateAdcChart(userChannels);
+  pill(byId('remote'),s.remote_io.running,s.remote_io.running?'Remote I/O running':'Remote I/O stopped');pill(byId('live'),true,'Live');
+}
+async function refresh(){try{const r=await fetch('/api/status',{cache:'no-store'});if(!r.ok)throw Error(r.status);render(await r.json())}catch(e){pill(byId('live'),false,'Disconnected')}}
+setInterval(refresh,1000);refresh();
+window.addEventListener('resize',drawAdcChart);
+document.querySelectorAll('[data-action]').forEach(button=>button.addEventListener('click',async()=>{if(button.dataset.confirm&&!confirm(button.dataset.confirm))return;byId('notice').textContent='Working…';try{const r=await fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json','X-Cora-Request':'1'},body:JSON.stringify({action:button.dataset.action})});const j=await r.json();byId('notice').textContent=j.message||j.error||'Done'}catch(e){byId('notice').textContent=`Request failed: ${e}`}}));
+let ws=null;const term=byId('terminal');let terminalText='';
+function appendTerminal(data){data=data.replace(/\x1b\][^\x07]*(?:\x07|\x1b\\)/g,'').replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g,'');for(const ch of data){if(ch==='\b'||ch==='\x7f')terminalText=terminalText.slice(0,-1);else if(ch==='\r'){}else terminalText+=ch}if(terminalText.length>120000)terminalText=terminalText.slice(-90000);term.textContent=terminalText;term.scrollTop=term.scrollHeight}
+function sendInput(data){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({type:'input',data}))}
+byId('term-open').onclick=()=>{if(ws&&ws.readyState<2)return;terminalText='Connecting…\n';term.textContent=terminalText;const scheme=location.protocol==='https:'?'wss':'ws';ws=new WebSocket(`${scheme}://${location.host}/ws/terminal`);ws.onopen=()=>{terminalText='';term.textContent='';term.focus();ws.send(JSON.stringify({type:'resize',cols:100,rows:28}))};ws.onmessage=e=>{try{const m=JSON.parse(e.data);if(m.type==='output')appendTerminal(m.data)}catch(_){}};ws.onclose=()=>appendTerminal('\n[terminal closed]\n');ws.onerror=()=>appendTerminal('\n[terminal error]\n')};
+byId('term-close').onclick=()=>{if(ws)ws.close()};term.addEventListener('click',()=>term.focus());
+term.addEventListener('paste',e=>{e.preventDefault();sendInput(e.clipboardData.getData('text'))});
+term.addEventListener('keydown',e=>{let data='';if(e.ctrlKey&&e.key.length===1)data=String.fromCharCode(e.key.toUpperCase().charCodeAt(0)-64);else{const keys={Enter:'\r',Backspace:'\x7f',Tab:'\t',Escape:'\x1b',ArrowUp:'\x1b[A',ArrowDown:'\x1b[B',ArrowRight:'\x1b[C',ArrowLeft:'\x1b[D',Home:'\x1b[H',End:'\x1b[F',Delete:'\x1b[3~'};data=keys[e.key]||(e.key.length===1?e.key:'')}if(data){e.preventDefault();sendInput(data)}});
+</script>
+</body>
+</html>

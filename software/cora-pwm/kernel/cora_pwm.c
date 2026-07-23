@@ -334,6 +334,248 @@ static u64 cora_pwm_read_sample_count(struct cora_pwm_dev *pwm)
 	return ((u64)high_after << 32) | low;
 }
 
+struct cora_pwm_sysfs_status {
+	u32 running;
+	u32 opened;
+	u32 faulted;
+	u32 period_ticks;
+	u32 queued_periods;
+	u32 fifo_level;
+	u32 active_period;
+	u32 active_duty;
+	u32 pwm_underruns;
+	u64 dma_periods;
+	u64 driver_underruns;
+	u64 accepted_samples;
+};
+
+static void cora_pwm_get_sysfs_status(struct cora_pwm_dev *pwm,
+				      struct cora_pwm_sysfs_status *status)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&pwm->state_lock, flags);
+	status->running = pwm->running;
+	status->opened = atomic_read(&pwm->opened);
+	status->faulted = pwm->faulted;
+	status->period_ticks = pwm->period_ticks;
+	status->queued_periods = pwm->queued_periods;
+	status->dma_periods = pwm->dma_periods;
+	status->driver_underruns = pwm->driver_underruns;
+	spin_unlock_irqrestore(&pwm->state_lock, flags);
+
+	status->fifo_level = readl(pwm->regs + PWM_FIFO_LEVEL);
+	status->active_period = readl(pwm->regs + PWM_ACTIVE_PERIOD);
+	status->active_duty = readl(pwm->regs + PWM_ACTIVE_DUTY);
+	status->pwm_underruns = readl(pwm->regs + PWM_UNDERRUN_COUNT);
+	status->accepted_samples = cora_pwm_read_sample_count(pwm);
+}
+
+static ssize_t cora_pwm_u32_show(struct device *dev,
+				 struct device_attribute *attribute, char *buffer)
+{
+	struct cora_pwm_sysfs_status status = { 0 };
+	u32 value;
+
+	cora_pwm_get_sysfs_status(dev_get_drvdata(dev), &status);
+	if (!strcmp(attribute->attr.name, "running"))
+		value = status.running;
+	else if (!strcmp(attribute->attr.name, "opened"))
+		value = status.opened;
+	else if (!strcmp(attribute->attr.name, "faulted"))
+		value = status.faulted;
+	else if (!strcmp(attribute->attr.name, "period_ticks"))
+		value = status.period_ticks;
+	else if (!strcmp(attribute->attr.name, "queued_periods"))
+		value = status.queued_periods;
+	else if (!strcmp(attribute->attr.name, "fifo_level"))
+		value = status.fifo_level;
+	else if (!strcmp(attribute->attr.name, "active_period"))
+		value = status.active_period;
+	else if (!strcmp(attribute->attr.name, "active_duty"))
+		value = status.active_duty;
+	else if (!strcmp(attribute->attr.name, "pwm_underruns"))
+		value = status.pwm_underruns;
+	else
+		return -EINVAL;
+
+	return sysfs_emit(buffer, "%u\n", value);
+}
+
+static ssize_t cora_pwm_u64_show(struct device *dev,
+				 struct device_attribute *attribute, char *buffer)
+{
+	struct cora_pwm_sysfs_status status = { 0 };
+	u64 value;
+
+	cora_pwm_get_sysfs_status(dev_get_drvdata(dev), &status);
+	if (!strcmp(attribute->attr.name, "dma_periods"))
+		value = status.dma_periods;
+	else if (!strcmp(attribute->attr.name, "driver_underruns"))
+		value = status.driver_underruns;
+	else if (!strcmp(attribute->attr.name, "accepted_samples"))
+		value = status.accepted_samples;
+	else
+		return -EINVAL;
+
+	return sysfs_emit(buffer, "%llu\n", (unsigned long long)value);
+}
+
+static ssize_t running_show(struct device *dev,
+			    struct device_attribute *attribute, char *buffer)
+{
+	return cora_pwm_u32_show(dev, attribute, buffer);
+}
+static DEVICE_ATTR_RO(running);
+
+static ssize_t opened_show(struct device *dev,
+			   struct device_attribute *attribute, char *buffer)
+{
+	return cora_pwm_u32_show(dev, attribute, buffer);
+}
+static DEVICE_ATTR_RO(opened);
+
+static ssize_t faulted_show(struct device *dev,
+			    struct device_attribute *attribute, char *buffer)
+{
+	return cora_pwm_u32_show(dev, attribute, buffer);
+}
+static DEVICE_ATTR_RO(faulted);
+
+static ssize_t period_ticks_show(struct device *dev,
+				 struct device_attribute *attribute, char *buffer)
+{
+	return cora_pwm_u32_show(dev, attribute, buffer);
+}
+static DEVICE_ATTR_RO(period_ticks);
+
+static ssize_t queued_periods_show(struct device *dev,
+				   struct device_attribute *attribute,
+				   char *buffer)
+{
+	return cora_pwm_u32_show(dev, attribute, buffer);
+}
+static DEVICE_ATTR_RO(queued_periods);
+
+static ssize_t fifo_level_show(struct device *dev,
+			       struct device_attribute *attribute, char *buffer)
+{
+	return cora_pwm_u32_show(dev, attribute, buffer);
+}
+static DEVICE_ATTR_RO(fifo_level);
+
+static ssize_t active_period_show(struct device *dev,
+				  struct device_attribute *attribute,
+				  char *buffer)
+{
+	return cora_pwm_u32_show(dev, attribute, buffer);
+}
+static DEVICE_ATTR_RO(active_period);
+
+static ssize_t active_duty_show(struct device *dev,
+				struct device_attribute *attribute, char *buffer)
+{
+	return cora_pwm_u32_show(dev, attribute, buffer);
+}
+static DEVICE_ATTR_RO(active_duty);
+
+static ssize_t pwm_underruns_show(struct device *dev,
+				  struct device_attribute *attribute,
+				  char *buffer)
+{
+	return cora_pwm_u32_show(dev, attribute, buffer);
+}
+static DEVICE_ATTR_RO(pwm_underruns);
+
+static ssize_t dma_periods_show(struct device *dev,
+				struct device_attribute *attribute, char *buffer)
+{
+	return cora_pwm_u64_show(dev, attribute, buffer);
+}
+static DEVICE_ATTR_RO(dma_periods);
+
+static ssize_t driver_underruns_show(struct device *dev,
+				     struct device_attribute *attribute,
+				     char *buffer)
+{
+	return cora_pwm_u64_show(dev, attribute, buffer);
+}
+static DEVICE_ATTR_RO(driver_underruns);
+
+static ssize_t accepted_samples_show(struct device *dev,
+				     struct device_attribute *attribute,
+				     char *buffer)
+{
+	return cora_pwm_u64_show(dev, attribute, buffer);
+}
+static DEVICE_ATTR_RO(accepted_samples);
+
+static ssize_t stop_store(struct device *dev, struct device_attribute *attribute,
+			  const char *buffer, size_t count)
+{
+	struct cora_pwm_dev *pwm = dev_get_drvdata(dev);
+	bool requested;
+	int ret;
+
+	ret = kstrtobool(buffer, &requested);
+	if (ret)
+		return ret;
+	if (!requested)
+		return -EINVAL;
+
+	mutex_lock(&pwm->io_lock);
+	cora_pwm_stop_locked(pwm);
+	mutex_unlock(&pwm->io_lock);
+	return count;
+}
+static DEVICE_ATTR_WO(stop);
+
+static ssize_t clear_stats_store(struct device *dev,
+				 struct device_attribute *attribute,
+				 const char *buffer, size_t count)
+{
+	struct cora_pwm_dev *pwm = dev_get_drvdata(dev);
+	unsigned long flags;
+	bool requested;
+	int ret;
+
+	ret = kstrtobool(buffer, &requested);
+	if (ret)
+		return ret;
+	if (!requested)
+		return -EINVAL;
+
+	spin_lock_irqsave(&pwm->state_lock, flags);
+	pwm->dma_periods = 0;
+	pwm->driver_underruns = 0;
+	spin_unlock_irqrestore(&pwm->state_lock, flags);
+	writel(1, pwm->regs + PWM_COMMAND);
+	return count;
+}
+static DEVICE_ATTR_WO(clear_stats);
+
+static struct attribute *cora_pwm_attributes[] = {
+	&dev_attr_running.attr,
+	&dev_attr_opened.attr,
+	&dev_attr_faulted.attr,
+	&dev_attr_period_ticks.attr,
+	&dev_attr_queued_periods.attr,
+	&dev_attr_fifo_level.attr,
+	&dev_attr_active_period.attr,
+	&dev_attr_active_duty.attr,
+	&dev_attr_pwm_underruns.attr,
+	&dev_attr_dma_periods.attr,
+	&dev_attr_driver_underruns.attr,
+	&dev_attr_accepted_samples.attr,
+	&dev_attr_stop.attr,
+	&dev_attr_clear_stats.attr,
+	NULL,
+};
+
+static const struct attribute_group cora_pwm_attribute_group = {
+	.attrs = cora_pwm_attributes,
+};
+
 static long cora_pwm_ioctl(struct file *file, unsigned int command,
 			   unsigned long argument)
 {
@@ -506,12 +748,18 @@ static int cora_pwm_probe(struct platform_device *platform)
 		goto free_ring;
 
 	platform_set_drvdata(platform, pwm);
+	ret = sysfs_create_group(&platform->dev.kobj,
+				 &cora_pwm_attribute_group);
+	if (ret)
+		goto deregister_misc;
 	dev_info(&platform->dev,
 		 "registered /dev/%s, %u-byte periods, %u-period cyclic ring\n",
 		 pwm->miscdev.name, CORA_PWM_PERIOD_BYTES, CORA_PWM_RING_PERIODS);
 
 	return 0;
 
+deregister_misc:
+	misc_deregister(&pwm->miscdev);
 free_ring:
 	dma_free_coherent(pwm->dma_dev, CORA_PWM_RING_BYTES,
 			  pwm->ring_cpu, pwm->ring_dma);
@@ -524,6 +772,7 @@ static void cora_pwm_remove(struct platform_device *platform)
 {
 	struct cora_pwm_dev *pwm = platform_get_drvdata(platform);
 
+	sysfs_remove_group(&platform->dev.kobj, &cora_pwm_attribute_group);
 	misc_deregister(&pwm->miscdev);
 	mutex_lock(&pwm->io_lock);
 	cora_pwm_stop_locked(pwm);
