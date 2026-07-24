@@ -74,6 +74,7 @@ class ReceiverResult:
     raw_bit_errors: int
     bit_errors: int
     total_bits: int
+    decoded_bits: np.ndarray
 
     @property
     def raw_ber(self) -> float:
@@ -125,7 +126,10 @@ def qpsk_demap(symbols: np.ndarray) -> np.ndarray:
 
 
 def make_packet(
-    cfg: ModemConfig, payload_symbols: int, seed: int
+    cfg: ModemConfig,
+    payload_symbols: int,
+    seed: int,
+    payload_bits: np.ndarray | None = None,
 ) -> TxPacket:
     rng = np.random.default_rng(seed)
     training = np.zeros(cfg.fft_len, dtype=np.complex64)
@@ -135,9 +139,20 @@ def make_packet(
     training[cfg.active_bins] = training_values.astype(np.complex64)
 
     bits_per_symbol = cfg.data_bins.size * 2
-    payload_bits = rng.integers(
-        0, 2, payload_symbols * bits_per_symbol, dtype=np.uint8
-    )
+    expected_bits = payload_symbols * bits_per_symbol
+    if payload_bits is None:
+        payload_bits = rng.integers(
+            0, 2, expected_bits, dtype=np.uint8
+        )
+    else:
+        payload_bits = np.asarray(payload_bits, dtype=np.uint8).reshape(-1)
+        if payload_bits.size != expected_bits:
+            raise ValueError(
+                f"payload requires exactly {expected_bits} bits"
+            )
+        if np.any(payload_bits > 1):
+            raise ValueError("payload bits must contain only 0 or 1")
+        payload_bits = payload_bits.copy()
     pilots = np.empty((payload_symbols, cfg.pilot_bins.size), np.complex64)
     payload_grid = np.zeros(
         (payload_symbols, cfg.fft_len), dtype=np.complex64
@@ -446,6 +461,7 @@ def receive_corrected(
         raw_bit_errors=raw_bit_errors,
         bit_errors=bit_errors,
         total_bits=int(packet.payload_bits.size),
+        decoded_bits=equalized_bits,
     )
 
 

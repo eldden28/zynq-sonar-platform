@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cora OFDM Picture Link</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink:#eef8ff; --muted:#89a2b6; --cyan:#55f4e0; --blue:#4e8cff;
+      --pink:#ff4fa3; --amber:#ffc857; --green:#73f59a; --red:#ff667d;
+      --panel:#0c1825e8; --line:#28445b; --void:#04080e;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; min-height:100vh; color:var(--ink);
+      font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+      background:
+        radial-gradient(circle at 12% -5%,#174f66 0,transparent 32%),
+        radial-gradient(circle at 94% 12%,#401b50 0,transparent 28%),
+        linear-gradient(150deg,#04080e,#07131e 48%,#090d18);
+    }
+    body::before {
+      content:""; position:fixed; inset:0; pointer-events:none; opacity:.13;
+      background-image:linear-gradient(#fff1 1px,transparent 1px),linear-gradient(90deg,#fff1 1px,transparent 1px);
+      background-size:42px 42px; mask-image:linear-gradient(to bottom,#000,transparent 75%);
+    }
+    header {
+      display:flex; align-items:center; justify-content:space-between; gap:20px;
+      padding:19px 26px; border-bottom:1px solid var(--line); background:#050b13db;
+      backdrop-filter:blur(15px); position:sticky; top:0; z-index:10;
+    }
+    .brand { display:flex; align-items:center; gap:14px; }
+    .mark {
+      width:44px; height:44px; display:grid; place-items:center; border:1px solid var(--cyan);
+      border-radius:13px; color:var(--cyan); font:800 14px/1 ui-monospace,monospace;
+      box-shadow:0 0 28px #55f4e033,inset 0 0 20px #55f4e012;
+    }
+    h1 { margin:0; font-size:18px; letter-spacing:.07em; text-transform:uppercase; }
+    .sub,.muted { color:var(--muted); }
+    .status {
+      padding:7px 12px; border:1px solid var(--line); border-radius:999px;
+      color:var(--muted); font:700 12px ui-monospace,monospace; text-transform:uppercase;
+    }
+    .status.running { color:var(--amber); border-color:#826528; }
+    .status.complete { color:var(--green); border-color:#397b50; }
+    .status.failed { color:var(--red); border-color:#813a49; }
+    main { max-width:1500px; margin:auto; padding:22px; display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:18px; }
+    .panel {
+      background:linear-gradient(150deg,var(--panel),#09121cdd); border:1px solid var(--line);
+      border-radius:18px; box-shadow:0 18px 45px #0006; overflow:hidden;
+    }
+    .receiver { padding:16px; }
+    .panel-head { display:flex; align-items:end; justify-content:space-between; gap:18px; margin-bottom:12px; }
+    h2 { margin:0; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+    .canvas-shell {
+      position:relative; width:min(100%,1024px); aspect-ratio:1; margin:auto; overflow:hidden;
+      border-radius:12px; border:1px solid #31536b; background:#03070b;
+      box-shadow:inset 0 0 70px #000,0 0 40px #2fc4e117;
+    }
+    #picture { display:block; width:100%; height:100%; image-rendering:auto; }
+    .scanline {
+      position:absolute; left:0; right:0; top:0; height:3px; opacity:0;
+      background:linear-gradient(90deg,transparent,var(--cyan),#fff,var(--pink),transparent);
+      box-shadow:0 0 20px var(--cyan); transition:top .35s linear,opacity .2s;
+    }
+    .canvas-shell.active .scanline { opacity:.85; }
+    .placeholder {
+      position:absolute; inset:0; display:grid; place-items:center; pointer-events:none;
+      color:#547085; letter-spacing:.18em; text-transform:uppercase; font:700 12px ui-monospace,monospace;
+    }
+    .canvas-shell.has-data .placeholder { display:none; }
+    .progress { height:12px; border:1px solid #29485d; border-radius:999px; overflow:hidden; margin-top:14px; background:#03080d; }
+    .progress span { display:block; width:0; height:100%; background:linear-gradient(90deg,var(--cyan),var(--blue),var(--pink)); transition:width .35s; }
+    .progress-copy { display:flex; justify-content:space-between; gap:12px; margin-top:7px; font:12px ui-monospace,monospace; color:var(--muted); }
+    aside { display:flex; flex-direction:column; gap:14px; }
+    .card { padding:16px; }
+    .metric { padding:10px 0; border-bottom:1px solid #1c3243; display:flex; justify-content:space-between; gap:12px; }
+    .metric:last-child { border:0; } .metric strong { font:700 13px ui-monospace,monospace; text-align:right; }
+    .hero-number { font:750 31px/1 ui-monospace,monospace; margin:10px 0 4px; color:var(--cyan); }
+    .controls { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:13px; }
+    button {
+      border:1px solid #3a6078; background:#122a3a; color:var(--ink); border-radius:9px;
+      padding:10px 12px; cursor:pointer; font-weight:750;
+    }
+    button:hover { border-color:var(--cyan); } button:disabled { opacity:.4; cursor:not-allowed; }
+    button.primary { background:linear-gradient(135deg,#116d72,#244f99); }
+    button.danger { background:#3b1720; border-color:#773748; }
+    #notice { min-height:20px; margin-top:10px; color:var(--amber); font-size:12px; }
+    .preview-wrap { position:relative; border-radius:10px; overflow:hidden; margin-top:12px; border:1px solid var(--line); }
+    .preview-wrap img { display:block; width:100%; filter:blur(18px) saturate(.6); transform:scale(1.08); transition:.25s; }
+    .preview-wrap.reveal img { filter:none; transform:none; }
+    .preview-wrap button { position:absolute; inset:auto 12px 12px; width:calc(100% - 24px); background:#07121ddd; }
+    .footnote { font-size:11px; color:#70899b; margin-top:10px; }
+    @media(max-width:1000px){main{grid-template-columns:1fr}aside{display:grid;grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:650px){header{padding:14px}.sub{display:none}main{padding:10px}.receiver{padding:10px}aside{display:flex}.controls{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="mark">OFDM</div><div><h1>Cora Picture Link</h1><div class="sub">3 MiB RGB payload · QPSK acoustic channel simulation</div></div></div>
+  <div id="status" class="status">Connecting</div>
+</header>
+<main>
+  <section class="panel receiver">
+    <div class="panel-head"><div><h2>Reconstructed payload</h2><div class="sub">Pixels appear only after a frame passes metadata and CRC validation.</div></div><strong id="dimensions">1024 × 1024 RGB</strong></div>
+    <div id="canvas-shell" class="canvas-shell">
+      <canvas id="picture" width="1024" height="1024"></canvas>
+      <div class="scanline" id="scanline"></div>
+      <div class="placeholder">Awaiting carrier</div>
+    </div>
+    <div class="progress"><span id="progress-bar"></span></div>
+    <div class="progress-copy"><span id="byte-progress">0 B / 3.00 MiB</span><span id="percent">0.00%</span></div>
+  </section>
+  <aside>
+    <section class="panel card">
+      <h2>Link progress</h2>
+      <div id="throughput" class="hero-number">0 bit/s</div>
+      <div class="muted">validated application payload</div>
+      <div class="metric"><span>Frames</span><strong id="frames">0 / 0</strong></div>
+      <div class="metric"><span>ETA</span><strong id="eta">—</strong></div>
+      <div class="metric"><span>Elapsed</span><strong id="elapsed">0:00</strong></div>
+      <div class="metric"><span>Retries</span><strong id="retries">0</strong></div>
+      <div class="metric"><span>Detected bit errors</span><strong id="errors">0</strong></div>
+    </section>
+    <section class="panel card">
+      <h2>Channel</h2>
+      <div class="metric"><span>Mode</span><strong id="mode">—</strong></div>
+      <div class="metric"><span>SNR</span><strong id="snr">—</strong></div>
+      <div class="metric"><span>Doppler</span><strong id="doppler">—</strong></div>
+      <div class="metric"><span>CFO</span><strong id="cfo">—</strong></div>
+      <div class="metric"><span>Batch</span><strong id="batch">—</strong></div>
+    </section>
+    <section class="panel card">
+      <h2>Demo controls</h2>
+      <div class="controls">
+        <button class="primary" data-start="benchmark">Start fast</button>
+        <button class="primary" data-start="realtime">Start 48k</button>
+        <button id="stop" class="danger">Stop</button>
+        <button id="reset">Reset</button>
+      </div>
+      <div id="notice"></div>
+      <div class="footnote">Fast mode removes the 48 ksample/s throttle. Both modes retain multipath, AWGN, CFO, Doppler, pilots, equalization, CRC, and retry handling.</div>
+    </section>
+    <section class="panel card">
+      <h2>Payload reference</h2>
+      <div id="preview-wrap" class="preview-wrap"><img src="/source.png" alt="Original demo payload"><button id="reveal">Reveal source</button></div>
+    </section>
+  </aside>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const canvas=$('picture'),ctx=canvas.getContext('2d',{alpha:false});
+let pixels=ctx.createImageData(canvas.width,canvas.height),loaded=0,lastStatus='idle',busy=false;
+function clearImage(){
+  pixels=ctx.createImageData(canvas.width,canvas.height);
+  for(let i=0;i<pixels.data.length;i+=4){pixels.data[i]=4;pixels.data[i+1]=9;pixels.data[i+2]=14;pixels.data[i+3]=255}
+  ctx.putImageData(pixels,0,0);loaded=0;$('canvas-shell').classList.remove('has-data','active');$('scanline').style.top='0';
+}
+clearImage();
+const humanBytes=n=>{const u=['B','KiB','MiB','GiB'];let i=0;while(n>=1024&&i<u.length-1){n/=1024;i++}return `${n.toFixed(i?2:0)} ${u[i]}`};
+const duration=s=>{if(s==null||!Number.isFinite(s))return '—';s=Math.max(0,Math.round(s));const h=Math.floor(s/3600);s%=3600;const m=Math.floor(s/60),sec=s%60;return `${h?h+':':''}${String(m).padStart(h?2:1,'0')}:${String(sec).padStart(2,'0')}`};
+const rate=n=>n>=1e6?`${(n/1e6).toFixed(2)} Mbit/s`:n>=1e3?`${(n/1e3).toFixed(1)} kbit/s`:`${Math.round(n||0)} bit/s`;
+function setStatus(name){const el=$('status');el.textContent=name;el.className=`status ${name}`}
+function configureImage(s){
+  if(canvas.width===s.width&&canvas.height===s.height)return;
+  canvas.width=s.width;canvas.height=s.height;pixels=ctx.createImageData(s.width,s.height);clearImage();
+}
+async function loadPixels(committed){
+  if(busy||loaded>=committed)return;busy=true;
+  try{
+    while(loaded<committed){
+      const response=await fetch(`/api/data?offset=${loaded}`,{cache:'no-store'});
+      if(!response.ok)throw Error(`data ${response.status}`);
+      const chunk=new Uint8Array(await response.arrayBuffer()),startPixel=Math.floor(loaded/3);
+      for(let i=0;i+2<chunk.length;i+=3){const d=(startPixel+i/3)*4;pixels.data[d]=chunk[i];pixels.data[d+1]=chunk[i+1];pixels.data[d+2]=chunk[i+2];pixels.data[d+3]=255}
+      loaded+=chunk.length;
+      const firstRow=Math.floor(startPixel/canvas.width),lastPixel=startPixel+Math.floor(chunk.length/3);
+      const rows=Math.min(canvas.height-firstRow,Math.ceil(lastPixel/canvas.width)-firstRow+1);
+      ctx.putImageData(pixels,0,0,0,firstRow,canvas.width,Math.max(1,rows));
+      if(!chunk.length)break;
+    }
+    if(loaded)$('canvas-shell').classList.add('has-data');
+  }finally{busy=false}
+}
+function render(s){
+  configureImage(s);const status=s.status||'idle';setStatus(status);
+  const progress=Number(s.progress_percent)||0,total=Number(s.total_bytes)||canvas.width*canvas.height*3,received=Number(s.bytes_received)||0;
+  $('progress-bar').style.width=`${Math.min(100,progress)}%`;$('percent').textContent=`${progress.toFixed(2)}%`;
+  $('byte-progress').textContent=`${humanBytes(received)} / ${humanBytes(total)}`;$('throughput').textContent=rate(Number(s.payload_throughput_bps)||0);
+  $('frames').textContent=`${s.frames_received||0} / ${s.frames_total||0}`;$('eta').textContent=duration(s.eta_s);$('elapsed').textContent=duration(s.elapsed_s||0);
+  $('retries').textContent=s.retries||0;$('errors').textContent=s.bit_errors||0;$('mode').textContent=s.mode||'—';
+  $('snr').textContent=s.snr_db==null?'—':`${s.snr_db} dB`;$('doppler').textContent=s.doppler_ppm==null?'—':`${s.doppler_ppm} ppm`;
+  $('cfo').textContent=s.cfo_hz==null?'—':`${s.cfo_hz} Hz`;$('batch').textContent=s.batch_size||'—';$('dimensions').textContent=`${s.width} × ${s.height} RGB`;
+  const active=status==='running'||status==='warming';$('canvas-shell').classList.toggle('active',active);$('scanline').style.top=`${Math.min(99.7,progress)}%`;
+  document.querySelectorAll('[data-start]').forEach(b=>b.disabled=active);$('stop').disabled=!active;
+  if(received<loaded||((status==='idle'||status==='warming')&&lastStatus!==status))clearImage();
+  loadPixels(received);lastStatus=status;if(s.error)$('notice').textContent=s.error;
+}
+async function refresh(){try{const r=await fetch('/api/status',{cache:'no-store'});if(!r.ok)throw Error(r.status);render(await r.json())}catch(e){setStatus('failed');$('notice').textContent=`Dashboard disconnected: ${e}`}}
+async function action(path,body={}){
+  $('notice').textContent='Working…';
+  try{const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Cora-Request':'1'},body:JSON.stringify(body)});const j=await r.json();if(!r.ok)throw Error(j.error||r.status);$('notice').textContent=j.message||'Done';if(path==='/api/reset')clearImage();await refresh()}catch(e){$('notice').textContent=String(e)}
+}
+document.querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>action('/api/start',{mode:b.dataset.start}));
+$('stop').onclick=()=>action('/api/stop');$('reset').onclick=()=>action('/api/reset');
+$('reveal').onclick=()=>{const p=$('preview-wrap');p.classList.toggle('reveal');$('reveal').textContent=p.classList.contains('reveal')?'Hide source':'Reveal source'};
+setInterval(refresh,500);refresh();
+</script>
+</body>
+</html>

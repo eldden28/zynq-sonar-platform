@@ -41,7 +41,16 @@ class CoraOfdmTest(unittest.TestCase):
 
     def test_high_snr_packet_is_error_free(self):
         config = MODULE.ModemConfig()
-        packet = MODULE.make_packet(config, payload_symbols=4, seed=20260723)
+        payload_bits = MODULE.np.tile(
+            MODULE.np.array([0, 1, 1, 0], dtype=MODULE.np.uint8),
+            config.data_bins.size * 2,
+        )
+        packet = MODULE.make_packet(
+            config,
+            payload_symbols=4,
+            seed=20260723,
+            payload_bits=payload_bits,
+        )
         flowgraph = MODULE.UnderwaterOfdmFlowgraph(
             cfg=config,
             packet=packet,
@@ -58,6 +67,9 @@ class CoraOfdmTest(unittest.TestCase):
         )
         result = MODULE.receive(config, packet, received, 900.0)
         self.assertEqual(result.bit_errors, 0)
+        MODULE.np.testing.assert_array_equal(
+            result.decoded_bits, payload_bits
+        )
 
     def test_packet_batch_decodes_each_guarded_packet(self):
         config = MODULE.ModemConfig()

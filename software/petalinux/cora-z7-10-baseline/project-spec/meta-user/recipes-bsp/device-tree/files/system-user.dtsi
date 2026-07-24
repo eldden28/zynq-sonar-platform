@@ -1,5 +1,25 @@
 /include/ "system-conf.dtsi"
 / {
+	/*
+	 * USB0 uses an external USB3320 ULPI transceiver whose reset is wired
+	 * to PS GPIO/MIO 46.  Linux 6.12's Zynq ChipIdea glue requires a
+	 * legacy usb-phy phandle before it will bind the host controller.
+	 */
+	usb_phy0: phy0 {
+		compatible = "usb-nop-xceiv";
+		#phy-cells = <0>;
+		reset-gpios = <&gpio0 46 1>; /* GPIO_ACTIVE_LOW */
+	};
+};
+
+/*
+ * The Cora Z7 implements USB0 as an embedded host.  Declare the fixed role
+ * explicitly so Linux does not fall back to OTG role detection.
+ */
+&usb0 {
+	dr_mode = "host";
+	usb-phy = <&usb_phy0>;
+	status = "okay";
 };
 
 &axis_pwm_s16_0 {

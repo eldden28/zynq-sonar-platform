@@ -40,23 +40,28 @@ The recipe is
 added through `project-spec/meta-user/conf/petalinuxbsp.conf`; no manual copy
 to the root filesystem is needed.
 
-The increment-4 checkpoint image generated on 2026-07-24 is:
+The progressive-image-demo checkpoint generated on 2026-07-24 is:
 
 ```text
 images/linux/petalinux-sdimage.wic
 size: 2,684,358,656 bytes
-SHA-256: c59f07494b4d9cf92d0329d2db421c7b962b6c328d5b1fc46a9fe831897ee14f
+SHA-256: 5333366fdaca8f24e7bd04955e81c24d071d9002e816463c2f01cfa0b2be5d13
 ```
 
 Its rootfs manifest contains `cora-ofdm`, `gnuradio-channels`, `cora-pwm`,
-`cora-dsp`, `gr-cora`, and `cora-dashboard`. It contains no Qt or PyQt runtime
-package. The packaged `/usr/bin/cora-ofdm` is byte-for-byte identical to the
-increment-4 source at SHA-256
-`4f3fa517b2244441fda9ba1ec4e647a32753470dbde7a476bf1fd52a8a20d535`.
+`cora-dsp`, `gr-cora`, `cora-dashboard`, and `cora-ofdm-demo`. It contains no
+Qt or PyQt runtime package. The packaged `/usr/bin/cora-ofdm` and importable
+`cora_ofdm.py` module match the current source at SHA-256
+`25c19a7fc991e437f4f8b5a4b56037ea65eb18ad0362688629cc3aa0c3cbf8bb`.
 The WIC partition table contains the intended 512 MiB FAT boot partition and
 2 GiB Linux root partition. This build has not yet been flashed for a
 persistent-image boot confirmation; target performance was measured by
 staging the identical executable in `/tmp` on the preceding image.
+
+The image also contains the separate progressive OFDM picture dashboard at
+`http://192.168.10.2:8081/`. Its packaged 1024×1024 RGB payload is exactly
+3,145,728 bytes. See `software/cora-ofdm-demo/README.md` for framing, CRC,
+retry, dashboard, and operation details.
 
 ## Target runs
 

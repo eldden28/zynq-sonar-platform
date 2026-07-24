@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cora Acoustic Text Link</title>
+  <style>
+    :root {
+      color-scheme:dark;
+      --void:#050809; --panel:#0a1212ee; --line:#29413c;
+      --ink:#e9fff7; --muted:#86a89c; --green:#63ffb2;
+      --cyan:#5ee9ff; --amber:#ffd166; --red:#ff6f86;
+    }
+    * { box-sizing:border-box }
+    body {
+      margin:0; min-height:100vh; color:var(--ink);
+      font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      background:
+        radial-gradient(circle at 15% 0,#123c35 0,transparent 32%),
+        radial-gradient(circle at 90% 15%,#102f3d 0,transparent 28%),
+        linear-gradient(145deg,#030505,#07100e 55%,#06090b);
+    }
+    body::before {
+      content:""; position:fixed; inset:0; pointer-events:none; opacity:.12;
+      background:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 4px);
+    }
+    header {
+      display:flex; align-items:center; justify-content:space-between; gap:18px;
+      padding:18px 24px; border-bottom:1px solid var(--line);
+      background:#050a09e8; position:sticky; top:0; z-index:3;
+    }
+    .brand { display:flex; align-items:center; gap:14px }
+    .prompt {
+      width:46px; height:46px; display:grid; place-items:center;
+      border:1px solid var(--green); border-radius:11px; color:var(--green);
+      font-size:20px; box-shadow:0 0 24px #63ffb225,inset 0 0 18px #63ffb214;
+    }
+    h1 { margin:0; font:700 18px/1.2 inherit; letter-spacing:.08em; text-transform:uppercase }
+    .sub,.muted { color:var(--muted) }
+    .status {
+      padding:7px 12px; border:1px solid var(--line); border-radius:999px;
+      color:var(--muted); font-weight:700; text-transform:uppercase;
+    }
+    .status.running,.status.warming { color:var(--amber); border-color:#75642d }
+    .status.complete { color:var(--green); border-color:#34795a }
+    .status.failed { color:var(--red); border-color:#743944 }
+    main { max-width:1450px; margin:auto; padding:20px; display:grid; gap:16px }
+    .terminals { display:grid; grid-template-columns:1fr 1fr; gap:16px }
+    .panel {
+      border:1px solid var(--line); border-radius:15px; overflow:hidden;
+      background:linear-gradient(155deg,var(--panel),#07100fdd);
+      box-shadow:0 20px 48px #0007;
+    }
+    .bar {
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:10px 13px; border-bottom:1px solid var(--line); color:var(--muted);
+      background:#0a1513;
+    }
+    .lights { display:flex; gap:6px }
+    .lights i { width:8px; height:8px; border-radius:50%; background:#385148 }
+    .lights i:first-child { background:#ff6f86 }
+    .lights i:nth-child(2) { background:#ffd166 }
+    .lights i:last-child { background:#63ffb2 }
+    textarea {
+      display:block; width:100%; min-height:390px; resize:vertical; border:0;
+      outline:0; padding:18px; color:var(--ink); background:#030807;
+      font:15px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      caret-color:var(--green);
+    }
+    textarea[readonly] { color:#baffdf; background:#020605 }
+    .rx-wrap { position:relative }
+    .rx-wrap::after {
+      content:""; position:absolute; left:18px; bottom:18px; width:9px; height:18px;
+      background:var(--green); opacity:.75; animation:blink 1s steps(1) infinite;
+    }
+    @keyframes blink { 50% { opacity:0 } }
+    .tools {
+      display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px;
+      padding:16px;
+    }
+    .controls { display:flex; flex-wrap:wrap; align-items:center; gap:9px }
+    button,select {
+      border:1px solid #3a6257; background:#10251f; color:var(--ink);
+      border-radius:8px; padding:10px 13px; font:700 13px inherit;
+    }
+    button { cursor:pointer }
+    button:hover { border-color:var(--green) }
+    button:disabled { opacity:.35; cursor:not-allowed }
+    button.primary { background:linear-gradient(135deg,#116a4f,#155b71) }
+    button.danger { background:#35171c; border-color:#753842 }
+    #notice { margin-top:10px; min-height:19px; color:var(--amber) }
+    .counter { text-align:right; color:var(--muted); white-space:nowrap }
+    .progress { height:12px; border:1px solid #29483f; border-radius:999px; overflow:hidden; background:#020504 }
+    .progress span { display:block; width:0; height:100%; background:linear-gradient(90deg,var(--green),var(--cyan)); transition:width .2s }
+    .stats { display:grid; grid-template-columns:repeat(6,1fr); gap:1px; background:var(--line) }
+    .stat { padding:14px; background:#08110f }
+    .stat span { display:block; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em }
+    .stat strong { display:block; margin-top:5px; color:var(--green); font-size:15px }
+    .foot { padding:11px 15px; color:#66877c; border-top:1px solid var(--line); font-size:11px }
+    @media(max-width:900px){.terminals{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:600px){header{padding:13px}.sub{display:none}main{padding:9px}.tools{grid-template-columns:1fr}.counter{text-align:left}.stats{grid-template-columns:repeat(2,1fr)}textarea{min-height:270px}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="prompt">&gt;_</div>
+    <div><h1>Cora Acoustic Text Link</h1><div class="sub">UTF-8 terminal · QPSK · validated packets only</div></div>
+  </div>
+  <div id="status" class="status">Connecting</div>
+</header>
+<main>
+  <section class="terminals">
+    <div class="panel">
+      <div class="bar"><span>TX / paste text here</span><span id="tx-bytes">0 B</span></div>
+      <textarea id="tx" maxlength="16384" spellcheck="false">Hello from the Cora Z7-10.
+
+This text is being split into numbered packets, modulated as real audio OFDM, passed through a colored multipath channel, decoded, CRC checked, and rebuilt in the terminal on the right.</textarea>
+    </div>
+    <div class="panel">
+      <div class="bar"><span>RX / validated text</span><span id="rx-bytes">0 B</span></div>
+      <div class="rx-wrap"><textarea id="rx" readonly spellcheck="false" placeholder="Awaiting carrier…"></textarea></div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="tools">
+      <div>
+        <div class="controls">
+          <select id="backend">
+            <option value="loopback">Colored-room simulation</option>
+            <option value="air">Speaker → lapel microphone</option>
+          </select>
+          <button id="send" class="primary">Transmit text</button>
+          <button id="stop" class="danger">Stop</button>
+          <button id="reset">Clear receiver</button>
+          <button id="copy">Copy RX</button>
+        </div>
+        <div id="notice">Ready.</div>
+      </div>
+      <div class="counter"><strong id="packet-progress">0 / 0 packets</strong><br><span id="byte-progress">0 B / 0 B</span></div>
+    </div>
+    <div class="progress"><span id="progress-bar"></span></div>
+    <div class="stats">
+      <div class="stat"><span>Payload rate</span><strong id="rate">0 bit/s</strong></div>
+      <div class="stat"><span>Elapsed</span><strong id="elapsed">0.0 s</strong></div>
+      <div class="stat"><span>ETA</span><strong id="eta">—</strong></div>
+      <div class="stat"><span>Retries</span><strong id="retries">0</strong></div>
+      <div class="stat"><span>Packet errors</span><strong id="errors">0</strong></div>
+      <div class="stat"><span>Sync metric</span><strong id="sync">—</strong></div>
+    </div>
+    <div class="foot">2.25–9.75 kHz · 48 ksample/s · FFT 256 · CP 64 · five pilots · three-copy payload recovery · CRC-32. Air mode stays locked until a speaker is connected and the service is explicitly enabled.</div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const encoder=new TextEncoder();
+let offset=0,decoder=new TextDecoder(),lastStatus='idle',loading=false,airEnabled=false;
+const bytes=n=>n>=1024?`${(n/1024).toFixed(2)} KiB`:`${n} B`;
+const rate=n=>n>=1000?`${(n/1000).toFixed(2)} kbit/s`:`${Math.round(n||0)} bit/s`;
+const seconds=n=>n==null||!Number.isFinite(n)?'—':`${Number(n).toFixed(1)} s`;
+function setStatus(name){const el=$('status');el.textContent=name;el.className=`status ${name}`}
+function clearReceiver(){offset=0;decoder=new TextDecoder();$('rx').value='';$('rx-bytes').textContent='0 B'}
+async function loadData(committed,status){
+  if(loading||offset>=committed)return;loading=true;
+  try{
+    while(offset<committed){
+      const response=await fetch(`/api/data?offset=${offset}`,{cache:'no-store'});
+      if(!response.ok)throw Error(`data ${response.status}`);
+      const chunk=new Uint8Array(await response.arrayBuffer());
+      if(!chunk.length)break;
+      offset+=chunk.length;
+      $('rx').value+=decoder.decode(chunk,{stream:status!=='complete'||offset<committed});
+      $('rx').scrollTop=$('rx').scrollHeight;
+    }
+  }finally{loading=false}
+}
+function render(s){
+  const status=s.status||'idle';setStatus(status);
+  const received=Number(s.bytes_received)||0,total=Number(s.total_bytes)||0,progress=Number(s.progress_percent)||0;
+  if(received<offset||(status==='idle'&&lastStatus!=='idle'))clearReceiver();
+  loadData(received,status);
+  $('rx-bytes').textContent=bytes(received);$('byte-progress').textContent=`${bytes(received)} / ${bytes(total)}`;
+  $('packet-progress').textContent=`${s.packets_received||0} / ${s.packets_total||0} packets`;
+  $('progress-bar').style.width=`${Math.min(100,progress)}%`;$('rate').textContent=rate(s.payload_throughput_bps);
+  $('elapsed').textContent=seconds(s.elapsed_s||0);$('eta').textContent=seconds(s.eta_s);
+  $('retries').textContent=s.retries||0;$('errors').textContent=s.packet_errors||0;
+  $('sync').textContent=s.last_sync_metric==null?'—':Number(s.last_sync_metric).toFixed(3);
+  const active=status==='running'||status==='warming';$('send').disabled=active;$('stop').disabled=!active;
+  airEnabled=Boolean(s.air_enabled);
+  const airOption=$('backend').querySelector('option[value="air"]');
+  airOption.disabled=!airEnabled;
+  if(!airEnabled&&$('backend').value==='air')$('backend').value='loopback';
+  if(s.error)$('notice').textContent=s.error;
+  else if(status==='complete')$('notice').textContent='Transfer complete — source and received SHA-256 match.';
+  lastStatus=status;
+}
+async function refresh(){
+  try{const response=await fetch('/api/status',{cache:'no-store'});if(!response.ok)throw Error(response.status);render(await response.json())}
+  catch(error){setStatus('failed');$('notice').textContent=`Dashboard disconnected: ${error}`}
+}
+async function action(path,body={}){
+  $('notice').textContent='Working…';
+  try{
+    const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Cora-Request':'1'},body:JSON.stringify(body)});
+    const result=await response.json();if(!response.ok)throw Error(result.error||response.status);
+    $('notice').textContent=result.message||'Done';if(path==='/api/reset')clearReceiver();await refresh();
+  }catch(error){$('notice').textContent=String(error)}
+}
+function updateTxCount(){$('tx-bytes').textContent=bytes(encoder.encode($('tx').value).length)}
+$('tx').addEventListener('input',updateTxCount);
+$('send').onclick=()=>{clearReceiver();action('/api/start',{text:$('tx').value,backend:$('backend').value})};
+$('stop').onclick=()=>action('/api/stop');
+$('reset').onclick=()=>action('/api/reset');
+$('copy').onclick=async()=>{await navigator.clipboard.writeText($('rx').value);$('notice').textContent='Received text copied.'};
+updateTxCount();setInterval(refresh,250);refresh();
+</script>
+</body>
+</html>

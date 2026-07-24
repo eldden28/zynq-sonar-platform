@@ -1,0 +1,2 @@
+# Dedicated OFDM picture-link dashboard on the development Ethernet interface.
+DASHBOARD_ARGS="--bind 0.0.0.0 --port 8081 --batch-size 10 --snr-db 40"

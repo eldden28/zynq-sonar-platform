@@ -1,0 +1,233 @@
+# Cora acoustic OFDM v2
+
+## Goal
+
+Version 2 carries validated OFDM packets through ordinary air using a speaker,
+room, and microphone. It is a separate application from the CPU channel
+simulation, so the existing OFDM demo, PWM path, and spectral accelerator are
+unchanged.
+
+The first milestone is deliberately audible and conservative. A
+near-ultrasonic waveform would be quieter to people, but inexpensive speakers,
+lapel microphones, USB audio codecs, and their anti-alias filters commonly
+lose useful and repeatable response near 20 kHz. Starting lower lets us
+measure the actual channel before moving the band upward.
+
+## Initial waveform
+
+| Parameter | Value |
+|---|---:|
+| Sample rate | 48,000 sample/s |
+| FFT | 256 points |
+| Cyclic prefix | 64 samples / 1.333 ms |
+| Occupied band | 2,250--9,750 Hz |
+| Active positive-frequency carriers | 41 |
+| Pilot carriers | 5 |
+| Data carriers | 36 |
+| Modulation | QPSK |
+| Raw physical payload | 10.8 kbit/s |
+| Repetition-coded payload | 3.6 kbit/s before framing |
+| Default waveform peak | 0.18 full scale |
+
+The transmitter uses Hermitian frequency-domain symmetry so its IFFT output is
+real audio. One unique synchronization symbol and two more known training
+symbols precede every packet. The receiver uses them for packet timing and a
+one-tap complex estimate of every occupied carrier. This estimate absorbs the
+frequency response and phase of the speaker, room, and microphone.
+
+Five known pilot carriers in every data symbol fit a linear phase correction.
+The intercept tracks common phase rotation; the slope tracks residual sample
+timing drift between independent audio clocks. The eight-byte header is sent
+three times and majority-voted. Payload bits are also sent in three interleaved
+copies for the first robust profile. CRC-32 is the final packet-validity test.
+
+## Commands
+
+The offline colored-room test does not require audio hardware:
+
+```sh
+cora-ofdm-acoustic info
+cora-ofdm-acoustic loopback --text "hello through a colored room"
+```
+
+Create a WAV packet:
+
+```sh
+cora-ofdm-acoustic encode \
+  --text "hello through the air" \
+  --wav /tmp/cora-tx.wav
+```
+
+Receive first on one board:
+
+```sh
+cora-ofdm-acoustic receive --seconds 5
+```
+
+Then transmit from another:
+
+```sh
+cora-ofdm-acoustic send --text "hello through the air"
+```
+
+One board can record its lapel microphone while playing a packet:
+
+```sh
+cora-ofdm-acoustic selftest --text "Cora acoustic OFDM v2"
+```
+
+The default playback and capture PCM is `plughw:0,0`. Device overrides go
+before the subcommand:
+
+```sh
+cora-ofdm-acoustic \
+  --playback-device plughw:1,0 \
+  --capture-device plughw:1,0 \
+  selftest
+```
+
+For the first over-air attempt, put the speaker 20--50 cm from the microphone,
+use moderate speaker volume, disable microphone AGC, and set a fixed capture
+gain. The target is a received OFDM peak around -12 to -6 dBFS with no
+clipping. Increase range only after short packets validate consistently.
+
+## Reproducible PetaLinux build
+
+```sh
+cd /home/eldden28/code/test-project/software/petalinux/cora-z7-10-baseline
+source /tools/Xilinx/2025.1/PetaLinux/tool/settings.sh
+petalinux-build -c cora-ofdm-acoustic
+petalinux-build
+./package-wic.sh
+```
+
+The recipe is:
+
+```text
+project-spec/meta-user/recipes-radio/cora-ofdm-acoustic/cora-ofdm-acoustic.bb
+```
+
+The image configuration installs `cora-ofdm-acoustic` alongside all existing
+Cora packages. The kernel fragment also enables
+`CONFIG_USB_EHCI_TT_NEWSCHED=y`; this is required by the tested full-speed USB
+audio codec to allocate its periodic capture endpoint reliably.
+
+## 2026-07-24 checkpoint
+
+Host validation passed:
+
+- clean NumPy encode/decode with arbitrary recording offsets;
+- 16-bit stereo WAV encode and mono decode;
+- deterministic speaker/microphone spectral color;
+- five-path multipath inside the cyclic prefix;
+- additive noise and three-copy payload recovery;
+- header and payload CRC validation.
+
+The Yocto recipe passed package QA, the full 7,157-task PetaLinux build
+completed without errors, and the WIC was generated with 512 MiB boot and
+2 GiB root partitions.
+
+On the Cora Z7-10, the live colored-channel test decoded a 26-byte packet with
+a valid CRC in 2.75 seconds. After booting the rebuilt kernel, the PCM2902-class
+USB dongle recorded five uninterrupted seconds of mono 48 ksample/s S16_LE
+audio. The old `error -28: not enough bandwidth` did not recur:
+
+```text
+frames=240000
+duration=5.000 s
+peak=-24.6 dBFS
+overall RMS=-45.3 dBFS
+2.25--9.75 kHz RMS=-76.4 dBFS
+clipped samples=0
+```
+
+Only a lapel microphone was present at this checkpoint. No acoustic playback
+or over-air decoding was attempted. The next checkpoint is a short-packet
+speaker-to-microphone test, followed by measured per-carrier channel response
+and packet success rate.
+
+## Progressive text-terminal dashboard
+
+The separate text dashboard is available at:
+
+```text
+http://192.168.10.2:8082/
+```
+
+It leaves the picture dashboard on port 8081 unchanged. The left terminal
+accepts up to 16 KiB of pasted UTF-8 text. The transfer engine splits it into
+96-byte chunks with an outer transfer ID, 16-bit sequence and packet count,
+length, and CRC-32. Each outer frame is carried inside an acoustic OFDM packet,
+which has its own protected header, repetition recovery, and CRC. The receive
+terminal commits a chunk only after both layers validate it.
+
+The browser displays progressive text plus packets, bytes, payload rate, ETA,
+retries, packet errors, and synchronization metric. The safe default is the
+colored-room simulation; real speaker-to-microphone mode is packaged but
+locked until `--allow-air` is added to:
+
+```text
+/etc/default/cora-ofdm-text-dashboard
+```
+
+The live Cora test transferred a 255-byte, three-packet Unicode message in
+2.14 seconds. The browser/API observed commits at 96, 192, and 255 bytes. It
+completed with zero retries, zero packet errors, approximately 953 bit/s
+validated payload throughput, and matching source/output SHA-256.
+
+FFT-based synchronization replaced the original direct time-domain
+correlation. This preserved all synchronization regression results and reduced
+the live Cortex-A9 colored-room decode time from roughly 2.75 seconds for a
+small packet to approximately 0.8 seconds for a 96-byte text packet.
+
+The service is:
+
+```sh
+/etc/init.d/cora-ofdm-text-dashboard status
+/etc/init.d/cora-ofdm-text-dashboard restart
+```
+
+### Continuous ALSA burst checkpoint
+
+The first air-mode implementation launched `arecord` and `aplay`, wrote and
+read temporary WAV files, and waited for an integer-second recording for every
+96-byte packet. A 12,809-byte transfer completed correctly, but 134 accepted
+packets plus four retries took 260.52 seconds: 393 bit/s. Each attempt averaged
+1.89 seconds even though its waveform lasted 0.52 seconds.
+
+The streaming backend now keeps one raw-PCM playback and capture pair open for
+each 16-packet burst. Packets play back-to-back with 40 ms leading and trailing
+guards, capture is drained continuously, and two decoder workers process
+packet windows while later audio is still playing. CRC validation and isolated
+packet retries are unchanged.
+
+The first live streaming burst produced:
+
+```text
+payload bytes:      1536
+packets:            16 / 16
+elapsed:            13.956 s
+payload throughput: 880.48 bit/s
+retries:            0
+packet errors:      0
+```
+
+This is approximately 2.2 times the validated payload rate of the original
+air backend. A second live test crossed the burst boundary: 3,072 bytes and
+32/32 packets completed in 28.154 seconds at 872.91 bit/s with zero retries
+and zero packet errors. The remaining limit is primarily the triple body
+repetition code and Cortex-A9 FFT/equalizer work rather than ALSA process gaps.
+
+Packet-size sweeps then used the same 3,072-byte text payload. The 384-byte
+configuration completed eight packets in 20.406 seconds at 1,204.33 bit/s
+without errors. A 768-byte configuration completed four packets in 20.086
+seconds at 1,223.54 bit/s without errors, only 1.6% faster. At the configured
+maximum of 1,024 bytes, one of three packets required a retry and throughput
+fell to 844.96 bit/s. The dashboard now defaults to 384-byte packets in
+eight-packet streaming bursts, which is the measured efficiency/retry knee.
+
+The reproducible recipe is:
+
+```text
+project-spec/meta-user/recipes-radio/cora-ofdm-text-demo/cora-ofdm-text-demo.bb
+```
