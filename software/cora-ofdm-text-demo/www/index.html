@@ -79,10 +79,12 @@
       padding:16px;
     }
     .controls { display:flex; flex-wrap:wrap; align-items:center; gap:9px }
-    button,select {
+    button,select,input[type="number"] {
       border:1px solid #3a6257; background:#10251f; color:var(--ink);
       border-radius:8px; padding:10px 13px; font:700 13px inherit;
     }
+    input[type="number"] { width:112px }
+    .field { display:flex; align-items:center; gap:6px; color:var(--muted) }
     button { cursor:pointer }
     button:hover { border-color:var(--green) }
     button:disabled { opacity:.35; cursor:not-allowed }
@@ -92,7 +94,7 @@
     .counter { text-align:right; color:var(--muted); white-space:nowrap }
     .progress { height:12px; border:1px solid #29483f; border-radius:999px; overflow:hidden; background:#020504 }
     .progress span { display:block; width:0; height:100%; background:linear-gradient(90deg,var(--green),var(--cyan)); transition:width .2s }
-    .stats { display:grid; grid-template-columns:repeat(6,1fr); gap:1px; background:var(--line) }
+    .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line) }
     .stat { padding:14px; background:#08110f }
     .stat span { display:block; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em }
     .stat strong { display:block; margin-top:5px; color:var(--green); font-size:15px }
@@ -130,6 +132,31 @@ This text is being split into numbered packets, modulated as real audio OFDM, pa
             <option value="loopback">Colored-room simulation</option>
             <option value="air">Speaker → lapel microphone</option>
           </select>
+          <select id="modem-version">
+            <option value="v3" selected>v3 · convolutional FEC</option>
+            <option value="v3-r2/3">v3 · punctured 2/3 FEC · experimental</option>
+            <option value="v2">v2 · triple repetition</option>
+            <option value="uncoded">Uncoded experimental · CRC only · 192 B</option>
+          </select>
+          <select id="fft-length">
+            <option value="256" selected>FFT 256 · 187.5 Hz bins</option>
+            <option value="512">FFT 512 experimental · 93.75 Hz bins</option>
+          </select>
+          <select id="band-preset">
+            <option value="2250,9750">Standard · 2.25–9.75 kHz</option>
+            <option value="1500,12000">Wide · 1.5–12 kHz</option>
+            <option value="1500,15000">Experimental · 1.5–15 kHz</option>
+            <option value="3000,9000">Voice-band · 3–9 kHz</option>
+            <option value="custom">Custom carrier band</option>
+          </select>
+          <label class="field">Low
+            <input id="low-frequency" type="number" value="2250"
+              min="375" max="22000" step="187.5">
+          </label>
+          <label class="field">High
+            <input id="high-frequency" type="number" value="9750"
+              min="375" max="23625" step="187.5">
+          </label>
           <button id="send" class="primary">Transmit text</button>
           <button id="stop" class="danger">Stop</button>
           <button id="reset">Clear receiver</button>
@@ -147,8 +174,12 @@ This text is being split into numbered packets, modulated as real audio OFDM, pa
       <div class="stat"><span>Retries</span><strong id="retries">0</strong></div>
       <div class="stat"><span>Packet errors</span><strong id="errors">0</strong></div>
       <div class="stat"><span>Sync metric</span><strong id="sync">—</strong></div>
+      <div class="stat"><span>Modem / FEC</span><strong id="version">v3</strong></div>
+      <div class="stat"><span>Carrier band</span><strong id="band">2.25–9.75 kHz</strong></div>
+      <div class="stat"><span>FFT / CP</span><strong id="fft">256 / 64</strong></div>
+      <div class="stat"><span>Framing</span><strong id="framing">continuous</strong></div>
     </div>
-    <div class="foot">2.25–9.75 kHz · 48 ksample/s · FFT 256 · CP 64 · five pilots · three-copy payload recovery · CRC-32. Air mode stays locked until a speaker is connected and the service is explicitly enabled.</div>
+    <div class="foot">48 ksample/s · FFT 256 default / FFT 512 experimental · CP 64 · five adaptive pilots · v2 repetition / v3 rate-1/2 or punctured rate-2/3 / uncoded experimental bodies · CRC-32.</div>
   </section>
 </main>
 <script>
@@ -185,7 +216,13 @@ function render(s){
   $('elapsed').textContent=seconds(s.elapsed_s||0);$('eta').textContent=seconds(s.eta_s);
   $('retries').textContent=s.retries||0;$('errors').textContent=s.packet_errors||0;
   $('sync').textContent=s.last_sync_metric==null?'—':Number(s.last_sync_metric).toFixed(3);
+  $('version').textContent=`${s.modem_version||'—'} · ${(s.body_code||'—').replace('convolutional-k7-r1/2','K7 R1/2').replace('punctured-convolutional-k7-r2/3','K7 R2/3')}`;
+  const low=Number(s.low_frequency_hz),high=Number(s.high_frequency_hz);
+  $('band').textContent=Number.isFinite(low)&&Number.isFinite(high)?`${(low/1000).toFixed(2)}–${(high/1000).toFixed(2)} kHz`:'—';
+  $('fft').textContent=`${s.fft_len||'—'} / ${s.cp_len||'—'} · ${Number(s.subcarrier_spacing_hz||0).toFixed(2)} Hz`;
+  $('framing').textContent=(s.framing||'—').replace('continuous-superframe','continuous superframe').replace('packet-burst','packet burst');
   const active=status==='running'||status==='warming';$('send').disabled=active;$('stop').disabled=!active;
+  for(const id of ['backend','modem-version','fft-length','band-preset','low-frequency','high-frequency'])$(id).disabled=active;
   airEnabled=Boolean(s.air_enabled);
   const airOption=$('backend').querySelector('option[value="air"]');
   airOption.disabled=!airEnabled;
@@ -207,8 +244,27 @@ async function action(path,body={}){
   }catch(error){$('notice').textContent=String(error)}
 }
 function updateTxCount(){$('tx-bytes').textContent=bytes(encoder.encode($('tx').value).length)}
+$('band-preset').onchange=()=>{
+  if($('band-preset').value==='custom')return;
+  const [low,high]=$('band-preset').value.split(',');
+  $('low-frequency').value=low;$('high-frequency').value=high;
+};
+for(const id of ['low-frequency','high-frequency']){
+  $(id).addEventListener('input',()=>{$('band-preset').value='custom'});
+}
+$('fft-length').onchange=()=>{
+  const spacing=48000/Number($('fft-length').value);
+  $('low-frequency').step=spacing;$('high-frequency').step=spacing;
+};
 $('tx').addEventListener('input',updateTxCount);
-$('send').onclick=()=>{clearReceiver();action('/api/start',{text:$('tx').value,backend:$('backend').value})};
+$('send').onclick=()=>{clearReceiver();action('/api/start',{
+  text:$('tx').value,
+  backend:$('backend').value,
+  modem_version:$('modem-version').value,
+  fft_len:Number($('fft-length').value),
+  low_frequency_hz:Number($('low-frequency').value),
+  high_frequency_hz:Number($('high-frequency').value)
+})};
 $('stop').onclick=()=>action('/api/stop');
 $('reset').onclick=()=>action('/api/reset');
 $('copy').onclick=async()=>{await navigator.clipboard.writeText($('rx').value);$('notice').textContent='Received text copied.'};

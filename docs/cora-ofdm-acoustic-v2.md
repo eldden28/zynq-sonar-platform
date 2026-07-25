@@ -196,7 +196,7 @@ packets plus four retries took 260.52 seconds: 393 bit/s. Each attempt averaged
 1.89 seconds even though its waveform lasted 0.52 seconds.
 
 The streaming backend now keeps one raw-PCM playback and capture pair open for
-each 16-packet burst. Packets play back-to-back with 40 ms leading and trailing
+each configured burst. Packets play back-to-back with 40 ms leading and trailing
 guards, capture is drained continuously, and two decoder workers process
 packet windows while later audio is still playing. CRC validation and isolated
 packet retries are unchanged.
@@ -225,6 +225,64 @@ seconds at 1,223.54 bit/s without errors, only 1.6% faster. At the configured
 maximum of 1,024 bytes, one of three packets required a retry and throughput
 fell to 844.96 bit/s. The dashboard now defaults to 384-byte packets in
 eight-packet streaming bursts, which is the measured efficiency/retry knee.
+
+## V3 FEC and programmable carrier band
+
+The text dashboard now offers a wire-version selector:
+
+- v2 retains the rate-1/3 three-copy body code and majority vote;
+- v3 uses a terminated K=7, rate-1/2 convolutional code with 171/133 octal
+  generators, depth-eight block interleaving, and a 64-state hard-decision
+  Viterbi decoder.
+
+The protected header remains triplicated in both versions. V3 uses a distinct
+wire-version byte, and both versions retain the inner payload CRC-32 and outer
+text-frame CRC-32.
+
+Carrier low/high edges are request parameters rather than compile-time
+constants. The server snaps them to the 187.5 Hz FFT-bin grid, requires at
+least a 3 kHz span, keeps the band below Nyquist, and places five pilot bins
+with a four-bin edge margin. The page exposes standard 2.25--9.75 kHz, wide
+1.5--12 kHz, experimental 1.5--15 kHz, voice-band 3--9 kHz, and custom
+profiles.
+
+For the 384-byte text chunk plus its outer frame:
+
+| Profile | Data carriers | Body symbols | Waveform | Useful waveform ceiling |
+|---|---:|---:|---:|---:|
+| v2, 2.25--9.75 kHz | 36 | 136 | 1.040 s | 2.95 kbit/s |
+| v3, 2.25--9.75 kHz | 36 | 91 | 0.740 s | 4.15 kbit/s |
+| v3, 1.5--12 kHz | 52 | 63 | 0.553 s | 5.55 kbit/s |
+| v3, 1.5--15 kHz | 68 | 48 | 0.453 s | 6.78 kbit/s |
+
+These are waveform-occupancy ceilings, not validated wall-clock throughput.
+Wider profiles divide the fixed output peak among more carriers and may expose
+speaker/microphone roll-off. Host regressions validate both wire versions,
+isolated-error correction, custom pilot placement, and byte-exact dashboard
+reconstruction. Live bandwidth results must be recorded separately for each
+physical audio path.
+
+The Cortex-A9 initially spent 1.82 seconds decoding one 3,232-bit
+convolutional input in the NumPy Viterbi loop. The packaged
+`libcora_ofdm_fec.so.1` implementation reduced that measurement to 0.032
+seconds (about 57 times faster), while the NumPy implementation remains as a
+portable fallback.
+
+Live speaker/microphone-loop measurements used 3,072 bytes in eight
+384-byte packets:
+
+| Version/profile | Wall time | Validated payload rate | Errors/retries |
+|---|---:|---:|---:|
+| v2, 2.25--9.75 kHz | 20.406 s | 1,204 bit/s | 0 / 0 |
+| v3, 2.25--9.75 kHz, pre-optimization | 15.217 s | 1,615 bit/s | 0 / 0 |
+| v3, 1.5--12 kHz, optimized | 5.731 s | 4,288 bit/s | 0 / 0 |
+
+The experimental v3 1.5--15 kHz profile failed the first packet after all
+three attempts on this physical audio path. It remains selectable for
+experimentation but is not a validated preset. The v3 standard profile
+improved payload throughput by 34%. After cached carrier geometry and batched
+grid/IFFT generation, the validated wide profile improved by 256% relative to
+the v2 standard baseline.
 
 The reproducible recipe is:
 

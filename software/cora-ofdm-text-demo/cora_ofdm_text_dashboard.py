@@ -11,6 +11,7 @@ import threading
 from typing import Sequence
 from urllib.parse import parse_qs, urlparse
 
+from cora_ofdm_acoustic import make_acoustic_config
 from cora_ofdm_text_transfer import (
     AlsaAirBackend,
     ColoredRoomBackend,
@@ -25,13 +26,40 @@ from cora_ofdm_text_transfer import (
 DEFAULT_WEB_ROOT = Path("/usr/share/cora-ofdm-text-demo/www")
 MAX_REQUEST_BYTES = MAX_TEXT_BYTES * 8 + 4096
 MAX_DATA_RESPONSE = 4096
+DEFAULT_MODEM_VERSION = "v3"
+DEFAULT_FFT_LENGTH = 256
+UNCODED_CHUNK_BYTES = 192
+DEFAULT_LOW_FREQUENCY_HZ = 2250.0
+DEFAULT_HIGH_FREQUENCY_HZ = 9750.0
 
 
 def idle_state(air_enabled: bool, port: int) -> dict:
+    cfg = make_acoustic_config(
+        DEFAULT_MODEM_VERSION,
+        DEFAULT_LOW_FREQUENCY_HZ,
+        DEFAULT_HIGH_FREQUENCY_HZ,
+        fft_len=DEFAULT_FFT_LENGTH,
+    )
     return {
         "application": "cora-ofdm-text-dashboard",
         "status": "idle",
         "backend": None,
+        "framing": "continuous-superframe",
+        "modem_version": cfg.modem_name,
+        "body_code": cfg.body_code,
+        "low_frequency_hz": cfg.low_frequency_hz,
+        "high_frequency_hz": cfg.high_frequency_hz,
+        "bandwidth_hz": (
+            cfg.high_frequency_hz - cfg.low_frequency_hz
+        ),
+        "sample_rate": cfg.sample_rate,
+        "fft_len": cfg.fft_len,
+        "cp_len": cfg.cp_len,
+        "subcarrier_spacing_hz": cfg.subcarrier_spacing_hz,
+        "symbol_duration_ms": 1000.0 * cfg.symbol_duration_s,
+        "cyclic_prefix_ms": 1000.0 * cfg.cyclic_prefix_duration_s,
+        "data_subcarriers": int(cfg.data_bins.size),
+        "gross_bit_rate": cfg.gross_bit_rate,
         "air_enabled": air_enabled,
         "burst_packets": 0,
         "dashboard_port": port,
@@ -82,7 +110,15 @@ class TextDemoController:
                 committed,
             )
 
-    def start(self, text: str, backend_name: str) -> None:
+    def start(
+        self,
+        text: str,
+        backend_name: str,
+        modem_version: str,
+        fft_len: int,
+        low_frequency_hz: float,
+        high_frequency_hz: float,
+    ) -> None:
         encoded_size = len(text.encode("utf-8"))
         if not text:
             raise ValueError("enter some text to transmit")
@@ -98,6 +134,12 @@ class TextDemoController:
                 "air mode is disabled until a speaker is connected and "
                 "--allow-air is configured"
             )
+        cfg = make_acoustic_config(
+            modem_version,
+            low_frequency_hz,
+            high_frequency_hz,
+            fft_len=fft_len,
+        )
 
         with self.lock:
             if self.worker is not None and self.worker.is_alive():
@@ -109,27 +151,58 @@ class TextDemoController:
                 {
                     "status": "warming",
                     "backend": backend_name,
+                    "framing": "continuous-superframe",
+                    "modem_version": cfg.modem_name,
+                    "body_code": cfg.body_code,
+                    "low_frequency_hz": cfg.low_frequency_hz,
+                    "high_frequency_hz": cfg.high_frequency_hz,
+                    "bandwidth_hz": (
+                        cfg.high_frequency_hz - cfg.low_frequency_hz
+                    ),
+                    "sample_rate": cfg.sample_rate,
+                    "fft_len": cfg.fft_len,
+                    "cp_len": cfg.cp_len,
+                    "subcarrier_spacing_hz": cfg.subcarrier_spacing_hz,
+                    "symbol_duration_ms": (
+                        1000.0 * cfg.symbol_duration_s
+                    ),
+                    "cyclic_prefix_ms": (
+                        1000.0 * cfg.cyclic_prefix_duration_s
+                    ),
+                    "data_subcarriers": int(cfg.data_bins.size),
+                    "gross_bit_rate": cfg.gross_bit_rate,
                     "burst_packets": self.args.burst_packets,
+                    "chunk_bytes": (
+                        UNCODED_CHUNK_BYTES
+                        if cfg.modem_name == "uncoded"
+                        else self.args.chunk_bytes
+                    ),
                     "total_bytes": encoded_size,
                 }
             )
             self.worker = threading.Thread(
                 target=self._run,
-                args=(text, backend_name),
+                args=(text, backend_name, cfg),
                 daemon=True,
                 name="cora-ofdm-text-transfer",
             )
             self.worker.start()
 
-    def _run(self, text: str, backend_name: str) -> None:
+    def _run(
+        self,
+        text: str,
+        backend_name: str,
+        cfg,
+    ) -> None:
         if backend_name == "air":
             backend = AlsaAirBackend(
                 playback_device=self.args.playback_device,
                 capture_device=self.args.capture_device,
                 burst_packets=self.args.burst_packets,
+                cfg=cfg,
             )
         else:
-            backend = ColoredRoomBackend(self.args.noise_dbfs)
+            backend = ColoredRoomBackend(self.args.noise_dbfs, cfg=cfg)
 
         def update(values: dict, chunk: bytes) -> None:
             with self.lock:
@@ -140,12 +213,17 @@ class TextDemoController:
                 self.state = values
 
         try:
+            chunk_bytes = (
+                UNCODED_CHUNK_BYTES
+                if cfg.modem_name == "uncoded"
+                else self.args.chunk_bytes
+            )
             output, values = transfer_text(
                 text,
                 backend=backend,
                 stop_event=self.stop_event,
                 packet_callback=update,
-                chunk_bytes=self.args.chunk_bytes,
+                chunk_bytes=chunk_bytes,
                 max_retries=self.args.max_retries,
             )
             with self.lock:
@@ -278,6 +356,30 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
                 self.controller.start(
                     str(request.get("text", "")),
                     str(request.get("backend", "loopback")),
+                    str(
+                        request.get(
+                            "modem_version",
+                            DEFAULT_MODEM_VERSION,
+                        )
+                    ),
+                    int(
+                        request.get(
+                            "fft_len",
+                            DEFAULT_FFT_LENGTH,
+                        )
+                    ),
+                    float(
+                        request.get(
+                            "low_frequency_hz",
+                            DEFAULT_LOW_FREQUENCY_HZ,
+                        )
+                    ),
+                    float(
+                        request.get(
+                            "high_frequency_hz",
+                            DEFAULT_HIGH_FREQUENCY_HZ,
+                        )
+                    ),
                 )
                 message = "text transfer started"
             elif parsed.path == "/api/stop":
@@ -289,7 +391,7 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             else:
                 self.send_error(404)
                 return
-        except (OSError, RuntimeError, ValueError) as error:
+        except (OSError, RuntimeError, TypeError, ValueError) as error:
             self.send_json(409, {"error": str(error)})
             return
         self.send_json(200, {"message": message})

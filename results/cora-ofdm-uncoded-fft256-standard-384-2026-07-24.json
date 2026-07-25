@@ -1,0 +1,206 @@
+{
+  "batch": {
+    "calls": 1,
+    "first_start_s": 0.002976898000270012,
+    "last_end_s": 4.297108947001107,
+    "max_s": 4.294132049000837,
+    "mean_s": 4.294132049000837,
+    "parallel_span_s": 4.294132049000837,
+    "sum_s": 4.294132049000837
+  },
+  "configuration": {
+    "backend": "air",
+    "body_code": "none",
+    "burst_packets": 8,
+    "chunk_bytes": 384,
+    "cp_len": 64,
+    "data_subcarriers": 36,
+    "fft_len": 256,
+    "high_frequency_hz": 9750.0,
+    "low_frequency_hz": 2250.0,
+    "modem_version": "uncoded",
+    "payload_bytes": 3072,
+    "subcarrier_spacing_hz": 187.5
+  },
+  "decode_packet": {
+    "calls": 11,
+    "first_start_s": 0.9276154689996474,
+    "last_end_s": 8.493736861000798,
+    "max_s": 0.29618161200050963,
+    "mean_s": 0.25022624036401714,
+    "parallel_span_s": 7.5661213920011505,
+    "sum_s": 2.7524886440041882
+  },
+  "encode_packet": {
+    "calls": 11,
+    "first_start_s": 0.0032929349999903934,
+    "last_end_s": 7.113702173999627,
+    "max_s": 0.022489107999717817,
+    "mean_s": 0.01887790500007792,
+    "parallel_span_s": 7.110409238999637,
+    "sum_s": 0.20765695500085712
+  },
+  "instrumented_wall_s": 8.496587986999657,
+  "manual_cpu_profile": {
+    "decode_one_captured_packet": {
+      "elapsed_s": 0.23629288600022846,
+      "functions": {
+        "_decode_body": {
+          "calls": 1,
+          "max_s": 4.563000038615428e-05,
+          "sum_s": 4.563000038615428e-05
+        },
+        "_equalize_symbol": {
+          "calls": 49,
+          "max_s": 0.003512522998789791,
+          "sum_s": 0.1370314089999738
+        },
+        "_fft_symbol": {
+          "calls": 52,
+          "max_s": 0.00030179100031091366,
+          "sum_s": 0.011557981006262708
+        },
+        "_find_start": {
+          "calls": 1,
+          "max_s": 0.05975441199916531,
+          "sum_s": 0.05975441199916531
+        },
+        "_normalized_correlation": {
+          "calls": 1,
+          "max_s": 0.05110013000012259,
+          "sum_s": 0.05110013000012259
+        },
+        "deinterleave_bits": {
+          "calls": 0,
+          "max_s": 0.0,
+          "sum_s": 0.0
+        },
+        "qpsk_demap": {
+          "calls": 49,
+          "max_s": 0.00036688599902845453,
+          "sum_s": 0.01260106800145877
+        },
+        "viterbi_decode": {
+          "calls": 0,
+          "max_s": 0.0,
+          "sum_s": 0.0
+        }
+      },
+      "result_valid": false
+    },
+    "encode_one_packet": {
+      "elapsed_s": 0.021255765999740106,
+      "functions": {
+        "_bit_rows_to_grids": {
+          "calls": 2,
+          "max_s": 0.002902325999457389,
+          "sum_s": 0.005190547999518458
+        },
+        "_encode_body": {
+          "calls": 1,
+          "max_s": 5.364900061977096e-05,
+          "sum_s": 5.364900061977096e-05
+        },
+        "_grids_to_symbols": {
+          "calls": 1,
+          "max_s": 0.00397734699981811,
+          "sum_s": 0.00397734699981811
+        },
+        "_training_grids": {
+          "calls": 1,
+          "max_s": 0.0029290029997355305,
+          "sum_s": 0.0029290029997355305
+        },
+        "convolutional_encode": {
+          "calls": 0,
+          "max_s": 0.0,
+          "sum_s": 0.0
+        },
+        "interleave_bits": {
+          "calls": 0,
+          "max_s": 0.0,
+          "sum_s": 0.0
+        }
+      },
+      "result_valid": true
+    }
+  },
+  "nominal_packet_audio_s": 5.2,
+  "output_matches": true,
+  "process_launches": [
+    {
+      "launch_time_s": 0.0028403630003595026,
+      "process": "arecord",
+      "start_s": 0.14982831300039834
+    },
+    {
+      "launch_time_s": 0.002518331999453949,
+      "process": "aplay",
+      "start_s": 0.31358703300065827
+    },
+    {
+      "launch_time_s": 0.0019006960010301555,
+      "process": "arecord",
+      "start_s": 4.326208755999687
+    },
+    {
+      "launch_time_s": 0.001871279999249964,
+      "process": "aplay",
+      "start_s": 4.47891380800138
+    },
+    {
+      "launch_time_s": 0.00651445500079717,
+      "process": "arecord",
+      "start_s": 5.727126816000236
+    },
+    {
+      "launch_time_s": 0.0017815200008044485,
+      "process": "aplay",
+      "start_s": 5.884374785000546
+    },
+    {
+      "launch_time_s": 0.0018753719996311702,
+      "process": "arecord",
+      "start_s": 7.120838894001281
+    },
+    {
+      "launch_time_s": 0.001804898000045796,
+      "process": "aplay",
+      "start_s": 7.273557423000966
+    }
+  ],
+  "transfer": {
+    "application": "cora-ofdm-text-transfer",
+    "backend": "air",
+    "bandwidth_hz": 7500.0,
+    "body_code": "none",
+    "bytes_received": 3072,
+    "chunk_bytes": 384,
+    "cp_len": 64,
+    "cyclic_prefix_ms": 1.3333333333333333,
+    "data_subcarriers": 36,
+    "elapsed_s": 8.496121975000278,
+    "error": null,
+    "eta_s": 0.0,
+    "fft_len": 256,
+    "gross_bit_rate": 10800.0,
+    "high_frequency_hz": 9750.0,
+    "last_sync_metric": 0.818428252455094,
+    "low_frequency_hz": 2250.0,
+    "modem_version": "uncoded",
+    "output_sha256": "c637653b59729777c9f343a9ceaf19baeb8f5c5b8f20242e4073c2ea753cface",
+    "packet_errors": 3,
+    "packets_received": 8,
+    "packets_total": 8,
+    "payload_throughput_bps": 2892.613838680111,
+    "progress_percent": 100.0,
+    "retries": 3,
+    "sample_rate": 48000,
+    "source_sha256": "c637653b59729777c9f343a9ceaf19baeb8f5c5b8f20242e4073c2ea753cface",
+    "status": "complete",
+    "subcarrier_spacing_hz": 187.5,
+    "symbol_duration_ms": 6.666666666666667,
+    "total_bytes": 3072,
+    "transfer_id": "ee516e4b"
+  }
+}

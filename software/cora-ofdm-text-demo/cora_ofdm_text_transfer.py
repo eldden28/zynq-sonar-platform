@@ -22,9 +22,15 @@ from cora_ofdm_acoustic import (
     AcousticConfig,
     DecodeResult,
     EncodedPacket,
+    HEADER_REPETITIONS,
+    TRAINING_SYMBOLS,
+    acquire_superframe,
     colored_room_channel,
     decode_packet,
+    decode_superframe,
+    decode_superframe_slot,
     encode_packet,
+    encode_superframe,
     read_wav,
     write_wav,
 )
@@ -101,12 +107,19 @@ def decode_text_frame(
 
 class ColoredRoomBackend:
     name = "loopback"
+    framing = "continuous-superframe"
 
-    def __init__(self, noise_dbfs: float = -48.0):
+    def __init__(
+        self,
+        noise_dbfs: float = -48.0,
+        cfg: AcousticConfig | None = None,
+    ):
         self.noise_dbfs = noise_dbfs
+        self.cfg = cfg or AcousticConfig()
+        self.burst_size = DEFAULT_BURST_PACKETS
 
     def transceive(self, payload: bytes, sequence: int) -> DecodeResult:
-        packet = encode_packet(payload, sequence=sequence)
+        packet = encode_packet(payload, sequence=sequence, cfg=self.cfg)
         offset = 613 + (sequence * 17) % 193
         samples = np.concatenate(
             (
@@ -118,7 +131,34 @@ class ColoredRoomBackend:
                 ),
             )
         )
-        return decode_packet(samples)
+        return decode_packet(samples, cfg=self.cfg)
+
+    def transceive_batch(
+        self,
+        items: list[tuple[bytes, int]],
+    ) -> list[DecodeResult]:
+        cfg = replace(
+            self.cfg,
+            leading_silence_s=0.04,
+            trailing_silence_s=0.04,
+        )
+        superframe = encode_superframe(items, cfg=cfg)
+        samples = np.concatenate(
+            (
+                np.zeros(733),
+                colored_room_channel(
+                    superframe.samples,
+                    noise_dbfs=self.noise_dbfs,
+                    seed=173,
+                ),
+            )
+        )
+        return decode_superframe(
+            samples,
+            expected_sequences=[sequence for _payload, sequence in items],
+            slot_payload_bytes=superframe.slot_payload_bytes,
+            cfg=cfg,
+        )
 
 
 class AlsaAirBackend:
@@ -129,12 +169,21 @@ class AlsaAirBackend:
         playback_device: str = "plughw:0,0",
         capture_device: str = "plughw:0,0",
         burst_packets: int = DEFAULT_BURST_PACKETS,
+        cfg: AcousticConfig | None = None,
+        continuous_framing: bool = True,
     ):
         if burst_packets < 1:
             raise ValueError("burst packet count must be positive")
         self.playback_device = playback_device
         self.capture_device = capture_device
         self.burst_size = burst_packets
+        self.cfg = cfg or AcousticConfig()
+        self.continuous_framing = continuous_framing
+        self.framing = (
+            "continuous-superframe"
+            if continuous_framing
+            else "packet-burst"
+        )
 
     @staticmethod
     def _stereo_pcm(samples: np.ndarray) -> bytes:
@@ -166,6 +215,306 @@ class AlsaAirBackend:
     def transceive_batch(
         self, items: list[tuple[bytes, int]]
     ) -> list[DecodeResult]:
+        if self.continuous_framing:
+            return self._transceive_superframe(items)
+        return self._transceive_packet_batch(items)
+
+    def _transceive_superframe(
+        self,
+        items: list[tuple[bytes, int]],
+    ) -> list[DecodeResult]:
+        if not items:
+            return []
+        cfg = replace(
+            self.cfg,
+            leading_silence_s=0.04,
+            trailing_silence_s=0.04,
+        )
+        superframe = encode_superframe(items, cfg=cfg)
+        sample_rate = cfg.sample_rate
+        pre_roll_s = 0.15
+        post_roll_s = 0.25
+        timeout_s = (
+            superframe.duration_s + pre_roll_s + post_roll_s + 8.0
+        )
+        record_command = [
+            "arecord",
+            "-q",
+            "-D",
+            self.capture_device,
+            "-t",
+            "raw",
+            "-f",
+            "S16_LE",
+            "-r",
+            str(sample_rate),
+            "-c",
+            "1",
+            "-",
+        ]
+        play_command = [
+            "aplay",
+            "-q",
+            "-D",
+            self.playback_device,
+            "-t",
+            "raw",
+            "-f",
+            "S16_LE",
+            "-r",
+            str(sample_rate),
+            "-c",
+            "2",
+            "-",
+        ]
+
+        captured = bytearray()
+        condition = threading.Condition()
+        capture_finished = False
+        capture_error: BaseException | None = None
+        playback_error: BaseException | None = None
+        recorder: subprocess.Popen | None = None
+        player: subprocess.Popen | None = None
+
+        def capture_reader() -> None:
+            nonlocal capture_finished, capture_error
+            try:
+                assert recorder is not None and recorder.stdout is not None
+                while True:
+                    chunk = recorder.stdout.read(8192)
+                    if not chunk:
+                        break
+                    with condition:
+                        captured.extend(chunk)
+                        condition.notify_all()
+            except BaseException as error:
+                capture_error = error
+            finally:
+                with condition:
+                    capture_finished = True
+                    condition.notify_all()
+
+        def playback_writer() -> None:
+            nonlocal playback_error
+            try:
+                assert player is not None and player.stdin is not None
+                player.stdin.write(self._stereo_pcm(superframe.samples))
+                player.stdin.close()
+            except BaseException as error:
+                playback_error = error
+
+        def finish_capture() -> None:
+            nonlocal playback_error
+            try:
+                assert player is not None
+                return_code = player.wait(timeout=timeout_s)
+                if return_code:
+                    playback_error = RuntimeError(
+                        f"aplay exited with status {return_code}"
+                    )
+            except BaseException as error:
+                playback_error = error
+            finally:
+                time.sleep(post_roll_s)
+                if recorder is not None and recorder.poll() is None:
+                    recorder.terminate()
+
+        reader_thread: threading.Thread | None = None
+        writer_thread: threading.Thread | None = None
+        finish_thread: threading.Thread | None = None
+        futures: list[Future[list[DecodeResult]]] = []
+        deadline = time.monotonic() + timeout_s
+        nominal_frame_start = round(pre_roll_s * sample_rate)
+        before = round(0.10 * sample_rate)
+        after = round(0.04 * sample_rate)
+        slot_symbols = HEADER_REPETITIONS + superframe.payload_symbols
+        slot_samples = slot_symbols * cfg.symbol_len
+
+        def capture_snapshot(
+            begin: int,
+            required_samples: int,
+            description: str,
+        ) -> np.ndarray:
+            with condition:
+                while (
+                    len(captured) // 2 < required_samples
+                    and not capture_finished
+                ):
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise TimeoutError(
+                            f"timed out waiting for {description}"
+                        )
+                    condition.wait(timeout=min(0.1, remaining))
+                available = len(captured) // 2
+                end = min(available, required_samples)
+                if end < required_samples:
+                    raise RuntimeError(
+                        f"audio capture ended inside {description}"
+                    )
+                segment_bytes = bytes(captured[begin * 2 : end * 2])
+            return (
+                np.frombuffer(segment_bytes, dtype="<i2")
+                .astype(np.float32)
+                / 32768.0
+            )
+
+        def decode_block(
+            sample_begin: int,
+            sample_end: int,
+            item_begin: int,
+            item_end: int,
+        ) -> list[DecodeResult]:
+            nominal_begin = nominal_frame_start + sample_begin
+            segment_begin = max(0, nominal_begin - before)
+            acquisition_samples = (
+                nominal_begin + round(0.20 * sample_rate)
+            )
+            try:
+                acquisition_audio = capture_snapshot(
+                    segment_begin,
+                    acquisition_samples,
+                    "superframe training",
+                )
+                acquisition = acquire_superframe(
+                    acquisition_audio,
+                    sync_search_samples=round(0.20 * sample_rate),
+                    cfg=cfg,
+                )
+            except (RuntimeError, TimeoutError, ValueError):
+                # A failed early acquisition should degrade to the existing
+                # complete-block decoder so packet-level retry remains usable.
+                block_audio = capture_snapshot(
+                    segment_begin,
+                    nominal_frame_start + sample_end + after,
+                    "superframe block",
+                )
+                block_items = items[item_begin:item_end]
+                return decode_superframe(
+                    block_audio,
+                    expected_sequences=[
+                        sequence for _payload, sequence in block_items
+                    ],
+                    slot_payload_bytes=superframe.slot_payload_bytes,
+                    sync_search_samples=round(0.20 * sample_rate),
+                    cfg=cfg,
+                )
+
+            results = []
+            for local_index, (_payload, sequence) in enumerate(
+                items[item_begin:item_end]
+            ):
+                symbol_offset = (
+                    TRAINING_SYMBOLS + local_index * slot_symbols
+                ) * cfg.symbol_len
+                slot_end = (
+                    segment_begin
+                    + acquisition.start_sample
+                    + symbol_offset
+                    + slot_samples
+                )
+                slot_audio = capture_snapshot(
+                    segment_begin,
+                    slot_end,
+                    f"superframe packet {item_begin + local_index}",
+                )
+                results.append(
+                    decode_superframe_slot(
+                        slot_audio,
+                        expected_sequence=sequence,
+                        slot_payload_bytes=superframe.slot_payload_bytes,
+                        symbol_offset=symbol_offset,
+                        acquisition=acquisition,
+                        cfg=cfg,
+                    )
+                )
+            return results
+
+        try:
+            recorder = subprocess.Popen(
+                record_command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                bufsize=0,
+            )
+            reader_thread = threading.Thread(
+                target=capture_reader,
+                daemon=True,
+                name="cora-ofdm-superframe-capture",
+            )
+            reader_thread.start()
+            time.sleep(pre_roll_s)
+
+            player = subprocess.Popen(
+                play_command,
+                stdin=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                bufsize=0,
+            )
+            writer_thread = threading.Thread(
+                target=playback_writer,
+                daemon=True,
+                name="cora-ofdm-superframe-playback",
+            )
+            finish_thread = threading.Thread(
+                target=finish_capture,
+                daemon=True,
+                name="cora-ofdm-superframe-finish",
+            )
+            writer_thread.start()
+            finish_thread.start()
+
+            with ThreadPoolExecutor(max_workers=2) as decoder_pool:
+                for (
+                    sample_begin,
+                    sample_end,
+                    item_begin,
+                    item_end,
+                ) in superframe.decode_blocks:
+                    futures.append(
+                        decoder_pool.submit(
+                            decode_block,
+                            sample_begin,
+                            sample_end,
+                            item_begin,
+                            item_end,
+                        )
+                    )
+                results = [
+                    result
+                    for future in futures
+                    for result in future.result()
+                ]
+
+            if finish_thread is not None:
+                finish_thread.join(
+                    timeout=max(0.0, deadline - time.monotonic())
+                )
+            if playback_error is not None:
+                raise RuntimeError(
+                    f"continuous playback failed: {playback_error}"
+                )
+            if capture_error is not None:
+                raise RuntimeError(
+                    f"continuous capture failed: {capture_error}"
+                )
+            return results
+        finally:
+            if player is not None and player.poll() is None:
+                player.terminate()
+            if recorder is not None and recorder.poll() is None:
+                recorder.terminate()
+            for thread in (writer_thread, finish_thread, reader_thread):
+                if thread is not None:
+                    thread.join(timeout=2)
+            if player is not None and player.poll() is None:
+                player.kill()
+            if recorder is not None and recorder.poll() is None:
+                recorder.kill()
+
+    def _transceive_packet_batch(
+        self, items: list[tuple[bytes, int]]
+    ) -> list[DecodeResult]:
         if not items:
             return []
 
@@ -174,7 +523,7 @@ class AlsaAirBackend:
         # process-start guards used by the single-packet fallback are not
         # necessary.
         cfg = replace(
-            AcousticConfig(),
+            self.cfg,
             leading_silence_s=0.04,
             trailing_silence_s=0.04,
         )
@@ -389,8 +738,8 @@ class AlsaAirBackend:
                 recorder.kill()
 
     def transceive(self, payload: bytes, sequence: int) -> DecodeResult:
-        cfg = AcousticConfig()
-        packet = encode_packet(payload, sequence=sequence)
+        cfg = self.cfg
+        packet = encode_packet(payload, sequence=sequence, cfg=cfg)
         record_seconds = max(1, math.ceil(packet.duration_s + 0.40))
         with tempfile.TemporaryDirectory(
             prefix="cora-acoustic-text-"
@@ -442,7 +791,7 @@ class AlsaAirBackend:
                     f"capture returned {rate} sample/s, expected "
                     f"{cfg.sample_rate}"
                 )
-            return decode_packet(samples)
+            return decode_packet(samples, cfg=cfg)
 
 
 PacketCallback = Callable[[dict, bytes], None]
@@ -476,10 +825,27 @@ def transfer_text(
     retries = 0
     packet_errors = 0
     start = time.perf_counter()
+    cfg = getattr(backend, "cfg", AcousticConfig())
     state = {
         "application": "cora-ofdm-text-transfer",
         "status": "warming",
         "backend": backend.name,
+        "framing": getattr(backend, "framing", "standalone-packets"),
+        "modem_version": cfg.modem_name,
+        "body_code": cfg.body_code,
+        "low_frequency_hz": cfg.low_frequency_hz,
+        "high_frequency_hz": cfg.high_frequency_hz,
+        "bandwidth_hz": (
+            cfg.high_frequency_hz - cfg.low_frequency_hz
+        ),
+        "sample_rate": cfg.sample_rate,
+        "fft_len": cfg.fft_len,
+        "cp_len": cfg.cp_len,
+        "subcarrier_spacing_hz": cfg.subcarrier_spacing_hz,
+        "symbol_duration_ms": 1000.0 * cfg.symbol_duration_s,
+        "cyclic_prefix_ms": 1000.0 * cfg.cyclic_prefix_duration_s,
+        "data_subcarriers": int(cfg.data_bins.size),
+        "gross_bit_rate": cfg.gross_bit_rate,
         "transfer_id": f"{transfer_id:08x}",
         "total_bytes": len(source),
         "bytes_received": 0,

@@ -1,0 +1,226 @@
+{
+  "batch": {
+    "calls": 1,
+    "first_start_s": 0.003082277000430622,
+    "last_end_s": 6.915353774000323,
+    "max_s": 6.912271496999892,
+    "mean_s": 6.912271496999892,
+    "parallel_span_s": 6.912271496999892,
+    "sum_s": 6.912271496999892
+  },
+  "configuration": {
+    "backend": "air",
+    "body_code": "convolutional-k7-r1/2",
+    "burst_packets": 8,
+    "chunk_bytes": 384,
+    "cp_len": 64,
+    "data_subcarriers": 76,
+    "fft_len": 512,
+    "high_frequency_hz": 9750.0,
+    "low_frequency_hz": 2250.0,
+    "modem_version": "v3",
+    "payload_bytes": 3072,
+    "subcarrier_spacing_hz": 93.75
+  },
+  "decode_packet": {
+    "calls": 13,
+    "first_start_s": 1.754988016000425,
+    "last_end_s": 20.062684578999324,
+    "max_s": 0.5189903680002317,
+    "mean_s": 0.3384460916919264,
+    "parallel_span_s": 18.3076965629989,
+    "sum_s": 4.399799191995044
+  },
+  "encode_packet": {
+    "calls": 13,
+    "first_start_s": 0.0033585840010346146,
+    "last_end_s": 17.454785597999944,
+    "max_s": 0.09689385799902084,
+    "mean_s": 0.09097189869232981,
+    "parallel_span_s": 17.45142701399891,
+    "sum_s": 1.1826346830002876
+  },
+  "instrumented_wall_s": 20.06573771100011,
+  "manual_cpu_profile": {
+    "decode_one_captured_packet": {
+      "elapsed_s": 0.32312174800063076,
+      "functions": {
+        "_decode_body": {
+          "calls": 1,
+          "max_s": 0.03189705299882917,
+          "sum_s": 0.03189705299882917
+        },
+        "_equalize_symbol": {
+          "calls": 46,
+          "max_s": 0.0027370269999664742,
+          "sum_s": 0.12170275299649802
+        },
+        "_fft_symbol": {
+          "calls": 49,
+          "max_s": 0.0002996740004164167,
+          "sum_s": 0.01387482599420764
+        },
+        "_find_start": {
+          "calls": 1,
+          "max_s": 0.12944289299957745,
+          "sum_s": 0.12944289299957745
+        },
+        "_normalized_correlation": {
+          "calls": 1,
+          "max_s": 0.11896518699904846,
+          "sum_s": 0.11896518699904846
+        },
+        "deinterleave_bits": {
+          "calls": 1,
+          "max_s": 0.00014956300037738401,
+          "sum_s": 0.00014956300037738401
+        },
+        "qpsk_demap": {
+          "calls": 46,
+          "max_s": 0.00034904600033769384,
+          "sum_s": 0.011158934004924959
+        },
+        "viterbi_decode": {
+          "calls": 1,
+          "max_s": 0.03161825899951509,
+          "sum_s": 0.03161825899951509
+        }
+      },
+      "result_valid": true
+    },
+    "encode_one_packet": {
+      "elapsed_s": 0.09265179700014414,
+      "functions": {
+        "_bit_rows_to_grids": {
+          "calls": 2,
+          "max_s": 0.004586066999763716,
+          "sum_s": 0.007088915999702294
+        },
+        "_encode_body": {
+          "calls": 1,
+          "max_s": 0.06295606200001203,
+          "sum_s": 0.06295606200001203
+        },
+        "_grids_to_symbols": {
+          "calls": 1,
+          "max_s": 0.007966911000039545,
+          "sum_s": 0.007966911000039545
+        },
+        "_training_grids": {
+          "calls": 1,
+          "max_s": 0.002966098998513189,
+          "sum_s": 0.002966098998513189
+        },
+        "convolutional_encode": {
+          "calls": 1,
+          "max_s": 0.06194309499915107,
+          "sum_s": 0.06194309499915107
+        },
+        "interleave_bits": {
+          "calls": 1,
+          "max_s": 0.0008943569991970435,
+          "sum_s": 0.0008943569991970435
+        }
+      },
+      "result_valid": true
+    }
+  },
+  "nominal_packet_audio_s": 9.596,
+  "output_matches": true,
+  "process_launches": [
+    {
+      "launch_time_s": 0.00283094800033723,
+      "process": "arecord",
+      "start_s": 0.7268489029993361
+    },
+    {
+      "launch_time_s": 0.0026419200003147125,
+      "process": "aplay",
+      "start_s": 0.8916105949992925
+    },
+    {
+      "launch_time_s": 0.0019375629999558441,
+      "process": "arecord",
+      "start_s": 7.0181550230008725
+    },
+    {
+      "launch_time_s": 0.001955039999302244,
+      "process": "aplay",
+      "start_s": 7.170892444000856
+    },
+    {
+      "launch_time_s": 0.0019315379995532567,
+      "process": "arecord",
+      "start_s": 9.543436989000838
+    },
+    {
+      "launch_time_s": 0.0055105230003391625,
+      "process": "aplay",
+      "start_s": 9.6962187299996
+    },
+    {
+      "launch_time_s": 0.0018995629998244112,
+      "process": "arecord",
+      "start_s": 12.24915919399973
+    },
+    {
+      "launch_time_s": 0.0019493969994073268,
+      "process": "aplay",
+      "start_s": 12.401971778001098
+    },
+    {
+      "launch_time_s": 0.0050784739996743156,
+      "process": "arecord",
+      "start_s": 14.961436241999763
+    },
+    {
+      "launch_time_s": 0.0018339260004722746,
+      "process": "aplay",
+      "start_s": 15.11725035299969
+    },
+    {
+      "launch_time_s": 0.0018746890000329586,
+      "process": "arecord",
+      "start_s": 17.46408074899955
+    },
+    {
+      "launch_time_s": 0.001825064000513521,
+      "process": "aplay",
+      "start_s": 17.616793457000313
+    }
+  ],
+  "transfer": {
+    "application": "cora-ofdm-text-transfer",
+    "backend": "air",
+    "bandwidth_hz": 7500.0,
+    "body_code": "convolutional-k7-r1/2",
+    "bytes_received": 3072,
+    "chunk_bytes": 384,
+    "cp_len": 64,
+    "cyclic_prefix_ms": 1.3333333333333333,
+    "data_subcarriers": 76,
+    "elapsed_s": 20.065266899999187,
+    "error": null,
+    "eta_s": 0.0,
+    "fft_len": 512,
+    "gross_bit_rate": 12666.666666666666,
+    "high_frequency_hz": 9750.0,
+    "last_sync_metric": 0.8235949153440205,
+    "low_frequency_hz": 2250.0,
+    "modem_version": "v3",
+    "output_sha256": "5fa16d8b5edee310a9aaab68eabda9c74f8a271d0e1008bfd4855845486f5b6a",
+    "packet_errors": 5,
+    "packets_received": 8,
+    "packets_total": 8,
+    "payload_throughput_bps": 1224.8030451068157,
+    "progress_percent": 100.0,
+    "retries": 5,
+    "sample_rate": 48000,
+    "source_sha256": "5fa16d8b5edee310a9aaab68eabda9c74f8a271d0e1008bfd4855845486f5b6a",
+    "status": "complete",
+    "subcarrier_spacing_hz": 93.75,
+    "symbol_duration_ms": 12.0,
+    "total_bytes": 3072,
+    "transfer_id": "f0d4aa73"
+  }
+}
