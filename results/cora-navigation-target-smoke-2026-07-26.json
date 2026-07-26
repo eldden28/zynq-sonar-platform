@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "application": "cora-navigation",
+  "target": "Cora Z7-10",
+  "date": "2026-07-26",
+  "fpga_bitstream_changed": false,
+  "image": {
+    "path": "software/petalinux/cora-z7-10-baseline/images/linux/petalinux-sdimage.wic",
+    "size_bytes": 2684358656,
+    "sha256": "ab2ed6e9aa20a4fc5b5dc390cfb05fb0cc6f90ed2098f318b94812d2cc5d3715",
+    "boot_partition_bytes": 536870912,
+    "root_partition_bytes": 2147483648
+  },
+  "tests": [
+    {
+      "mode": "lbl",
+      "waveform": "dedicated",
+      "duration_s": 10.0,
+      "result": "PASS",
+      "effective_rate_hz": 97.4,
+      "deadline_miss_fraction": 0.027720739219712527,
+      "position_error_m": 1.790364071045315,
+      "velocity_error_mps": 0.09561741790798305,
+      "dvl_frames": 49,
+      "dvl_invalid": 0,
+      "acoustic_frames": 9,
+      "acoustic_invalid": 0,
+      "dvl_queue_drops": 0,
+      "acoustic_queue_drops": 0,
+      "dvl_processing_ms_final": 61.885759998403955,
+      "acoustic_processing_ms_final": 573.3279500054778,
+      "maximum_step_ms": 30.95894100260921,
+      "mean_step_ms": 5.687007672661749
+    },
+    {
+      "mode": "iusbl",
+      "waveform": "ofdm",
+      "duration_s": 15.0,
+      "result": "PASS",
+      "effective_rate_hz": 98.86666666666666,
+      "deadline_miss_fraction": 0.012137559002022926,
+      "position_error_m": 0.8273023084517089,
+      "velocity_error_mps": 0.1711979563608799,
+      "dvl_frames": 74,
+      "dvl_invalid": 0,
+      "acoustic_frames": 15,
+      "acoustic_invalid": 0,
+      "dvl_queue_drops": 0,
+      "acoustic_queue_drops": 0,
+      "dvl_processing_ms_final": 32.3605659941677,
+      "acoustic_processing_ms_final": 292.40155699517345,
+      "maximum_step_ms": 19.73555699805729,
+      "mean_step_ms": 5.510665673033057
+    }
+  ]
+}

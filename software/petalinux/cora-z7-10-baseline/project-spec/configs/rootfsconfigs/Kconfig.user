@@ -1,4 +1,8 @@
 menu "user packages " 
+config cora-navigation
+	 bool "cora-navigation"
+	 help
+
 config gnuradio
 	 bool "gnuradio"
 	 help

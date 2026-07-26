@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cora DVL Laboratory</title>
+  <style>
+    :root{color-scheme:dark;--bg:#061015;--panel:#0c1d24;--panel2:#102a33;--line:#28505c;
+      --text:#e7fbfb;--muted:#8eb0b5;--cyan:#4ee4d2;--blue:#58a6ff;--green:#78e08f;
+      --amber:#ffc857;--red:#ff6878}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:
+      radial-gradient(circle at 15% 0,#124253 0,transparent 35%),linear-gradient(150deg,#040b0f,#07151b 60%,#071116);
+      color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+    header{position:sticky;top:0;z-index:4;display:flex;align-items:center;justify-content:space-between;
+      gap:16px;padding:16px 22px;background:#061116e8;border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
+    .brand{display:flex;align-items:center;gap:12px}.mark{width:40px;height:40px;border:2px solid var(--cyan);
+      border-radius:50%;display:grid;place-items:center;font-weight:850;color:var(--cyan);box-shadow:0 0 28px #4ee4d244}
+    h1{font-size:19px;margin:0;letter-spacing:.05em}.subtitle,.muted{color:var(--muted)}
+    .pills{display:flex;gap:8px;flex-wrap:wrap}.pill{border:1px solid var(--line);border-radius:999px;padding:5px 10px;color:var(--muted)}
+    .pill.good{color:var(--green);border-color:#34704d}.pill.bad{color:var(--red);border-color:#743645}
+    main{max-width:1550px;margin:auto;padding:18px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:13px}
+    .card{grid-column:span 3;padding:15px;border:1px solid var(--line);border-radius:13px;
+      background:linear-gradient(145deg,var(--panel),#09171d);box-shadow:0 9px 25px #0005;min-width:0}
+    .wide{grid-column:span 6}.full{grid-column:1/-1}.card h2{margin:0 0 11px;color:var(--muted);
+      text-transform:uppercase;font-size:11px;letter-spacing:.14em}.big{font:650 26px/1.1 ui-monospace,monospace}
+    .row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid #17323b}
+    .row:last-child{border:0}.value{font-family:ui-monospace,monospace;text-align:right}
+    canvas{display:block;width:100%;height:310px;background:#03090c;border:1px solid #21434d;border-radius:9px}
+    #beamCanvas{height:310px}table{width:100%;border-collapse:collapse;font:12px ui-monospace,monospace}
+    th,td{text-align:left;padding:7px;border-bottom:1px solid #17323b}th{color:var(--muted)}
+    .meter{height:7px;background:#040b0e;border:1px solid #1f3d46;border-radius:9px;overflow:hidden}
+    .meter i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));width:0}
+    .controls{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px}
+    label{display:grid;gap:4px;color:var(--muted);font-size:12px}input,select{width:100%;background:#07151a;color:var(--text);
+      border:1px solid #315966;border-radius:7px;padding:7px}button{border:1px solid #376775;background:#12323d;color:var(--text);
+      border-radius:8px;padding:9px 13px;font-weight:700;cursor:pointer}button:hover{border-color:var(--cyan)}
+    button.warn{background:#3c2c11;border-color:#7b6027}button.danger{background:#3c1720;border-color:#773747}
+    .buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}#notice{min-height:20px;color:var(--cyan);margin-top:8px}
+    @media(max-width:1050px){.card{grid-column:span 6}.wide,.full{grid-column:1/-1}.controls{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:650px){header{align-items:flex-start}.pills{display:none}main{padding:10px}.card{grid-column:1/-1}.controls{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="mark">DVL</div><div><h1>Cora DVL Laboratory</h1><div class="subtitle">Four-beam complex-baseband bottom-track processor</div></div></div>
+  <div class="pills"><span id="live" class="pill">Connecting</span><span id="lock" class="pill">Bottom lock</span><span class="pill">CI16 · 4 beam</span></div>
+</header>
+<main><div class="grid">
+  <section class="card"><h2>Body velocity</h2><div id="speed" class="big">—</div><div class="row"><span>Forward X</span><span id="vx" class="value">—</span></div><div class="row"><span>Right Y</span><span id="vy" class="value">—</span></div><div class="row"><span>Down Z</span><span id="vz" class="value">—</span></div></section>
+  <section class="card"><h2>Bottom track</h2><div id="altitude" class="big">—</div><div class="row"><span>Solution</span><span id="quality" class="value">—</span></div><div class="row"><span>Processor</span><span id="process" class="value">—</span></div><div class="row"><span>Frames</span><span id="frames" class="value">—</span></div></section>
+  <section class="card"><h2>INS attitude</h2><div id="heading" class="big">—</div><div class="row"><span>Roll</span><span id="roll" class="value">—</span></div><div class="row"><span>Pitch</span><span id="pitch" class="value">—</span></div><div class="row"><span>Position error</span><span id="poserr" class="value">—</span></div></section>
+  <section class="card"><h2>Real-time health</h2><div id="step" class="big">—</div><div class="row"><span>Full-period misses</span><span id="misses" class="value">—</span></div><div class="row"><span>Late wake-ups</span><span id="late" class="value">—</span></div><div class="row"><span>Memory high-water</span><span id="memory" class="value">—</span></div><div class="row"><span>Simulation</span><span id="simstate" class="value">—</span></div></section>
+  <section class="card wide"><h2>Vehicle track · NED top view</h2><canvas id="trackCanvas"></canvas></section>
+  <section class="card wide"><h2>Janus beam geometry and returns</h2><canvas id="beamCanvas"></canvas></section>
+  <section class="card full"><h2>Beam solutions</h2><div style="overflow:auto"><table><thead><tr><th>Beam</th><th>State</th><th>Slant range</th><th>Radial velocity</th><th>Doppler</th><th>Correlation</th><th>SNR</th><th>Quality</th></tr></thead><tbody id="beams"></tbody></table></div></section>
+  <section class="card full"><h2>Simulation and fault controls</h2>
+    <div class="controls">
+      <label>Vehicle speed (m/s)<input id="speedControl" type="number" min="0" max="3" step=".1" value="1.2"></label>
+      <label>Commanded depth (m)<input id="depthControl" type="number" min="1" max="29" step=".5" value="15"></label>
+      <label>DVL noise<input id="noiseControl" type="number" min="0" max=".5" step=".005" value=".018"></label>
+      <label>Dropped beams<select id="dropControl"><option value="0">None</option><option value="1">Beam 1</option><option value="2">Beam 2</option><option value="4">Beam 3</option><option value="8">Beam 4</option><option value="3">Beams 1 + 2</option><option value="15">All beams</option></select></label>
+    </div>
+    <div class="buttons"><button data-action="start">Start</button><button data-action="pause" class="warn">Pause</button><button data-action="resume">Resume</button><button data-action="reset" class="warn">Reset mission</button><button id="apply">Apply controls</button><a href="/api/log/telemetry"><button>Download telemetry</button></a></div>
+    <div id="notice"></div>
+  </section>
+</div></main>
+<script>
+const $=id=>document.getElementById(id),history=[];let cursor=-1,last=null;
+const fmt=(v,n=2,u='')=>Number.isFinite(v)?`${v.toFixed(n)}${u}`:'—';
+const pill=(el,ok,text)=>{el.textContent=text;el.className='pill '+(ok?'good':'bad')};
+function fit(canvas){const r=canvas.getBoundingClientRect(),d=devicePixelRatio||1,h=310;if(canvas.width!==Math.round(r.width*d)){canvas.width=Math.round(r.width*d);canvas.height=Math.round(h*d)}const c=canvas.getContext('2d');c.setTransform(d,0,0,d,0,0);return [c,r.width,h]}
+function track(){const [c,w,h]=fit($('trackCanvas'));c.fillStyle='#03090c';c.fillRect(0,0,w,h);const sx=(w-60)/140,sy=(h-50)/110,xy=p=>[30+(p[1]+70)*sx,20+(p[0]+50)*sy];
+  c.strokeStyle='#173943';c.lineWidth=1;for(let n=-40;n<=40;n+=20){let a=xy([n,-70]),b=xy([n,70]);c.beginPath();c.moveTo(...a);c.lineTo(...b);c.stroke()}for(let e=-60;e<=60;e+=20){let a=xy([-50,e]),b=xy([50,e]);c.beginPath();c.moveTo(...a);c.lineTo(...b);c.stroke()}
+  const line=(key,color)=>{c.strokeStyle=color;c.lineWidth=2;c.beginPath();history.forEach((v,i)=>{const p=xy(v[key]);i?c.lineTo(...p):c.moveTo(...p)});c.stroke()};line('truth_position_ned_m','#52717a');line('ins_position_ned_m','#4ee4d2');
+  if(last){const p=xy(last.ins.position_ned_m),a=last.ins.heading_deg*Math.PI/180;c.fillStyle='#4ee4d2';c.beginPath();c.arc(...p,5,0,7);c.fill();c.strokeStyle='#ffc857';c.beginPath();c.moveTo(...p);c.lineTo(p[0]+22*Math.sin(a),p[1]+22*Math.cos(a));c.stroke()}c.fillStyle='#8eb0b5';c.fillText('E →',w-35,h-8);c.fillText('N ↓',7,14)}
+function beamPlot(s){const [c,w,h]=fit($('beamCanvas'));c.fillStyle='#03090c';c.fillRect(0,0,w,h);const cx=w/2,cy=65;c.strokeStyle='#6a929a';c.lineWidth=3;c.beginPath();c.moveTo(cx-30,cy);c.lineTo(cx+30,cy);c.stroke();c.fillStyle='#e7fbfb';c.fillText('vehicle',cx-18,cy-12);
+  if(!s.dvl)return;s.dvl.beams.forEach((b,i)=>{const x=cx+(i-1.5)*w*.18,y=h-45;c.strokeStyle=b.valid?'#4ee4d2':'#ff6878';c.lineWidth=2;c.beginPath();c.moveTo(cx+(i-1.5)*10,cy+5);c.lineTo(x,y);c.stroke();c.fillStyle=c.strokeStyle;c.beginPath();c.arc(x,y,5,0,7);c.fill();c.fillText(`B${i+1} ${b.range_m===null?'—':b.range_m.toFixed(1)+'m'}`,x-25,y+20)});c.strokeStyle='#31515a';c.beginPath();c.moveTo(20,h-38);c.lineTo(w-20,h-38);c.stroke()}
+function render(s){last=s;const d=s.dvl||null,i=s.ins||{},st=s.stats||{};pill($('live'),s.status==='running',s.status||'idle');pill($('lock'),!!(d&&d.bottom_lock),d&&d.bottom_lock?'Bottom locked':'No bottom lock');
+  const v=d?d.velocity_body_mps:[NaN,NaN,NaN];$('speed').textContent=fmt(d?d.speed_mps:NaN,2,' m/s');$('vx').textContent=fmt(v[0],3,' m/s');$('vy').textContent=fmt(v[1],3,' m/s');$('vz').textContent=fmt(v[2],3,' m/s');
+  $('altitude').textContent=fmt(d&&d.altitude_m,2,' m');$('quality').textContent=d?(d.valid?(d.degraded?'DEGRADED':'VALID'):'INVALID'):'—';$('process').textContent=fmt(d&&d.processing_ms,2,' ms');$('frames').textContent=st.dvl_frames??'—';
+  $('heading').textContent=fmt(i.heading_deg,1,'°');$('roll').textContent=fmt(i.roll_deg,2,'°');$('pitch').textContent=fmt(i.pitch_deg,2,'°');$('poserr').textContent=fmt(s.errors&&s.errors.position_norm_m,2,' m');
+  $('step').textContent=fmt(st.mean_step_ms,2,' ms');$('misses').textContent=st.deadline_misses??'—';$('late').textContent=st.late_wakeups??'—';$('memory').textContent=fmt((s.service&&s.service.maximum_rss_kib)/1024,1,' MiB');$('simstate').textContent=s.status||'—';
+  $('beams').innerHTML=d?d.beams.map((b,i)=>`<tr><td>${i+1}</td><td style="color:${b.valid?'#78e08f':'#ff6878'}">${b.valid?'LOCK':'LOST'}</td><td>${b.range_m===null?'—':b.range_m.toFixed(3)+' m'}</td><td>${b.radial_velocity_mps===null?'—':b.radial_velocity_mps.toFixed(4)+' m/s'}</td><td>${b.doppler_hz===null?'—':b.doppler_hz.toFixed(1)+' Hz'}</td><td>${b.correlation.toFixed(3)}</td><td>${b.snr_db.toFixed(1)} dB</td><td><div class="meter"><i style="width:${Math.min(100,b.correlation*100)}%"></i></div></td></tr>`).join(''):'';track();beamPlot(s)}
+async function refresh(){try{const r=await fetch('/api/status',{cache:'no-store'});if(!r.ok)throw Error(r.status);render(await r.json())}catch(e){pill($('live'),false,'Disconnected')}}
+async function fetchHistory(){try{const r=await fetch(`/api/history?after=${cursor}`,{cache:'no-store'}),j=await r.json();if(j.reset)history.length=0;for(const v of j.history)history.push(v);while(history.length>900)history.shift();cursor=j.latest_id;track()}catch(_){}}
+async function control(action,values){$('notice').textContent='Working…';try{const r=await fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,values})}),j=await r.json();$('notice').textContent=j.message||j.error||'Done';if(!r.ok)throw Error(j.error)}catch(e){$('notice').textContent=`Request failed: ${e}`}}
+document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>control(b.dataset.action));$('apply').onclick=()=>control('configure',{speed_mps:+$('speedControl').value,depth_m:+$('depthControl').value,dvl_noise:+$('noiseControl').value,dvl_dropout_mask:+$('dropControl').value});
+setInterval(refresh,500);setInterval(fetchHistory,1000);refresh();fetchHistory();addEventListener('resize',()=>{track();if(last)beamPlot(last)});
+</script>
+</body>
+</html>
