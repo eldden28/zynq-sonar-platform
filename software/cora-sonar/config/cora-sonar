@@ -1,0 +1,2 @@
+# CPU-bounded complex-baseband time-series profile for the Cora Z7-10.
+SONAR_ARGS="--bind 0.0.0.0 --port 8085 --web-root /usr/share/cora-sonar/www --max-range 12 --ping-rate 1 --beam-count 512 --beamforming-range-bins 1024"

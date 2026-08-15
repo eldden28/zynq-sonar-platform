@@ -1,0 +1,40 @@
+#!/bin/sh
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/cora-sonar
+PIDFILE=/var/run/cora-sonar.pid
+SONAR_ARGS="--bind 0.0.0.0 --port 8085"
+
+[ -r /etc/default/cora-sonar ] && . /etc/default/cora-sonar
+
+case "$1" in
+    start)
+        echo "Starting Cora forward-sonar laboratory"
+        start-stop-daemon --start --quiet --background --make-pidfile \
+            --pidfile "$PIDFILE" --exec "$DAEMON" -- $SONAR_ARGS
+        ;;
+    stop)
+        echo "Stopping Cora forward-sonar laboratory"
+        start-stop-daemon --stop --quiet --retry TERM/5/KILL/2 \
+            --pidfile "$PIDFILE"
+        rm -f "$PIDFILE"
+        ;;
+    restart|force-reload)
+        "$0" stop
+        "$0" start
+        ;;
+    status)
+        if [ -s "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+            echo "Cora forward-sonar laboratory is running"
+            exit 0
+        fi
+        echo "Cora forward-sonar laboratory is stopped"
+        exit 3
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+
+exit 0
