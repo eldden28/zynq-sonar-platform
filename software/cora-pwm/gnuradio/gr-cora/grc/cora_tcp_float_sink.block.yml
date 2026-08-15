@@ -1,0 +1,29 @@
+id: cora_tcp_float_sink
+label: Cora TCP Float Sink
+category: '[Cora]'
+flags: [python]
+
+templates:
+  imports: from gnuradio import cora
+  make: cora.tcp_float_sink(${host}, ${port})
+
+parameters:
+- id: host
+  label: Board Address
+  dtype: string
+  default: 192.168.10.2
+- id: port
+  label: Port
+  dtype: int
+  default: '50001'
+
+inputs:
+- domain: stream
+  dtype: float
+
+documentation: |-
+  Sends normalized float32 samples to Cora Remote I/O v1 on the board.
+  The default endpoint is the Cora PWM TCP server. -1.0 maps to 0% PWM,
+  0.0 to approximately 50%, and +1.0 to approximately 100%.
+
+file_format: 1

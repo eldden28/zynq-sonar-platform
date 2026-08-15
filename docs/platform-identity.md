@@ -62,6 +62,11 @@ explicit, logged, and unavailable by default.
 | ID | Name | Device | Status |
 |---:|---|---|---|
 | `0x00010001` | `cora-z7-10` | XC7Z010-1CLG400C | Reserved for this project |
+| `0x00020001` | `ultrazed-3eg-pcie` | XCZU3EG-1SFVA625I | Reserved for Avnet PCIe carrier bring-up |
+
+Allocate a distinct ID for every custom carrier, even when it reuses the same
+UltraZed SOM. Record new allocations here before using them in RTL or a
+platform definition.
 
 Platform ID identifies the board-level design contract, not an accelerator.
 Accelerators have separate type and version identifiers so the same algorithm
@@ -85,4 +90,3 @@ all required artifacts and hashes are present.
 The initial boot workflow installs the bitstream, DTB, and manifest together.
 Device-tree overlays are deferred until runtime platform switching is a proven
 requirement.
-

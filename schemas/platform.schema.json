@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/unified-sonar/platform.schema.json",
+  "title": "Unified embedded platform definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "display_name",
+    "status",
+    "platform_id",
+    "soc",
+    "board",
+    "hardware",
+    "linux",
+    "software",
+    "deployment",
+    "snapshot"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "display_name": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["validated", "development", "scaffold", "retired"] },
+    "platform_id": { "type": "string", "pattern": "^0x[0-9a-fA-F]{8}$" },
+    "soc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "device", "architecture", "petalinux_template"],
+      "properties": {
+        "family": { "enum": ["zynq-7000", "zynq-ultrascale-plus", "versal"] },
+        "device": { "type": "string", "minLength": 1 },
+        "architecture": { "enum": ["armv7a", "aarch64"] },
+        "petalinux_template": { "enum": ["zynq", "zynqMP", "versal"] }
+      }
+    },
+    "board": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["module", "carrier", "revision", "board_part"],
+      "properties": {
+        "module": { "type": "string", "minLength": 1 },
+        "carrier": { "type": "string", "minLength": 1 },
+        "revision": { "type": ["string", "null"] },
+        "board_part": { "type": ["string", "null"] }
+      }
+    },
+    "hardware": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["build_script", "xsa", "bitstream", "platform_overlay"],
+      "properties": {
+        "build_script": { "type": ["string", "null"] },
+        "xsa": { "type": "string", "minLength": 1 },
+        "bitstream": { "type": ["string", "null"] },
+        "platform_overlay": { "type": "string", "minLength": 1 }
+      }
+    },
+    "linux": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project", "platform_overlay", "shared_layers", "image", "init_system"],
+      "properties": {
+        "project": { "type": "string", "minLength": 1 },
+        "platform_overlay": { "type": "string", "minLength": 1 },
+        "shared_layers": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "image": { "type": "string", "minLength": 1 },
+        "init_system": { "enum": ["sysvinit", "systemd"] }
+      }
+    },
+    "software": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["common_components", "required_capabilities"],
+      "properties": {
+        "common_components": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "uniqueItems": true
+        },
+        "required_capabilities": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hostname", "ssh_user", "addresses"],
+      "properties": {
+        "hostname": { "type": ["string", "null"] },
+        "ssh_user": { "type": ["string", "null"] },
+        "addresses": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["include", "live_commands"],
+      "properties": {
+        "include": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "live_commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "command"],
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+              "command": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

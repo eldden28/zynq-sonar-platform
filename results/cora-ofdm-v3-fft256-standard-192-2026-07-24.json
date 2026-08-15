@@ -1,0 +1,186 @@
+{
+  "batch": {
+    "calls": 2,
+    "first_start_s": 0.0032819200005178573,
+    "last_end_s": 9.318314115000248,
+    "max_s": 4.665283801999976,
+    "mean_s": 4.656994358999327,
+    "parallel_span_s": 9.31503219499973,
+    "sum_s": 9.313988717998654
+  },
+  "configuration": {
+    "backend": "air",
+    "body_code": "convolutional-k7-r1/2",
+    "burst_packets": 8,
+    "chunk_bytes": 192,
+    "cp_len": 64,
+    "data_subcarriers": 36,
+    "fft_len": 256,
+    "high_frequency_hz": 9750.0,
+    "low_frequency_hz": 2250.0,
+    "modem_version": "v3",
+    "payload_bytes": 3072,
+    "subcarrier_spacing_hz": 187.5
+  },
+  "decode_packet": {
+    "calls": 16,
+    "first_start_s": 1.209742349001317,
+    "last_end_s": 9.217140022999956,
+    "max_s": 0.28514863999953377,
+    "mean_s": 0.25436378118740777,
+    "parallel_span_s": 8.00739767399864,
+    "sum_s": 4.069820498998524
+  },
+  "encode_packet": {
+    "calls": 16,
+    "first_start_s": 0.0035253780006314628,
+    "last_end_s": 5.081163192000531,
+    "max_s": 0.05841676900126913,
+    "mean_s": 0.052220460374996946,
+    "parallel_span_s": 5.0776378139999,
+    "sum_s": 0.8355273659999511
+  },
+  "instrumented_wall_s": 9.319522712001344,
+  "manual_cpu_profile": {
+    "decode_one_captured_packet": {
+      "elapsed_s": 0.27217371099868615,
+      "functions": {
+        "_decode_body": {
+          "calls": 1,
+          "max_s": 0.01713105899943912,
+          "sum_s": 0.01713105899943912
+        },
+        "_equalize_symbol": {
+          "calls": 51,
+          "max_s": 0.0030753169994568452,
+          "sum_s": 0.1363673520008888
+        },
+        "_fft_symbol": {
+          "calls": 54,
+          "max_s": 0.00028342800032987725,
+          "sum_s": 0.011772517002100358
+        },
+        "_find_start": {
+          "calls": 1,
+          "max_s": 0.0782495139992534,
+          "sum_s": 0.0782495139992534
+        },
+        "_normalized_correlation": {
+          "calls": 1,
+          "max_s": 0.06900783300079638,
+          "sum_s": 0.06900783300079638
+        },
+        "deinterleave_bits": {
+          "calls": 1,
+          "max_s": 0.00013287399997352622,
+          "sum_s": 0.00013287399997352622
+        },
+        "qpsk_demap": {
+          "calls": 51,
+          "max_s": 0.00029033899954811204,
+          "sum_s": 0.012642127003346104
+        },
+        "viterbi_decode": {
+          "calls": 1,
+          "max_s": 0.016875802999493317,
+          "sum_s": 0.016875802999493317
+        }
+      },
+      "result_valid": true
+    },
+    "encode_one_packet": {
+      "elapsed_s": 0.05473538499973074,
+      "functions": {
+        "_bit_rows_to_grids": {
+          "calls": 2,
+          "max_s": 0.00295040700075333,
+          "sum_s": 0.0054987390012684045
+        },
+        "_encode_body": {
+          "calls": 1,
+          "max_s": 0.03339327399953618,
+          "sum_s": 0.03339327399953618
+        },
+        "_grids_to_symbols": {
+          "calls": 1,
+          "max_s": 0.00429408000127296,
+          "sum_s": 0.00429408000127296
+        },
+        "_training_grids": {
+          "calls": 1,
+          "max_s": 0.002840086001015152,
+          "sum_s": 0.002840086001015152
+        },
+        "convolutional_encode": {
+          "calls": 1,
+          "max_s": 0.03243099700011953,
+          "sum_s": 0.03243099700011953
+        },
+        "interleave_bits": {
+          "calls": 1,
+          "max_s": 0.0008422650007560151,
+          "sum_s": 0.0008422650007560151
+        }
+      },
+      "result_valid": true
+    }
+  },
+  "nominal_packet_audio_s": 7.253333333333333,
+  "output_matches": true,
+  "process_launches": [
+    {
+      "launch_time_s": 0.006068442999094259,
+      "process": "arecord",
+      "start_s": 0.4290126820014848
+    },
+    {
+      "launch_time_s": 0.007970399999976507,
+      "process": "aplay",
+      "start_s": 0.5954615930004366
+    },
+    {
+      "launch_time_s": 0.0022893479999765987,
+      "process": "arecord",
+      "start_s": 5.081479512000442
+    },
+    {
+      "launch_time_s": 0.0023853470011090394,
+      "process": "aplay",
+      "start_s": 5.245128934000604
+    }
+  ],
+  "transfer": {
+    "application": "cora-ofdm-text-transfer",
+    "backend": "air",
+    "bandwidth_hz": 7500.0,
+    "body_code": "convolutional-k7-r1/2",
+    "bytes_received": 3072,
+    "chunk_bytes": 192,
+    "cp_len": 64,
+    "cyclic_prefix_ms": 1.3333333333333333,
+    "data_subcarriers": 36,
+    "elapsed_s": 9.319069279001269,
+    "error": null,
+    "eta_s": 0.0,
+    "fft_len": 256,
+    "gross_bit_rate": 10800.0,
+    "high_frequency_hz": 9750.0,
+    "last_sync_metric": 0.8663464105415322,
+    "low_frequency_hz": 2250.0,
+    "modem_version": "v3",
+    "output_sha256": "5fa16d8b5edee310a9aaab68eabda9c74f8a271d0e1008bfd4855845486f5b6a",
+    "packet_errors": 0,
+    "packets_received": 16,
+    "packets_total": 16,
+    "payload_throughput_bps": 2637.17322666302,
+    "progress_percent": 100.0,
+    "retries": 0,
+    "sample_rate": 48000,
+    "source_sha256": "5fa16d8b5edee310a9aaab68eabda9c74f8a271d0e1008bfd4855845486f5b6a",
+    "status": "complete",
+    "subcarrier_spacing_hz": 187.5,
+    "symbol_duration_ms": 6.666666666666667,
+    "total_bytes": 3072,
+    "transfer_id": "f0d4aa73"
+  }
+}

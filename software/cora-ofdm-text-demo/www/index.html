@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cora Acoustic Text Link</title>
+  <style>
+    :root {
+      color-scheme:dark;
+      --void:#050809; --panel:#0a1212ee; --line:#29413c;
+      --ink:#e9fff7; --muted:#86a89c; --green:#63ffb2;
+      --cyan:#5ee9ff; --amber:#ffd166; --red:#ff6f86;
+    }
+    * { box-sizing:border-box }
+    body {
+      margin:0; min-height:100vh; color:var(--ink);
+      font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      background:
+        radial-gradient(circle at 15% 0,#123c35 0,transparent 32%),
+        radial-gradient(circle at 90% 15%,#102f3d 0,transparent 28%),
+        linear-gradient(145deg,#030505,#07100e 55%,#06090b);
+    }
+    body::before {
+      content:""; position:fixed; inset:0; pointer-events:none; opacity:.12;
+      background:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 4px);
+    }
+    header {
+      display:flex; align-items:center; justify-content:space-between; gap:18px;
+      padding:18px 24px; border-bottom:1px solid var(--line);
+      background:#050a09e8; position:sticky; top:0; z-index:3;
+    }
+    .brand { display:flex; align-items:center; gap:14px }
+    .prompt {
+      width:46px; height:46px; display:grid; place-items:center;
+      border:1px solid var(--green); border-radius:11px; color:var(--green);
+      font-size:20px; box-shadow:0 0 24px #63ffb225,inset 0 0 18px #63ffb214;
+    }
+    h1 { margin:0; font:700 18px/1.2 inherit; letter-spacing:.08em; text-transform:uppercase }
+    .sub,.muted { color:var(--muted) }
+    .status {
+      padding:7px 12px; border:1px solid var(--line); border-radius:999px;
+      color:var(--muted); font-weight:700; text-transform:uppercase;
+    }
+    .status.running,.status.warming { color:var(--amber); border-color:#75642d }
+    .status.complete { color:var(--green); border-color:#34795a }
+    .status.failed { color:var(--red); border-color:#743944 }
+    main { max-width:1450px; margin:auto; padding:20px; display:grid; gap:16px }
+    .terminals { display:grid; grid-template-columns:1fr 1fr; gap:16px }
+    .panel {
+      border:1px solid var(--line); border-radius:15px; overflow:hidden;
+      background:linear-gradient(155deg,var(--panel),#07100fdd);
+      box-shadow:0 20px 48px #0007;
+    }
+    .bar {
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:10px 13px; border-bottom:1px solid var(--line); color:var(--muted);
+      background:#0a1513;
+    }
+    .lights { display:flex; gap:6px }
+    .lights i { width:8px; height:8px; border-radius:50%; background:#385148 }
+    .lights i:first-child { background:#ff6f86 }
+    .lights i:nth-child(2) { background:#ffd166 }
+    .lights i:last-child { background:#63ffb2 }
+    textarea {
+      display:block; width:100%; min-height:390px; resize:vertical; border:0;
+      outline:0; padding:18px; color:var(--ink); background:#030807;
+      font:15px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      caret-color:var(--green);
+    }
+    textarea[readonly] { color:#baffdf; background:#020605 }
+    .rx-wrap { position:relative }
+    .rx-wrap::after {
+      content:""; position:absolute; left:18px; bottom:18px; width:9px; height:18px;
+      background:var(--green); opacity:.75; animation:blink 1s steps(1) infinite;
+    }
+    @keyframes blink { 50% { opacity:0 } }
+    .tools {
+      display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px;
+      padding:16px;
+    }
+    .controls { display:flex; flex-wrap:wrap; align-items:center; gap:9px }
+    button,select,input[type="number"] {
+      border:1px solid #3a6257; background:#10251f; color:var(--ink);
+      border-radius:8px; padding:10px 13px; font:700 13px inherit;
+    }
+    input[type="number"] { width:112px }
+    .field { display:flex; align-items:center; gap:6px; color:var(--muted) }
+    button { cursor:pointer }
+    button:hover { border-color:var(--green) }
+    button:disabled { opacity:.35; cursor:not-allowed }
+    button.primary { background:linear-gradient(135deg,#116a4f,#155b71) }
+    button.danger { background:#35171c; border-color:#753842 }
+    #notice { margin-top:10px; min-height:19px; color:var(--amber) }
+    .counter { text-align:right; color:var(--muted); white-space:nowrap }
+    .progress { height:12px; border:1px solid #29483f; border-radius:999px; overflow:hidden; background:#020504 }
+    .progress span { display:block; width:0; height:100%; background:linear-gradient(90deg,var(--green),var(--cyan)); transition:width .2s }
+    .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line) }
+    .stat { padding:14px; background:#08110f }
+    .stat span { display:block; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em }
+    .stat strong { display:block; margin-top:5px; color:var(--green); font-size:15px }
+    .waterfall-wrap { position:relative; padding:10px 12px 5px; background:#020506 }
+    #waterfall {
+      display:block; width:100%; height:245px; border:1px solid #29483f;
+      background:#010203; image-rendering:pixelated;
+    }
+    .waterfall-axis {
+      display:flex; justify-content:space-between; padding:4px 1px 0;
+      color:var(--muted); font-size:10px;
+    }
+    .waterfall-legend {
+      display:flex; align-items:center; gap:9px; padding:0 13px 10px;
+      color:var(--muted); font-size:10px;
+    }
+    .waterfall-gradient {
+      width:180px; height:8px; border:1px solid #34524b;
+      background:linear-gradient(90deg,#000207,#061b4b,#00a5c8,#59ff9b,#ffe45b,#ff553d);
+    }
+    .foot { padding:11px 15px; color:#66877c; border-top:1px solid var(--line); font-size:11px }
+    @media(max-width:900px){.terminals{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:600px){header{padding:13px}.sub{display:none}main{padding:9px}.tools{grid-template-columns:1fr}.counter{text-align:left}.stats{grid-template-columns:repeat(2,1fr)}textarea{min-height:270px}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="prompt">&gt;_</div>
+    <div><h1>Cora Acoustic Text Link</h1><div class="sub">UTF-8 terminal · QPSK · validated packets only</div></div>
+  </div>
+  <div id="status" class="status">Connecting</div>
+</header>
+<main>
+  <section class="terminals">
+    <div class="panel">
+      <div class="bar"><span>TX / paste text here</span><span id="tx-bytes">0 B</span></div>
+      <textarea id="tx" maxlength="16384" spellcheck="false">Hello from the Cora Z7-10.
+
+This text is being split into numbered packets, modulated as real audio OFDM, passed through a colored multipath channel, decoded, CRC checked, and rebuilt in the terminal on the right.</textarea>
+    </div>
+    <div class="panel">
+      <div class="bar"><span>RX / validated text</span><span id="rx-bytes">0 B</span></div>
+      <div class="rx-wrap"><textarea id="rx" readonly spellcheck="false" placeholder="Awaiting carrier…"></textarea></div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="bar">
+      <span>RX / live spectral waterfall</span>
+      <span id="waterfall-peak">Awaiting receiver samples…</span>
+    </div>
+    <div class="waterfall-wrap">
+      <canvas id="waterfall" width="513" height="180"></canvas>
+      <div class="waterfall-axis">
+        <span>0</span><span>5 kHz</span><span>10 kHz</span>
+        <span>15 kHz</span><span>20 kHz</span><span>24 kHz</span>
+      </div>
+    </div>
+    <div class="waterfall-legend">
+      <span>−100 dBFS</span><span class="waterfall-gradient"></span>
+      <span>0 dBFS</span><span>· newest samples at bottom · selected band outlined</span>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="tools">
+      <div>
+        <div class="controls">
+          <select id="backend">
+            <option value="loopback">Colored-room simulation</option>
+            <option value="air">Speaker → lapel microphone</option>
+          </select>
+          <select id="output-channel" title="Air-mode speaker output">
+            <option value="left" selected>Mono · left speaker only</option>
+            <option value="right">Mono · right speaker only</option>
+            <option value="stereo">Both speakers · multipath diagnostic</option>
+          </select>
+          <select id="modem-version">
+            <option value="v3">v3 · convolutional FEC</option>
+            <option value="v3-r2/3" selected>v3 · punctured 2/3 FEC · validated fast default</option>
+            <option value="v2">v2 · triple repetition</option>
+            <option value="uncoded">Uncoded experimental · CRC only · 192 B</option>
+          </select>
+          <select id="modulation">
+            <option value="qpsk" selected>QPSK · validated default</option>
+            <option value="8psk">8-PSK · experimental</option>
+          </select>
+          <select id="fft-length">
+            <option value="256" selected>FFT 256 · 187.5 Hz bins</option>
+            <option value="512">FFT 512 experimental · 93.75 Hz bins</option>
+          </select>
+          <select id="band-preset">
+            <option value="2000,15000" selected>Validated fast · 2–15 kHz</option>
+            <option value="2250,9750">Standard · 2.25–9.75 kHz</option>
+            <option value="1500,12000">Wide · 1.5–12 kHz</option>
+            <option value="1500,15000">Experimental · 1.5–15 kHz</option>
+            <option value="3000,9000">Voice-band · 3–9 kHz</option>
+            <option value="custom">Custom carrier band</option>
+          </select>
+          <label class="field">Low
+            <input id="low-frequency" type="number" value="2000"
+              min="375" max="22000" step="187.5">
+          </label>
+          <label class="field">High
+            <input id="high-frequency" type="number" value="15000"
+              min="375" max="23625" step="187.5">
+          </label>
+          <button id="send" class="primary">Transmit text</button>
+          <button id="stop" class="danger">Stop</button>
+          <button id="reset">Clear receiver</button>
+          <button id="copy">Copy RX</button>
+        </div>
+        <div id="notice">Ready.</div>
+      </div>
+      <div class="counter"><strong id="packet-progress">0 / 0 packets</strong><br><span id="byte-progress">0 B / 0 B</span></div>
+    </div>
+    <div class="progress"><span id="progress-bar"></span></div>
+    <div class="stats">
+      <div class="stat"><span>Payload rate</span><strong id="rate">0 bit/s</strong></div>
+      <div class="stat"><span>Elapsed</span><strong id="elapsed">0.0 s</strong></div>
+      <div class="stat"><span>ETA</span><strong id="eta">—</strong></div>
+      <div class="stat"><span>Retries</span><strong id="retries">0</strong></div>
+      <div class="stat"><span>Packet errors</span><strong id="errors">0</strong></div>
+      <div class="stat"><span>Sync metric</span><strong id="sync">—</strong></div>
+      <div class="stat"><span>Modem / modulation / FEC</span><strong id="version">v3-r2/3 · QPSK</strong></div>
+      <div class="stat"><span>Carrier band</span><strong id="band">2.06–15.00 kHz</strong></div>
+      <div class="stat"><span>FFT / CP</span><strong id="fft">256 / 64</strong></div>
+      <div class="stat"><span>Framing</span><strong id="framing">continuous</strong></div>
+    </div>
+    <div class="foot">48 ksample/s · single-speaker mono output by default · FFT 256 default / FFT 512 experimental · CP 64 · five adaptive pilots · v2 repetition / v3 rate-1/2 or punctured rate-2/3 / uncoded experimental bodies · CRC-32.</div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const encoder=new TextEncoder();
+let offset=0,decoder=new TextDecoder(),lastStatus='idle',loading=false,airEnabled=false;
+let spectrumAfter=-1,spectrumLoading=false,waterfallRows=[];
+let spectrumRate=48000,currentLow=2062.5,currentHigh=15000;
+const bytes=n=>n>=1024?`${(n/1024).toFixed(2)} KiB`:`${n} B`;
+const rate=n=>n>=1000?`${(n/1000).toFixed(2)} kbit/s`:`${Math.round(n||0)} bit/s`;
+const seconds=n=>n==null||!Number.isFinite(n)?'—':`${Number(n).toFixed(1)} s`;
+function setStatus(name){const el=$('status');el.textContent=name;el.className=`status ${name}`}
+function clearReceiver(){offset=0;decoder=new TextDecoder();$('rx').value='';$('rx-bytes').textContent='0 B'}
+function spectrumColor(db){
+  const stops=[
+    [0,0,2,7],[.2,6,27,75],[.4,0,165,200],
+    [.62,89,255,155],[.82,255,228,91],[1,255,85,61]
+  ];
+  const t=Math.max(0,Math.min(1,(Number(db)+100)/100));
+  let upper=1;while(upper<stops.length-1&&t>stops[upper][0])upper++;
+  const a=stops[upper-1],b=stops[upper],mix=(t-a[0])/(b[0]-a[0]);
+  return [
+    Math.round(a[1]+mix*(b[1]-a[1])),
+    Math.round(a[2]+mix*(b[2]-a[2])),
+    Math.round(a[3]+mix*(b[3]-a[3]))
+  ];
+}
+function drawWaterfall(){
+  const canvas=$('waterfall'),ctx=canvas.getContext('2d');
+  const width=canvas.width,height=canvas.height,image=ctx.createImageData(width,height);
+  for(let i=0;i<image.data.length;i+=4){image.data[i]=0;image.data[i+1]=2;image.data[i+2]=5;image.data[i+3]=255}
+  const rows=waterfallRows.slice(-height);
+  rows.forEach((row,rowIndex)=>{
+    const y=height-rows.length+rowIndex,values=row.values||[];
+    for(let x=0;x<width;x++){
+      const source=Math.min(values.length-1,Math.floor(x*values.length/width));
+      if(source<0)continue;
+      const [r,g,b]=spectrumColor(values[source]),pixel=4*(y*width+x);
+      image.data[pixel]=r;image.data[pixel+1]=g;image.data[pixel+2]=b;
+    }
+  });
+  ctx.putImageData(image,0,0);
+  const nyquist=spectrumRate/2;
+  ctx.save();ctx.strokeStyle='#e9fff7cc';ctx.lineWidth=1;
+  for(const frequency of [currentLow,currentHigh]){
+    const x=Math.max(0,Math.min(width-1,frequency/nyquist*width));
+    ctx.beginPath();ctx.moveTo(x,.5);ctx.lineTo(x,height);ctx.stroke();
+  }
+  if(!rows.length){
+    ctx.fillStyle='#86a89c';ctx.font='13px ui-monospace,monospace';
+    ctx.textAlign='center';ctx.fillText('Waterfall starts with the next transfer',width/2,height/2);
+  }
+  ctx.restore();
+}
+async function refreshSpectrum(){
+  if(spectrumLoading)return;spectrumLoading=true;
+  try{
+    const response=await fetch(`/api/spectrum?after=${spectrumAfter}`,{cache:'no-store'});
+    if(!response.ok)throw Error(response.status);
+    const data=await response.json();
+    if(data.reset){waterfallRows=[];spectrumAfter=-1}
+    spectrumRate=Number(data.sample_rate)||48000;
+    for(const row of data.rows||[])waterfallRows.push(row);
+    waterfallRows=waterfallRows.slice(-$('waterfall').height);
+    spectrumAfter=Number(data.latest_id);
+    const latest=waterfallRows[waterfallRows.length-1];
+    if(latest)$('waterfall-peak').textContent=`Peak ${(Number(latest.peak_hz)/1000).toFixed(2)} kHz · ${Number(latest.peak_dbfs).toFixed(1)} dBFS`;
+    else $('waterfall-peak').textContent='Awaiting receiver samples…';
+    drawWaterfall();
+  }catch(error){
+    $('waterfall-peak').textContent=`Spectrum unavailable: ${error}`;
+  }finally{spectrumLoading=false}
+}
+async function loadData(committed,status){
+  if(loading||offset>=committed)return;loading=true;
+  try{
+    while(offset<committed){
+      const response=await fetch(`/api/data?offset=${offset}`,{cache:'no-store'});
+      if(!response.ok)throw Error(`data ${response.status}`);
+      const chunk=new Uint8Array(await response.arrayBuffer());
+      if(!chunk.length)break;
+      offset+=chunk.length;
+      $('rx').value+=decoder.decode(chunk,{stream:status!=='complete'||offset<committed});
+      $('rx').scrollTop=$('rx').scrollHeight;
+    }
+  }finally{loading=false}
+}
+function render(s){
+  const status=s.status||'idle';setStatus(status);
+  const received=Number(s.bytes_received)||0,total=Number(s.total_bytes)||0,progress=Number(s.progress_percent)||0;
+  if(received<offset||(status==='idle'&&lastStatus!=='idle'))clearReceiver();
+  loadData(received,status);
+  $('rx-bytes').textContent=bytes(received);$('byte-progress').textContent=`${bytes(received)} / ${bytes(total)}`;
+  $('packet-progress').textContent=`${s.packets_received||0} / ${s.packets_total||0} packets`;
+  $('progress-bar').style.width=`${Math.min(100,progress)}%`;$('rate').textContent=rate(s.payload_throughput_bps);
+  $('elapsed').textContent=seconds(s.elapsed_s||0);$('eta').textContent=seconds(s.eta_s);
+  $('retries').textContent=s.retries||0;$('errors').textContent=s.packet_errors||0;
+  $('sync').textContent=s.last_sync_metric==null?'—':Number(s.last_sync_metric).toFixed(3);
+  $('version').textContent=`${s.modem_version||'—'} · ${(s.modulation||'qpsk').toUpperCase()} · ${(s.body_code||'—').replace('convolutional-k7-r1/2','K7 R1/2').replace('punctured-convolutional-k7-r2/3','K7 R2/3')}`;
+  const low=Number(s.low_frequency_hz),high=Number(s.high_frequency_hz);
+  if(Number.isFinite(low))currentLow=low;if(Number.isFinite(high))currentHigh=high;
+  $('band').textContent=Number.isFinite(low)&&Number.isFinite(high)?`${(low/1000).toFixed(2)}–${(high/1000).toFixed(2)} kHz`:'—';
+  $('fft').textContent=`${s.fft_len||'—'} / ${s.cp_len||'—'} · ${Number(s.subcarrier_spacing_hz||0).toFixed(2)} Hz`;
+  $('framing').textContent=(s.framing||'—').replace('continuous-superframe','continuous superframe').replace('packet-burst','packet burst');
+  const active=status==='running'||status==='warming';$('send').disabled=active;$('stop').disabled=!active;
+  for(const id of ['backend','output-channel','modem-version','modulation','fft-length','band-preset','low-frequency','high-frequency'])$(id).disabled=active;
+  airEnabled=Boolean(s.air_enabled);
+  const airOption=$('backend').querySelector('option[value="air"]');
+  airOption.disabled=!airEnabled;
+  if(!airEnabled&&$('backend').value==='air')$('backend').value='loopback';
+  if(s.error)$('notice').textContent=s.error;
+  else if(status==='complete')$('notice').textContent='Transfer complete — source and received SHA-256 match.';
+  lastStatus=status;
+}
+async function refresh(){
+  try{const response=await fetch('/api/status',{cache:'no-store'});if(!response.ok)throw Error(response.status);render(await response.json())}
+  catch(error){setStatus('failed');$('notice').textContent=`Dashboard disconnected: ${error}`}
+}
+async function action(path,body={}){
+  $('notice').textContent='Working…';
+  try{
+    const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Cora-Request':'1'},body:JSON.stringify(body)});
+    const result=await response.json();if(!response.ok)throw Error(result.error||response.status);
+    $('notice').textContent=result.message||'Done';if(path==='/api/reset')clearReceiver();await refresh();
+  }catch(error){$('notice').textContent=String(error)}
+}
+function updateTxCount(){$('tx-bytes').textContent=bytes(encoder.encode($('tx').value).length)}
+$('band-preset').onchange=()=>{
+  if($('band-preset').value==='custom')return;
+  const [low,high]=$('band-preset').value.split(',');
+  $('low-frequency').value=low;$('high-frequency').value=high;
+};
+for(const id of ['low-frequency','high-frequency']){
+  $(id).addEventListener('input',()=>{$('band-preset').value='custom'});
+}
+$('fft-length').onchange=()=>{
+  const spacing=48000/Number($('fft-length').value);
+  $('low-frequency').step=spacing;$('high-frequency').step=spacing;
+};
+$('modulation').onchange=()=>{
+  if($('modulation').value==='8psk')$('modem-version').value='v3';
+};
+$('tx').addEventListener('input',updateTxCount);
+$('send').onclick=()=>{clearReceiver();action('/api/start',{
+  text:$('tx').value,
+  backend:$('backend').value,
+  output_channel:$('output-channel').value,
+  modem_version:$('modem-version').value,
+  modulation:$('modulation').value,
+  fft_len:Number($('fft-length').value),
+  low_frequency_hz:Number($('low-frequency').value),
+  high_frequency_hz:Number($('high-frequency').value)
+})};
+$('stop').onclick=()=>action('/api/stop');
+$('reset').onclick=()=>action('/api/reset');
+$('copy').onclick=async()=>{await navigator.clipboard.writeText($('rx').value);$('notice').textContent='Received text copied.'};
+updateTxCount();setInterval(refresh,250);refresh();
+drawWaterfall();setInterval(refreshSpectrum,250);refreshSpectrum();
+</script>
+</body>
+</html>

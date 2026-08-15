@@ -11,9 +11,9 @@
 | Processing system | Dual-core ARM Cortex-A9, 32-bit ARMv7-A | Device-defined |
 | Board revision | Rev. B | Verified from underside PCB silkscreen in user-supplied photo; use Digilent `B.0` board definition |
 | Vivado board files | Digilent commit `36f34ab687b7fa9c778b779d027f3bce63b3ace9` | Cora definition loaded successfully by Vivado 2025.1 |
-| PetaLinux BSP | TBD | Do not assume a current vendor BSP exists |
-| Initial boot source | TBD | microSD is the likely development choice but is not yet selected |
-| Serial settings | TBD | Confirm from the board documentation and hardware test |
+| PetaLinux BSP | Repository template baseline | Validated without a vendor BSP |
+| Initial boot source | microSD | Validated with a 512 MiB FAT boot partition and 2 GiB ext4 root partition |
+| Serial settings | 115200 baud, 8N1 | Validated on the USB-UART interface |
 
 The exact device is supported by Digilent's Cora Z7 statement of volatility.
 Digilent also publishes a Cora Z7-10 master constraints file explicitly marked
@@ -33,12 +33,13 @@ is pinned to commit `36f34ab687b7fa9c778b779d027f3bce63b3ace9`; use
   introduced.
 - Any board preset or constraints must match the physical board revision.
 
-## Next information to record
+## Validated development wiring
 
-1. Preferred initial boot source (microSD is recommended for bring-up).
-2. Available microSD capacity and USB cable for JTAG/UART.
-3. Whether the board will use wired Ethernet and DHCP during development.
-4. Whether an existing Cora Z7 BSP or known-good Linux image is available.
+- Boot from a microSD card written with the generated PetaLinux WIC image.
+- Connect USB-UART and use 115200 baud, 8 data bits, no parity, and 1 stop bit.
+- Connect Ethernet directly to the Ubuntu host.
+- Configure the host as `192.168.10.1/24`; the board uses the static address
+  `192.168.10.2/24` and exposes OpenSSH.
 
 ## Primary references
 

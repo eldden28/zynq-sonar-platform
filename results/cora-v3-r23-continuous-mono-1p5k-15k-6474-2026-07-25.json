@@ -1,0 +1,32 @@
+{
+  "configuration": {
+    "backend": "air",
+    "framing": "continuous-superframe",
+    "output_channel": "left",
+    "modem_version": "v3-r2/3",
+    "body_code": "punctured-convolutional-k7-r2/3",
+    "fft_len": 256,
+    "cp_len": 64,
+    "sample_rate": 48000,
+    "low_frequency_hz": 1500.0,
+    "high_frequency_hz": 15000.0,
+    "data_subcarriers": 68,
+    "gross_bit_rate": 20400.0,
+    "chunk_bytes": 384,
+    "burst_packets": 64
+  },
+  "transfer": {
+    "status": "complete",
+    "total_bytes": 6474,
+    "bytes_received": 6474,
+    "packets_total": 17,
+    "packets_received": 17,
+    "elapsed_s": 6.680767522000679,
+    "payload_throughput_bps": 7752.402673711049,
+    "last_sync_metric": 0.8222341927919204,
+    "packet_errors": 0,
+    "retries": 0,
+    "source_sha256": "fde3fd4ac4906018ba1eb4034b4da7fa0a786185b02ee2cda2a9e09cc26cc9db",
+    "output_sha256": "fde3fd4ac4906018ba1eb4034b4da7fa0a786185b02ee2cda2a9e09cc26cc9db"
+  }
+}

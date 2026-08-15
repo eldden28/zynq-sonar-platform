@@ -1,0 +1,176 @@
+{
+  "batch": {
+    "calls": 1,
+    "first_start_s": 0.0032531010001548566,
+    "last_end_s": 6.154645578000782,
+    "max_s": 6.151392477000627,
+    "mean_s": 6.151392477000627,
+    "parallel_span_s": 6.151392477000627,
+    "sum_s": 6.151392477000627
+  },
+  "configuration": {
+    "backend": "air",
+    "body_code": "punctured-convolutional-k7-r2/3",
+    "burst_packets": 8,
+    "chunk_bytes": 384,
+    "cp_len": 64,
+    "data_subcarriers": 36,
+    "fft_len": 256,
+    "high_frequency_hz": 9750.0,
+    "low_frequency_hz": 2250.0,
+    "modem_version": "v3-r2/3",
+    "payload_bytes": 3072,
+    "subcarrier_spacing_hz": 187.5
+  },
+  "decode_packet": {
+    "calls": 8,
+    "first_start_s": 1.5958559300015622,
+    "last_end_s": 6.144243609000114,
+    "max_s": 0.44870066399926145,
+    "mean_s": 0.42911924299983184,
+    "parallel_span_s": 4.548387678998552,
+    "sum_s": 3.4329539439986547
+  },
+  "encode_packet": {
+    "calls": 8,
+    "first_start_s": 0.0035041480005020276,
+    "last_end_s": 0.6916194570003427,
+    "max_s": 0.09647614099958446,
+    "mean_s": 0.08595319437517901,
+    "parallel_span_s": 0.6881153089998406,
+    "sum_s": 0.6876255550014321
+  },
+  "instrumented_wall_s": 6.15599087100054,
+  "manual_cpu_profile": {
+    "decode_one_captured_packet": {
+      "elapsed_s": 0.39175552599954244,
+      "functions": {
+        "_decode_body": {
+          "calls": 1,
+          "max_s": 0.03729461500006437,
+          "sum_s": 0.03729461500006437
+        },
+        "_equalize_symbol": {
+          "calls": 71,
+          "max_s": 0.0029612429989356315,
+          "sum_s": 0.1801105499980622
+        },
+        "_fft_symbol": {
+          "calls": 74,
+          "max_s": 0.00029804899895680137,
+          "sum_s": 0.015486152991798008
+        },
+        "_find_start": {
+          "calls": 1,
+          "max_s": 0.12357706399961899,
+          "sum_s": 0.12357706399961899
+        },
+        "_normalized_correlation": {
+          "calls": 1,
+          "max_s": 0.11408338500041282,
+          "sum_s": 0.11408338500041282
+        },
+        "deinterleave_bits": {
+          "calls": 1,
+          "max_s": 0.00014869000006001443,
+          "sum_s": 0.00014869000006001443
+        },
+        "qpsk_demap": {
+          "calls": 71,
+          "max_s": 0.0002803570005198708,
+          "sum_s": 0.01696581600117497
+        },
+        "viterbi_decode": {
+          "calls": 1,
+          "max_s": 0.03565980399980617,
+          "sum_s": 0.03565980399980617
+        }
+      },
+      "result_valid": true
+    },
+    "encode_one_packet": {
+      "elapsed_s": 0.08541112599959888,
+      "functions": {
+        "_bit_rows_to_grids": {
+          "calls": 2,
+          "max_s": 0.003395735999220051,
+          "sum_s": 0.005630965999444015
+        },
+        "_encode_body": {
+          "calls": 1,
+          "max_s": 0.0629415200000949,
+          "sum_s": 0.0629415200000949
+        },
+        "_grids_to_symbols": {
+          "calls": 1,
+          "max_s": 0.004867797000770224,
+          "sum_s": 0.004867797000770224
+        },
+        "_training_grids": {
+          "calls": 1,
+          "max_s": 0.0028981049999856623,
+          "sum_s": 0.0028981049999856623
+        },
+        "convolutional_encode": {
+          "calls": 1,
+          "max_s": 0.06094678699992073,
+          "sum_s": 0.06094678699992073
+        },
+        "interleave_bits": {
+          "calls": 1,
+          "max_s": 0.0008446280007774476,
+          "sum_s": 0.0008446280007774476
+        }
+      },
+      "result_valid": true
+    }
+  },
+  "nominal_packet_audio_s": 4.693333333333333,
+  "output_matches": true,
+  "process_launches": [
+    {
+      "launch_time_s": 0.0029399569993984187,
+      "process": "arecord",
+      "start_s": 0.6919732420010405
+    },
+    {
+      "launch_time_s": 0.002629544000228634,
+      "process": "aplay",
+      "start_s": 0.8506517160003568
+    }
+  ],
+  "transfer": {
+    "application": "cora-ofdm-text-transfer",
+    "backend": "air",
+    "bandwidth_hz": 7500.0,
+    "body_code": "punctured-convolutional-k7-r2/3",
+    "bytes_received": 3072,
+    "chunk_bytes": 384,
+    "cp_len": 64,
+    "cyclic_prefix_ms": 1.3333333333333333,
+    "data_subcarriers": 36,
+    "elapsed_s": 6.155528808998497,
+    "error": null,
+    "eta_s": 0.0,
+    "fft_len": 256,
+    "gross_bit_rate": 10800.0,
+    "high_frequency_hz": 9750.0,
+    "last_sync_metric": 0.7657666282187732,
+    "low_frequency_hz": 2250.0,
+    "modem_version": "v3-r2/3",
+    "output_sha256": "3734e0d4734067f241a9660c38116a65712b1c17001ea2ff8f8f0061fce37d5c",
+    "packet_errors": 0,
+    "packets_received": 8,
+    "packets_total": 8,
+    "payload_throughput_bps": 3992.50832261128,
+    "progress_percent": 100.0,
+    "retries": 0,
+    "sample_rate": 48000,
+    "source_sha256": "3734e0d4734067f241a9660c38116a65712b1c17001ea2ff8f8f0061fce37d5c",
+    "status": "complete",
+    "subcarrier_spacing_hz": 187.5,
+    "symbol_duration_ms": 6.666666666666667,
+    "total_bytes": 3072,
+    "transfer_id": "83cc1f4c"
+  }
+}

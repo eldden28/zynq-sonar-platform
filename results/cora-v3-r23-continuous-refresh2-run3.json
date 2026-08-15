@@ -1,0 +1,130 @@
+{
+  "acquire_superframe": {
+    "calls": 4,
+    "first_start_s": 1.22776344399972,
+    "last_end_s": 4.234680239998852,
+    "max_s": 0.13424398700226448,
+    "mean_s": 0.10783610775069974,
+    "parallel_span_s": 3.006916795999132,
+    "sum_s": 0.43134443100279896
+  },
+  "batch": {
+    "calls": 1,
+    "first_start_s": 0.0030033539987925906,
+    "last_end_s": 5.20248678599819,
+    "max_s": 5.199483431999397,
+    "mean_s": 5.199483431999397,
+    "parallel_span_s": 5.199483431999397,
+    "sum_s": 5.199483431999397
+  },
+  "configuration": {
+    "backend": "air",
+    "body_code": "punctured-convolutional-k7-r2/3",
+    "burst_packets": 8,
+    "chunk_bytes": 384,
+    "cp_len": 64,
+    "data_subcarriers": 36,
+    "fft_len": 256,
+    "framing": "continuous-superframe",
+    "high_frequency_hz": 9750.0,
+    "low_frequency_hz": 2250.0,
+    "modem_version": "v3-r2/3",
+    "payload_bytes": 3072,
+    "subcarrier_spacing_hz": 187.5
+  },
+  "decode_packet": {
+    "calls": 0,
+    "first_start_s": null,
+    "last_end_s": null,
+    "max_s": 0.0,
+    "mean_s": 0.0,
+    "parallel_span_s": 0.0,
+    "sum_s": 0.0
+  },
+  "decode_superframe": {
+    "calls": 0,
+    "first_start_s": null,
+    "last_end_s": null,
+    "max_s": 0.0,
+    "mean_s": 0.0,
+    "parallel_span_s": 0.0,
+    "sum_s": 0.0
+  },
+  "decode_superframe_slot": {
+    "calls": 8,
+    "first_start_s": 1.4788753509965318,
+    "last_end_s": 5.113187794999249,
+    "max_s": 0.31752377199882176,
+    "mean_s": 0.2864085009991868,
+    "parallel_span_s": 3.634312444002717,
+    "sum_s": 2.2912680079934944
+  },
+  "encode_packet": {
+    "calls": 0,
+    "first_start_s": null,
+    "last_end_s": null,
+    "max_s": 0.0,
+    "mean_s": 0.0,
+    "parallel_span_s": 0.0,
+    "sum_s": 0.0
+  },
+  "encode_superframe": {
+    "calls": 1,
+    "first_start_s": 0.0032512059988221154,
+    "last_end_s": 0.7019302079970657,
+    "max_s": 0.6986790019982436,
+    "mean_s": 0.6986790019982436,
+    "parallel_span_s": 0.6986790019982436,
+    "sum_s": 0.6986790019982436
+  },
+  "instrumented_wall_s": 5.203846643998986,
+  "nominal_packet_audio_s": 3.96,
+  "output_matches": true,
+  "process_launches": [
+    {
+      "launch_time_s": 0.002792393999698106,
+      "process": "arecord",
+      "start_s": 0.7022579739968933
+    },
+    {
+      "launch_time_s": 0.0033622089977143332,
+      "process": "aplay",
+      "start_s": 0.8594183739987784
+    }
+  ],
+  "transfer": {
+    "application": "cora-ofdm-text-transfer",
+    "backend": "air",
+    "bandwidth_hz": 7500.0,
+    "body_code": "punctured-convolutional-k7-r2/3",
+    "bytes_received": 3072,
+    "chunk_bytes": 384,
+    "cp_len": 64,
+    "cyclic_prefix_ms": 1.3333333333333333,
+    "data_subcarriers": 36,
+    "elapsed_s": 5.203380971001025,
+    "error": null,
+    "eta_s": 0.0,
+    "fft_len": 256,
+    "framing": "continuous-superframe",
+    "gross_bit_rate": 10800.0,
+    "high_frequency_hz": 9750.0,
+    "last_sync_metric": 0.8240830366420002,
+    "low_frequency_hz": 2250.0,
+    "modem_version": "v3-r2/3",
+    "output_sha256": "3734e0d4734067f241a9660c38116a65712b1c17001ea2ff8f8f0061fce37d5c",
+    "packet_errors": 0,
+    "packets_received": 8,
+    "packets_total": 8,
+    "payload_throughput_bps": 4723.082960283817,
+    "progress_percent": 100.0,
+    "retries": 0,
+    "sample_rate": 48000,
+    "source_sha256": "3734e0d4734067f241a9660c38116a65712b1c17001ea2ff8f8f0061fce37d5c",
+    "status": "complete",
+    "subcarrier_spacing_hz": 187.5,
+    "symbol_duration_ms": 6.666666666666667,
+    "total_bytes": 3072,
+    "transfer_id": "83cc1f4c"
+  }
+}

@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""Run A0 through the FPGA FFT/filter/IFFT accelerator and into PWM."""
+
+import argparse
+import time
+from pathlib import Path
+
+from gnuradio import blocks, cora, gr
+
+
+def discover_xadc() -> str:
+    for candidate in sorted(Path("/sys/bus/iio/devices").glob("iio:device*")):
+        try:
+            name = (candidate / "name").read_text(encoding="ascii").strip().lower()
+        except FileNotFoundError:
+            continue
+        if "xadc" in name:
+            return str(candidate)
+    raise RuntimeError("no XADC IIO device found; pass --adc-device explicitly")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--adc-device")
+    parser.add_argument("--channel", default="auto")
+    parser.add_argument("--full-scale-volts", type=float, default=3.3)
+    parser.add_argument("--scale-multiplier", type=float, default=3.3)
+    parser.add_argument("--poll-period-ms", type=int, default=1)
+    parser.add_argument("--dsp-device", default="/dev/cora-dsp0")
+    parser.add_argument("--low-bin", type=int, default=0)
+    parser.add_argument("--high-bin", type=int, default=64)
+    parser.add_argument("--pwm-device", default="/dev/cora-pwm0")
+    parser.add_argument("--period-ticks", type=int, default=2000)
+    parser.add_argument("--seconds", type=float, default=0.0)
+    args = parser.parse_args()
+
+    if not 0 <= args.low_bin <= args.high_bin <= 256:
+        parser.error("filter bins must satisfy 0 <= low <= high <= 256")
+    if args.seconds < 0:
+        parser.error("--seconds must not be negative")
+
+    source = cora.iio_adc_source(
+        args.adc_device or discover_xadc(),
+        args.channel,
+        args.full_scale_volts,
+        args.poll_period_ms,
+        args.scale_multiplier,
+    )
+    accelerator = cora.hw_fft_filter(
+        args.dsp_device, args.low_bin, args.high_bin
+    )
+    convert = blocks.float_to_short(1, 32767.0)
+    sink = cora.pwm_sink(args.pwm_device, args.period_ticks, False, True)
+
+    flowgraph = gr.top_block("cora_adc_fft_filter_ifft_pwm")
+    flowgraph.connect(source, accelerator, convert, sink)
+
+    print(
+        f"A0 -> FPGA FFT -> bins {args.low_bin}..{args.high_bin} -> "
+        f"FPGA IFFT -> {args.pwm_device}"
+    )
+    print("Ctrl-C to stop.")
+    flowgraph.start()
+    try:
+        if args.seconds:
+            time.sleep(args.seconds)
+        else:
+            while True:
+                time.sleep(1)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        flowgraph.stop()
+        flowgraph.wait()
+        print("Cora ADC spectral-filter demo stopped.")
+
+
+if __name__ == "__main__":
+    main()

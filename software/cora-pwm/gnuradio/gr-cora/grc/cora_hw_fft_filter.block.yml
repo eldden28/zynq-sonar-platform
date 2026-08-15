@@ -1,0 +1,36 @@
+id: cora_hw_fft_filter
+label: Cora Hardware FFT Filter
+category: '[Cora]'
+
+templates:
+  imports: from gnuradio import cora
+  make: cora.hw_fft_filter(${device_path}, ${low_bin}, ${high_bin})
+
+parameters:
+- id: device_path
+  label: DSP Device
+  dtype: string
+  default: /dev/cora-dsp0
+- id: low_bin
+  label: Low Pass Bin
+  dtype: int
+  default: '0'
+- id: high_bin
+  label: High Pass Bin
+  dtype: int
+  default: '64'
+
+inputs:
+- domain: stream
+  dtype: float
+
+outputs:
+- domain: stream
+  dtype: float
+
+asserts:
+- ${0 <= low_bin}
+- ${low_bin <= high_bin}
+- ${high_bin <= 256}
+
+file_format: 1

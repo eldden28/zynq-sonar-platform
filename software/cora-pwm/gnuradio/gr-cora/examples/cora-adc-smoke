@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+"""Display Cora shield A0 as a vertically scrolling 10 Hz terminal graph."""
+
+import argparse
+import shutil
+import sys
+import time
+from collections import deque
+from pathlib import Path
+
+from gnuradio import cora
+
+
+def discover_xadc() -> str:
+    for candidate in sorted(Path("/sys/bus/iio/devices").glob("iio:device*")):
+        try:
+            name = (candidate / "name").read_text(encoding="ascii").strip().lower()
+        except FileNotFoundError:
+            continue
+        if "xadc" in name:
+            return str(candidate)
+    raise RuntimeError("no XADC IIO device found; pass --device explicitly")
+
+
+def render(history: deque[tuple[float, float]], device: str, channel: str) -> None:
+    columns, rows = shutil.get_terminal_size(fallback=(80, 24))
+    graph_width = max(20, columns - 35)
+    graph_height = max(4, rows - 4)
+    recent = list(history)[-graph_height:]
+    voltage, normalized = recent[-1]
+
+    lines = [
+        f"Cora ADC  {device}/{channel}  A0 / VAUX[1]",
+        f"{voltage:6.3f} V  {normalized:+.3f} normalized  "
+        "(oldest at top; Ctrl-C to stop)",
+        f"0 V |{'-' * graph_width}| {3.3:3.1f} V",
+    ]
+    for sample_voltage, sample_normalized in recent:
+        position = round((sample_normalized + 1.0) * 0.5 * (graph_width - 1))
+        position = max(0, min(graph_width - 1, position))
+        marker = " " * position + "*" + " " * (graph_width - position - 1)
+        lines.append(f"{sample_voltage:6.3f} |{marker}|")
+    sys.stdout.write("\x1b[2J\x1b[H" + "\n".join(lines) + "\n")
+    sys.stdout.flush()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--device", help="IIO device directory (default: auto-detect XADC)")
+    parser.add_argument("--channel", default="auto",
+                        help="IIO channel without in_ prefix (default: auto-detect A0)")
+    parser.add_argument("--full-scale-volts", type=float, default=3.3,
+                        help="voltage represented by +1.0 (default: 3.3)")
+    parser.add_argument("--scale-multiplier", type=float, default=3.3,
+                        help="board analog-divider gain (default: 3.3 for shield A0)")
+    parser.add_argument("--interval", type=float, default=0.1,
+                        help="display interval in seconds (default: 0.1)")
+    parser.add_argument("--samples", type=int, default=0,
+                        help="number of updates before exiting (0 means run until Ctrl-C)")
+    args = parser.parse_args()
+
+    if args.interval <= 0:
+        parser.error("--interval must be positive")
+    if args.samples < 0:
+        parser.error("--samples must not be negative")
+
+    device = args.device or discover_xadc()
+    adc = cora.IioAdc(device, args.channel, args.full_scale_volts, args.scale_multiplier)
+    history: deque[tuple[float, float]] = deque(maxlen=200)
+
+    count = 0
+    try:
+        while args.samples == 0 or count < args.samples:
+            voltage = adc.read_voltage()
+            normalized = adc.read_normalized()
+            history.append((voltage, normalized))
+            if sys.stdout.isatty():
+                render(history, device, adc.channel)
+            else:
+                print(f"{count:05d} {voltage:.6f} V {normalized:+.6f}", flush=True)
+            count += 1
+            time.sleep(args.interval)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if sys.stdout.isatty():
+            print("Cora ADC smoke test stopped.")
+
+
+if __name__ == "__main__":
+    main()

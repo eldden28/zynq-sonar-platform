@@ -1,0 +1,4 @@
+# DVL and acoustic positioning lab consoles. Raw recording is disabled by
+# default because four-channel captures grow quickly; add --raw-recording for
+# a bounded diagnostic session and download the result before reboot.
+NAVIGATION_ARGS="--bind 0.0.0.0 --dvl-port 8083 --acoustic-port 8084 --dvl-web-root /usr/share/cora-navigation/dvl --acoustic-web-root /usr/share/cora-navigation/acoustic --run-directory /run/cora-navigation"

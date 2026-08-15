@@ -1,0 +1,31 @@
+id: cora_pwm_sink
+label: Cora Signed-16 PWM Sink
+category: '[Cora]'
+
+templates:
+  imports: from gnuradio import cora
+  make: cora.pwm_sink(${device}, ${period_ticks}, ${invert}, ${dither})
+
+parameters:
+  - id: device
+    label: Device
+    dtype: string
+    default: /dev/cora-pwm0
+  - id: period_ticks
+    label: PWM Period Ticks
+    dtype: int
+    default: '2000'
+  - id: invert
+    label: Invert Output
+    dtype: bool
+    default: 'False'
+  - id: dither
+    label: Fractional Dither
+    dtype: bool
+    default: 'True'
+
+inputs:
+  - domain: stream
+    dtype: short
+
+file_format: 1

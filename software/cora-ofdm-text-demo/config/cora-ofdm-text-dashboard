@@ -1,0 +1,4 @@
+# The PCM2902/USB PnP Sound Device is ALSA card 0 in the Cora image. Air mode
+# remains opt-in in the web page; enabling it here only makes the choice
+# available and does not emit audio by itself.
+DASHBOARD_ARGS="--bind 0.0.0.0 --port 8082 --chunk-bytes 384 --noise-dbfs -60 --allow-air --playback-device plughw:0,0 --capture-device plughw:0,0 --output-channel left --burst-packets 64"

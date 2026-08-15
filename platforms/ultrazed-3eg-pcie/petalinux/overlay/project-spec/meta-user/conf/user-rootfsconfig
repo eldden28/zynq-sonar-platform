@@ -1,0 +1,2 @@
+# One package per line. PetaLinux regenerates the rootfs menu from this file.
+CONFIG_cora-sonar

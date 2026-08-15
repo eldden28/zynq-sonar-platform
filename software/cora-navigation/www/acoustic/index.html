@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cora LBL / iUSBL Laboratory</title>
+  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="/map.css">
+  <style>
+    :root{color-scheme:dark;--bg:#070b12;--panel:#101722;--line:#313e57;--text:#eef4ff;
+      --muted:#99a8c1;--violet:#b48cff;--cyan:#4ee4d2;--blue:#64a8ff;--green:#7be495;
+      --amber:#ffc857;--red:#ff697d}*{box-sizing:border-box}body{margin:0;min-height:100vh;
+      background:radial-gradient(circle at 85% 0,#30204d 0,transparent 36%),linear-gradient(145deg,#060911,#0a101b 65%,#0c1018);
+      color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+    header{position:sticky;top:0;z-index:4;display:flex;align-items:center;justify-content:space-between;gap:16px;
+      padding:16px 22px;background:#070b12e8;border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
+    .brand{display:flex;align-items:center;gap:12px}.mark{width:43px;height:43px;border:2px solid var(--violet);border-radius:11px;
+      display:grid;place-items:center;font-weight:850;color:var(--violet);box-shadow:0 0 26px #b48cff3d}
+    h1{font-size:19px;margin:0;letter-spacing:.04em}.subtitle,.muted{color:var(--muted)}.pills{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{border:1px solid var(--line);border-radius:999px;padding:5px 10px;color:var(--muted)}.pill.good{color:var(--green);border-color:#367150}.pill.bad{color:var(--red);border-color:#783747}
+    main{max-width:1550px;margin:auto;padding:18px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:13px}
+    .card{grid-column:span 3;background:linear-gradient(145deg,var(--panel),#0c121c);border:1px solid var(--line);
+      border-radius:13px;padding:15px;box-shadow:0 9px 25px #0005;min-width:0}.wide{grid-column:span 6}.full{grid-column:1/-1}
+    .card h2{margin:0 0 11px;color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:.14em}
+    .big{font:650 25px/1.1 ui-monospace,monospace}.row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid #222d41}.row:last-child{border:0}.value{font-family:ui-monospace,monospace;text-align:right}
+    #arrayCanvas{display:block;width:100%;height:260px;background:#03060b;border:1px solid #29364d;border-radius:9px}
+    .controls{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px}label{display:grid;gap:4px;color:var(--muted);font-size:12px}
+    input,select{width:100%;background:#090f19;color:var(--text);border:1px solid #3b4a67;border-radius:7px;padding:7px}
+    button{border:1px solid #495e84;background:#192640;color:var(--text);border-radius:8px;padding:9px 13px;font-weight:700;cursor:pointer}button:hover{border-color:var(--violet)}
+    button.warn{background:#3a2b12;border-color:#765d28}.buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    #notice{min-height:20px;color:var(--cyan);margin-top:8px}.metric{display:grid;grid-template-columns:80px 1fr 60px;gap:7px;align-items:center;padding:4px 0}
+    .bar{height:7px;background:#070a10;border:1px solid #283750;border-radius:7px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan))}
+    .attitude-card{padding-bottom:11px}.attitude-stage{position:relative;overflow:hidden;border:1px solid #29364d;border-radius:9px;background:#03070d}
+    #attitudeCanvas{display:block;width:100%;height:410px;touch-action:none;cursor:grab}#attitudeCanvas:active{cursor:grabbing}
+    .attitude-hud{position:absolute;left:12px;right:12px;bottom:12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;pointer-events:none}
+    .attitude-hud div{padding:7px 9px;border:1px solid #3a4a62;border-radius:7px;background:#07101bd9;box-shadow:0 3px 12px #0008}
+    .attitude-hud span{display:block;color:var(--muted);font:700 9px/1.2 ui-monospace,monospace;letter-spacing:.12em}.attitude-hud strong{display:block;margin-top:3px;color:var(--cyan);font:700 17px/1 ui-monospace,monospace}
+    .attitude-note{display:flex;justify-content:space-between;gap:10px;margin-top:7px;color:var(--muted);font-size:11px}.attitude-source{color:var(--cyan);font-family:ui-monospace,monospace}
+    @media(max-width:1050px){.card{grid-column:span 6}.wide,.full{grid-column:1/-1}.controls{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){header{align-items:flex-start}.pills{display:none}main{padding:10px}.card{grid-column:1/-1}.controls{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header><div class="brand"><div class="mark">NAV</div><div><h1>Cora LBL / iUSBL Laboratory</h1><div class="subtitle">Raw four-hydrophone ranging, bearing, and fused INS</div></div></div>
+  <div class="pills"><span id="live" class="pill">Connecting</span><span id="packet" class="pill">Packet</span><span id="clock" class="pill">Clock</span></div></header>
+<main><div class="grid">
+  <section class="card"><h2>Acoustic observation</h2><div id="mode" class="big">—</div><div class="row"><span>Waveform</span><span id="waveform" class="value">—</span></div><div class="row"><span>Transponder</span><span id="transponder" class="value">—</span></div><div class="row"><span>Processing</span><span id="process" class="value">—</span></div></section>
+  <section class="card"><h2>Range and bearing</h2><div id="range" class="big">—</div><div class="row"><span>Body bearing</span><span id="bearing" class="value">—</span></div><div class="row"><span>Range status</span><span id="rangeStatus" class="value">—</span></div><div class="row"><span>Fix status</span><span id="fixStatus" class="value">—</span></div></section>
+  <section class="card"><h2>Fused INS</h2><div id="position" class="big">—</div><div class="row"><span>Depth</span><span id="depth" class="value">—</span></div><div class="row"><span>Heading / attitude</span><span id="attitude" class="value">—</span></div><div class="row"><span>Uncertainty</span><span id="sigma" class="value">—</span></div></section>
+  <section class="card"><h2>Clock discipline</h2><div id="uncertainty" class="big">—</div><div class="row"><span>Lock</span><span id="clockLock" class="value">—</span></div><div class="row"><span>Offset</span><span id="offset" class="value">—</span></div><div class="row"><span>Drift</span><span id="drift" class="value">—</span></div></section>
+  <section class="card wide"><h2>Mission map · WGS-84 / local NED</h2>
+    <div class="map-toolbar">
+      <select id="basemapControl" aria-label="Map background"><option value="street">Street map</option><option value="satellite">Satellite imagery</option><option value="local">Offline local grid</option></select>
+      <button id="mapFollow" class="warn">Follow: OFF</button><button id="mapFit">Fit mission</button>
+      <span id="mapReadout" class="map-readout">Waiting for position…</span>
+      <details id="mapKeySettings" class="map-settings"><summary>Satellite setup</summary>
+        <div class="map-key-row"><input id="maptilerKey" type="password" autocomplete="off" placeholder="MapTiler API key · stored only on this browser"><button id="saveMapKey">Save key</button><button id="clearMapKey" class="warn">Clear</button></div>
+        <div>Get a key from <a class="map-key-help" href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener">MapTiler</a>. The key stays in this browser and is never written to the Cora image.</div>
+      </details>
+    </div>
+    <div id="navMap" role="application" aria-label="Cora navigation mission map"></div>
+  </section>
+  <section class="card wide attitude-card"><h2>Live vehicle attitude · fused INS</h2>
+    <div class="attitude-stage">
+      <canvas id="attitudeCanvas" role="img" aria-label="Live three-dimensional vehicle attitude model"></canvas>
+      <div class="attitude-hud">
+        <div><span>Heading</span><strong id="modelHeading">—</strong></div>
+        <div><span>Roll</span><strong id="modelRoll">—</strong></div>
+        <div><span>Pitch</span><strong id="modelPitch">—</strong></div>
+      </div>
+    </div>
+    <div class="attitude-note"><span class="attitude-source">FUSED INS · BODY → NED</span><span>Drag to orbit · wheel/pinch to zoom · double-tap to reset view</span></div>
+  </section>
+  <section class="card wide"><h2>Four-hydrophone timing aperture</h2><canvas id="arrayCanvas"></canvas><div id="metrics"></div></section>
+  <section class="card full"><h2>Simulation and fault controls</h2>
+    <div class="controls">
+      <label>Positioning mode<select id="modeControl"><option value="lbl">Two-transponder LBL</option><option value="iusbl">Four-hydrophone iUSBL</option></select></label>
+      <label>Navigation waveform<select id="waveControl"><option value="dedicated">Dedicated chirp + coded BPSK</option><option value="ofdm">Existing V3 QPSK OFDM</option></select></label>
+      <label>Hydrophone square side (m)<input id="arrayControl" type="number" min=".01" max="2" step=".01" value=".10"></label>
+      <label>Acoustic noise<input id="noiseControl" type="number" min="0" max=".5" step=".005" value=".012"></label>
+      <label>Multipath gain<input id="multiControl" type="number" min="0" max=".8" step=".02" value=".16"></label>
+      <label>Clock drift (ppm)<input id="driftControl" type="number" min="-100" max="100" step=".1" value=".8"></label>
+      <label>Clock uncertainty (ns)<input id="uncertaintyControl" type="number" min="0" max="10000000" step="10000" value="50000"></label>
+      <label>Packet fault<select id="packetControl"><option value="ok">No fault</option><option value="drop">Drop packet</option><option value="corrupt">Corrupt payload</option></select></label>
+    </div>
+    <div class="buttons"><button data-action="start">Start</button><button data-action="pause" class="warn">Pause</button><button data-action="resume">Resume</button><button data-action="reset" class="warn">Reset mission</button><button id="apply">Apply controls</button><button id="unlock" class="warn">Toggle clock lock</button><a href="/api/log/telemetry"><button>Download telemetry</button></a></div><div id="notice"></div>
+  </section>
+</div></main>
+<script src="/vendor/leaflet/leaflet.js"></script>
+<script src="/map.js"></script>
+<script src="/attitude.js"></script>
+<script>
+const $=id=>document.getElementById(id),history=[];let cursor=-1,last=null,clockLocked=true;
+const navigationMap=window.navigationMap=new CoraNavigationMap({notice:message=>$('notice').textContent=message});
+const attitudeViewer=window.attitudeViewer=new CoraAttitudeViewer($('attitudeCanvas'));
+const fmt=(v,n=2,u='')=>Number.isFinite(v)?`${v.toFixed(n)}${u}`:'—';const pill=(el,ok,text)=>{el.textContent=text;el.className='pill '+(ok?'good':'bad')};
+function fit(canvas,height){const r=canvas.getBoundingClientRect(),d=devicePixelRatio||1;if(canvas.width!==Math.round(r.width*d)){canvas.width=Math.round(r.width*d);canvas.height=Math.round(height*d)}const c=canvas.getContext('2d');c.setTransform(d,0,0,d,0,0);return[c,r.width,height]}
+function arrayPlot(s){const [c,w,h]=fit($('arrayCanvas'),260);c.fillStyle='#03060b';c.fillRect(0,0,w,h);const ac=s.acoustic,center=[w/2,h/2],radius=Math.min(w,h)*.28,pts=[[-1,-1],[-1,1],[1,1],[1,-1]];
+  c.strokeStyle='#394867';c.lineWidth=2;c.beginPath();pts.forEach((p,i)=>{const x=center[0]+p[0]*radius,y=center[1]+p[1]*radius;i?c.lineTo(x,y):c.moveTo(x,y)});c.closePath();c.stroke();
+  pts.forEach((p,i)=>{const x=center[0]+p[0]*radius,y=center[1]+p[1]*radius,metric=ac?ac.peak_metrics[i]:0;c.fillStyle=metric>.12?'#b48cff':'#ff697d';c.beginPath();c.arc(x,y,10,0,7);c.fill();c.fillStyle='#eef4ff';c.fillText(`H${i+1}`,x-8,y+25);if(ac)c.fillText(`${ac.tdoa_us[i].toFixed(1)} µs`,x-23,y-16)});
+  if(ac&&ac.bearing_body_unit){const u=ac.bearing_body_unit;c.strokeStyle='#4ee4d2';c.lineWidth=3;c.beginPath();c.moveTo(...center);c.lineTo(center[0]+u[0]*radius*1.4,center[1]+u[1]*radius*1.4);c.stroke()}}
+function render(s){last=s;const a=s.acoustic||{},i=s.ins||{},cl=s.clock||{};clockLocked=!!cl.locked;pill($('live'),s.status==='running',s.status||'idle');pill($('packet'),!!a.payload_valid,a.payload_valid?'Packet valid':'No valid packet');pill($('clock'),!!cl.locked,cl.locked?'TAI locked':'Clock unlocked');
+  $('mode').textContent=(a.mode||s.simulation.acoustic_mode||'—').toUpperCase();$('waveform').textContent=a.waveform||s.simulation.waveform||'—';$('transponder').textContent=a.transponder_id??'—';$('process').textContent=fmt(a.processing_ms,2,' ms');
+  $('range').textContent=fmt(a.range_m,2,' m');if(a.bearing_body_unit){const u=a.bearing_body_unit;$('bearing').textContent=`[${u.map(v=>v.toFixed(3)).join(', ')}]`}else $('bearing').textContent='—';$('rangeStatus').textContent=a.range_valid?'VALID':'UNAVAILABLE';$('fixStatus').textContent=a.valid?'VALID':(a.error||'WAITING');
+  $('position').textContent=i.position_ned_m?`N ${i.position_ned_m[0].toFixed(1)} · E ${i.position_ned_m[1].toFixed(1)}`:'—';$('depth').textContent=fmt(i.depth_m,2,' m');$('attitude').textContent=i.heading_deg===undefined?'—':`${i.heading_deg.toFixed(1)}° / ${i.roll_deg.toFixed(1)}° / ${i.pitch_deg.toFixed(1)}°`;$('sigma').textContent=fmt(i.horizontal_sigma_m,2,' m');
+  $('uncertainty').textContent=fmt(cl.uncertainty_ns/1000,1,' µs');$('clockLock').textContent=cl.locked?'LOCKED':'UNLOCKED';$('offset').textContent=fmt(cl.offset_ns/1000,1,' µs');$('drift').textContent=fmt(cl.drift_ppm,2,' ppm');
+  $('metrics').innerHTML=a.peak_metrics?a.peak_metrics.map((v,n)=>`<div class="metric"><span>Hydro ${n+1}</span><div class="bar"><i style="width:${Math.min(100,v*100)}%"></i></div><span>${v.toFixed(3)}</span></div>`).join(''):'Waiting for ping…';navigationMap.update(s,history);attitudeViewer.update(i);arrayPlot(s)}
+async function refresh(){try{const r=await fetch('/api/status',{cache:'no-store'});if(!r.ok)throw Error(r.status);render(await r.json())}catch(e){pill($('live'),false,'Disconnected')}}
+async function fetchHistory(){try{const r=await fetch(`/api/history?after=${cursor}`,{cache:'no-store'}),j=await r.json();if(j.reset){history.length=0;navigationMap.resetTracks()}for(const v of j.history)history.push(v);while(history.length>900)history.shift();cursor=j.latest_id;if(last)navigationMap.update(last,history)}catch(_){}}
+async function control(action,values){$('notice').textContent='Working…';try{const r=await fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,values})}),j=await r.json();$('notice').textContent=j.message||j.error||'Done';if(!r.ok)throw Error(j.error);if(action==='reset'){history.length=0;cursor=-1;navigationMap.resetTracks()}}catch(e){$('notice').textContent=`Request failed: ${e}`}}
+document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>control(b.dataset.action));$('apply').onclick=()=>{const fault=$('packetControl').value;control('configure',{acoustic_mode:$('modeControl').value,waveform:$('waveControl').value,array_side_m:+$('arrayControl').value,acoustic_noise:+$('noiseControl').value,multipath_gain:+$('multiControl').value,clock_drift_ppm:+$('driftControl').value,clock_uncertainty_ns:+$('uncertaintyControl').value,packet_dropout:fault==='drop',corrupt_packet:fault==='corrupt'})};$('unlock').onclick=()=>control('configure',{clock_locked:!clockLocked});
+setInterval(refresh,500);setInterval(fetchHistory,1000);refresh();fetchHistory();addEventListener('resize',()=>{navigationMap.invalidateSize();if(last)arrayPlot(last)});
+</script>
+</body>
+</html>

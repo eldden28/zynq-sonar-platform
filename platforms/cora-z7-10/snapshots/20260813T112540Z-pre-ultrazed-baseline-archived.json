@@ -1,0 +1,958 @@
+{
+  "snapshot_version": 1,
+  "created_utc": "2026-08-13T11:25:40Z",
+  "platform": "cora-z7-10",
+  "platform_definition_sha256": "c2056793b9febb79618096dc5a69fd4baaa26d839f12115bc5f482a9caefff94",
+  "source": {
+    "branch": "feature/gnuradio-integration",
+    "commit": "2555a0f3a4d4b7d98a29719abb4e2c629eac98e1",
+    "dirty": true,
+    "status": [
+      " M docs/cora-ofdm-acoustic-v2.md",
+      " M docs/cora-ofdm-modulation-test-report.md",
+      " M docs/cora-ofdm-v3-profile.md",
+      " M software/cora-navigation/tests/test_cora_navigation.py",
+      " M software/cora-navigation/www/acoustic/index.html",
+      " M software/cora-ofdm-acoustic/cora_ofdm_acoustic.py",
+      " M software/cora-ofdm-acoustic/tests/test_cora_ofdm_acoustic.py",
+      " M software/cora-ofdm-text-demo/README.md",
+      " M software/cora-ofdm-text-demo/config/cora-ofdm-text-dashboard",
+      " M software/cora-ofdm-text-demo/cora_ofdm_text_dashboard.py",
+      " M software/cora-ofdm-text-demo/cora_ofdm_text_transfer.py",
+      " M software/cora-ofdm-text-demo/tests/test_text_transfer.py",
+      " M software/cora-ofdm-text-demo/www/index.html",
+      " M software/petalinux/cora-z7-10-baseline/project-spec/configs/.statistics",
+      " M software/petalinux/cora-z7-10-baseline/project-spec/configs/config",
+      " M software/petalinux/cora-z7-10-baseline/project-spec/configs/rootfs_config",
+      " M software/petalinux/cora-z7-10-baseline/project-spec/configs/rootfsconfigs/Kconfig.user",
+      " M software/petalinux/cora-z7-10-baseline/project-spec/configs/rootfsconfigs/user-rootfsconfig",
+      " M software/petalinux/cora-z7-10-baseline/project-spec/meta-user/conf/user-rootfsconfig",
+      " D software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-apps/cora-dashboard/cora-dashboard.bb",
+      " D software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-modules/cora-dsp/cora-dsp.bb",
+      " D software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-modules/cora-pwm/cora-pwm.bb",
+      " D software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-navigation/cora-navigation/cora-navigation.bb",
+      " D software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-radio/cora-ofdm-acoustic/cora-ofdm-acoustic.bb",
+      " D software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-radio/cora-ofdm-demo/cora-ofdm-demo.bb",
+      " D software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-radio/cora-ofdm-text-demo/cora-ofdm-text-demo.bb",
+      " D software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-radio/cora-ofdm/cora-ofdm.bb",
+      " D software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-radio/gnuradio/gnuradio_%.bbappend",
+      " D software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-radio/gr-cora/gr-cora.bb",
+      " D software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-radio/volk/volk_%.bbappend",
+      "?? docs/32ch_400-500kHz_forward_sonar_simulator_spec.md",
+      "?? platforms/cora-z7-10/hardware/",
+      "?? platforms/cora-z7-10/platform.json",
+      "?? platforms/cora-z7-10/snapshots/",
+      "?? platforms/ultrazed-3eg-pcie/",
+      "?? results/cora-v3-8psk-r12-continuous-mono-1p5k-15k-6450-2026-07-25.json",
+      "?? results/cora-v3-r23-continuous-2k-15k-16184-2026-07-25.json",
+      "?? results/cora-v3-r23-continuous-mono-1p5k-15k-6474-2026-07-25.json",
+      "?? schemas/platform.schema.json",
+      "?? scripts/platformctl.py",
+      "?? software/cora-navigation/www/acoustic/attitude.js",
+      "?? software/cora-sonar/",
+      "?? software/petalinux/meta-platform-common/"
+    ]
+  },
+  "inputs": [
+    {
+      "path": "hardware/constraints/cora-z7-10-axis-pwm.xdc",
+      "size": 302,
+      "sha256": "096451aa9b7843a875b29c9a2c6ab1fbe77fe9c993ea9809e370da003f21f23f"
+    },
+    {
+      "path": "hardware/rtl/axis_pwm_s16/README.md",
+      "size": 4159,
+      "sha256": "ced96d55fa37cc36c2a281121cac529c936ea640256a403c26aa9a208f5caaae"
+    },
+    {
+      "path": "hardware/rtl/axis_pwm_s16/axis_pwm_s16.sv",
+      "size": 13282,
+      "sha256": "23a4a47eb33e0078f50ca583cb512139c0955943440b288aa7b35fba6e0071f2"
+    },
+    {
+      "path": "hardware/rtl/axis_pwm_s16/axis_pwm_s16_axi.sv",
+      "size": 9132,
+      "sha256": "31e694572d2f6cd9a7ecc1067d7cf5edb00cc8f8984125704d7b2cfe8fbe7a29"
+    },
+    {
+      "path": "hardware/rtl/axis_pwm_s16/tb_axis_pwm_s16.sv",
+      "size": 6934,
+      "sha256": "f09ef6ee5bbf896d9a286bc40767c9df12c362689c6415028b2ac5c59ebae612"
+    },
+    {
+      "path": "hardware/rtl/axis_pwm_s16/tb_axis_pwm_s16_axi.sv",
+      "size": 6283,
+      "sha256": "edeaa1427ba86cea3ae7704cec8d61261052754cb929e739c6f909959b5d004d"
+    },
+    {
+      "path": "hardware/rtl/axis_spectral_filter/README.md",
+      "size": 454,
+      "sha256": "a82c56e51c4de0a724fb08fd556b62812de428989509d75b10ba54a1548bd9f3"
+    },
+    {
+      "path": "hardware/rtl/axis_spectral_filter/axis_spectral_filter.sv",
+      "size": 3380,
+      "sha256": "47464dafbfa73c1f0b2eeca1c445bb38a7f5df6a6eb9b4568622ff6838865297"
+    },
+    {
+      "path": "hardware/rtl/axis_spectral_filter/axis_spectral_filter_axi.sv",
+      "size": 9029,
+      "sha256": "bc3e8aaa6b8d6d496cdff2af46572ee773b6d2bd2c3eb3326b1b6273e0ae76e8"
+    },
+    {
+      "path": "hardware/rtl/axis_spectral_filter/tb_axis_spectral_filter.sv",
+      "size": 2565,
+      "sha256": "19136edd6d556773f715ef77dea5fd4d1a382b8d73ce134bd7eed8ccf5ed6d30"
+    },
+    {
+      "path": "hardware/vivado/tcl/check_axis_pwm_s16.tcl",
+      "size": 1736,
+      "sha256": "290c60c5430787d9ee6db0ab1e15b003cb9028ad635466bcf0fbac592b2a31bb"
+    },
+    {
+      "path": "hardware/vivado/tcl/check_board_part.tcl",
+      "size": 982,
+      "sha256": "44e8c2b9eab8d5b645932cb3e8c41f2f68fe2f43e0119aaf8d44a402223321b7"
+    },
+    {
+      "path": "hardware/vivado/tcl/check_target_part.tcl",
+      "size": 457,
+      "sha256": "319c1d5039c54d3058da4816fa7a47c54ff8a3d301a5a94855dd610b967f6266"
+    },
+    {
+      "path": "hardware/vivado/tcl/create_base_platform.tcl",
+      "size": 2500,
+      "sha256": "d376d7cafb9f93aec14ecf4cc5712c35e09d0d3163f606617da253c874855c37"
+    },
+    {
+      "path": "hardware/vivado/tcl/create_cora_z7_10_base.tcl",
+      "size": 2595,
+      "sha256": "88d96418c25df475c53f6fd02e8f0bad49ad6789adcb12dba530ee0fcb1ce688"
+    },
+    {
+      "path": "hardware/vivado/tcl/create_cora_z7_10_pwm.tcl",
+      "size": 18635,
+      "sha256": "3d47c2a5f45f3774e80e8ab3ab66a07a252134c1854248113a47e92124ffd3e5"
+    },
+    {
+      "path": "platforms/cora-z7-10/hardware/README.md",
+      "size": 555,
+      "sha256": "2838f7c7daeaa8eeefe962cc6b9f499f7e9c2ee1785314dd854c5ef956cf203b"
+    },
+    {
+      "path": "platforms/cora-z7-10/platform-manifest.json",
+      "size": 695,
+      "sha256": "3d3588fc7377ef603093568e28d0a6613529c5641b5ac7cc07b784e5e427dd3b"
+    },
+    {
+      "path": "platforms/cora-z7-10/platform.json",
+      "size": 2578,
+      "sha256": "c2056793b9febb79618096dc5a69fd4baaa26d839f12115bc5f482a9caefff94"
+    },
+    {
+      "path": "schemas/platform-manifest.schema.json",
+      "size": 3077,
+      "sha256": "9a9e0c36362328de8b779e1f307ec66d09a5af3cd95dec3e25389676b78c6552"
+    },
+    {
+      "path": "schemas/platform.schema.json",
+      "size": 4319,
+      "sha256": "0c50acc5f93808c9629fb27c9b78432bc7396563c52b5efbc507abafde98c59c"
+    },
+    {
+      "path": "scripts/activate-tools.sh",
+      "size": 2690,
+      "sha256": "e4d5017590ae2127dac2664f4c61e21f18b1ae8c1b381d4e5c967e8d058155b5"
+    },
+    {
+      "path": "scripts/build-base-hardware.sh",
+      "size": 485,
+      "sha256": "46a6df8cc28a37f8e215c2fcdd42d233f8b1d26eaf1800b39017ce9e75cd5f64"
+    },
+    {
+      "path": "scripts/build-hardware.sh",
+      "size": 762,
+      "sha256": "1e3cde5bcca7d06f169ad66e6c01621dd1b49fa4890623cdce114fb80730320f"
+    },
+    {
+      "path": "scripts/build-petalinux-baseline.sh",
+      "size": 587,
+      "sha256": "a01a2aaa5a444700a4b6a89b14bf11cf46f0a8b4bad106d0d9e9b1ad8799368e"
+    },
+    {
+      "path": "scripts/build-petalinux.sh",
+      "size": 1888,
+      "sha256": "544f1a38c6aaf19049c1afd421b6a0be8d50c64322d6405d3158f0cb53e401ae"
+    },
+    {
+      "path": "scripts/build-pwm-hardware.sh",
+      "size": 882,
+      "sha256": "55dd5dff5b4fbc95fbd04e937127b0d948ed5e10ad291e4521c0e74d68b71fde"
+    },
+    {
+      "path": "software/cora-dashboard/README.md",
+      "size": 1551,
+      "sha256": "0182326c5bfe4b42a6c1308c7a72c1a8d3b9674feed1c366c38344e773c45a7b"
+    },
+    {
+      "path": "software/cora-dashboard/config/cora-dashboard",
+      "size": 402,
+      "sha256": "96e1ac0a1b79cff9ea58b65b204816d20985b1afc9705af724425366af7c2d54"
+    },
+    {
+      "path": "software/cora-dashboard/cora_dashboard.py",
+      "size": 27245,
+      "sha256": "89483069533a6685169e1711ee61bb4f99910ffa888c613c9f43886c3e8ee31c"
+    },
+    {
+      "path": "software/cora-dashboard/init/cora-dashboard",
+      "size": 1137,
+      "sha256": "5217101f320208a0d4ce9c6cc27b9e4510caf82d871f99c1a7b87b86aad62430"
+    },
+    {
+      "path": "software/cora-dashboard/tests/test_websocket_terminal.py",
+      "size": 2889,
+      "sha256": "cd2eb752e2003e5a5f37952467b20414f175bb99dfa120a9bf6f3193a949360e"
+    },
+    {
+      "path": "software/cora-dashboard/www/index.html",
+      "size": 17117,
+      "sha256": "2a369c673420aa2693ef7c5b6b801f8770055422a856b2210284722a2f94315a"
+    },
+    {
+      "path": "software/cora-dsp/README.md",
+      "size": 630,
+      "sha256": "e8dedc8c66201935749ccb33f95867b2765cf69d359bae3556efc44c0ed1c2b3"
+    },
+    {
+      "path": "software/cora-dsp/include/cora_dsp_ioctl.h",
+      "size": 1078,
+      "sha256": "b6960a8388272e284f2b3f5730d852039812d7912ed39a3a68cecf1ee86e7e69"
+    },
+    {
+      "path": "software/cora-dsp/kernel/Makefile",
+      "size": 290,
+      "sha256": "c5920251577aa03c543de4c807e45d7833e6fe2ff4f41c8345a4d483c45dffe9"
+    },
+    {
+      "path": "software/cora-dsp/kernel/cora_dsp.c",
+      "size": 13028,
+      "sha256": "0e25e0837bace995812ecacd037598332b069a3375dbb1cc6a4f01f523137dde"
+    },
+    {
+      "path": "software/cora-dsp/udev/99-cora-dsp.rules",
+      "size": 52,
+      "sha256": "b573c4fc03b36b04add4325025afa28bcc281f8180007a4a86f4b30ae1f82918"
+    },
+    {
+      "path": "software/cora-navigation/README.md",
+      "size": 6065,
+      "sha256": "7621c68333c36eb639d6693139962bfa461d72c19590923409bb330496d38188"
+    },
+    {
+      "path": "software/cora-navigation/config/cora-navigation",
+      "size": 431,
+      "sha256": "f2bb246bacbe5f8e935892c0a85d12859621c67894ff0a90a2d5d9e5b0b617a1"
+    },
+    {
+      "path": "software/cora-navigation/cora_navigation.py",
+      "size": 102577,
+      "sha256": "36438e49df45135ef8e16d17e82ef61eec60831e335f83f0d76f6edec0a569fa"
+    },
+    {
+      "path": "software/cora-navigation/cora_navigation_service.py",
+      "size": 11310,
+      "sha256": "965b4f777430807a62f207a6667d87b594772865bef157702ad39a727edfeb75"
+    },
+    {
+      "path": "software/cora-navigation/cora_navigation_smoke.py",
+      "size": 2402,
+      "sha256": "f9113482f68fd9948214c42c11385e8101bc4e5ff85ae7bcff6f902b99704626"
+    },
+    {
+      "path": "software/cora-navigation/init/cora-navigation",
+      "size": 1126,
+      "sha256": "f6c5a84cc4119e8c47d0db3826c246123a83cfbb452ecce95b799f9307faa765"
+    },
+    {
+      "path": "software/cora-navigation/tests/test_cora_navigation.py",
+      "size": 13556,
+      "sha256": "75d4c883604a98f101b0bc9248c85b92f0ee8c714f6d9eaf2343c93f876d93b7"
+    },
+    {
+      "path": "software/cora-navigation/www/acoustic/attitude.js",
+      "size": 20017,
+      "sha256": "2a6857571a9fbb0d556237b8506f6c8322725dfa9eed56be38dc2d8421f893ed"
+    },
+    {
+      "path": "software/cora-navigation/www/acoustic/index.html",
+      "size": 15571,
+      "sha256": "a714f0856216bd6073cb91b24b8fcafadea6688825ca2f1f818e594a8eb1a58e"
+    },
+    {
+      "path": "software/cora-navigation/www/acoustic/map.css",
+      "size": 3684,
+      "sha256": "1d5adaf5d12baf6cdf99ae51c9ed1bf3b248f49c17e3af08139cc722dfd0f448"
+    },
+    {
+      "path": "software/cora-navigation/www/acoustic/map.js",
+      "size": 18090,
+      "sha256": "8321f27c4f0f05abdf0b8c299ec2f05bfd6dd214f14361ec9456322b1c184f45"
+    },
+    {
+      "path": "software/cora-navigation/www/acoustic/vendor/leaflet/LICENSE",
+      "size": 1369,
+      "sha256": "bbc959aaef7488b38942e7f05cfd1244351f8bce54261951ea17dd7cf60f894b"
+    },
+    {
+      "path": "software/cora-navigation/www/acoustic/vendor/leaflet/leaflet.css",
+      "size": 14145,
+      "sha256": "337bfca5cabd03b39815b2700febe2b3b7edf55921c59cd49f88ecb328212303"
+    },
+    {
+      "path": "software/cora-navigation/www/acoustic/vendor/leaflet/leaflet.js",
+      "size": 147552,
+      "sha256": "db49d009c841f5ca34a888c96511ae936fd9f5533e90d8b2c4d57596f4e5641a"
+    },
+    {
+      "path": "software/cora-navigation/www/dvl/index.html",
+      "size": 12521,
+      "sha256": "e090f8627bf0e2eabb0dc45dde6f000f5cc4cd8d8d819a7fe2321a0d84021927"
+    },
+    {
+      "path": "software/cora-ofdm-acoustic/README.md",
+      "size": 5020,
+      "sha256": "ab34d05019627227598ec84b7bd358ba65b841df98cac94ca3d36dd7f7fa433b"
+    },
+    {
+      "path": "software/cora-ofdm-acoustic/cora_ofdm_acoustic.py",
+      "size": 61280,
+      "sha256": "8d1330c6594bb5cfe86264b117f2a34f778d0c1ea65a2cc3535057336b22a43f"
+    },
+    {
+      "path": "software/cora-ofdm-acoustic/cora_ofdm_fec.c",
+      "size": 4244,
+      "sha256": "db5818517bbf12710af6af996ff0ea47ba3bb3506761e018c5e253eb03f97b21"
+    },
+    {
+      "path": "software/cora-ofdm-acoustic/tests/test_cora_ofdm_acoustic.py",
+      "size": 13337,
+      "sha256": "540197c083221bcdd2ffc9ab5fb81c822a28ba53e0fe8a5e4517331728979b77"
+    },
+    {
+      "path": "software/cora-ofdm-demo/README.md",
+      "size": 3838,
+      "sha256": "4c0a8f5b84976fe8acfdbb19cdaba631ed94141105b0203cae55c28d88de04a6"
+    },
+    {
+      "path": "software/cora-ofdm-demo/assets/rickroll.png",
+      "size": 1529381,
+      "sha256": "996910dae50a876c8436d8b40f9c0e30dd7c419cab20543a11ec0bad3b2e48da"
+    },
+    {
+      "path": "software/cora-ofdm-demo/assets/rickroll.rgb",
+      "size": 3145728,
+      "sha256": "794c16b48e0b60099132b4f9b1a3c57daad54d8fe63d1be7296a4349d602b663"
+    },
+    {
+      "path": "software/cora-ofdm-demo/config/cora-ofdm-dashboard",
+      "size": 151,
+      "sha256": "bbb7a6d8ca98fa0853bb683b686a06bf7ee63d9b40af7c8247655933e0938278"
+    },
+    {
+      "path": "software/cora-ofdm-demo/cora_ofdm_dashboard.py",
+      "size": 11459,
+      "sha256": "e1a8ed6a5576e9a656d661d070273014b750bc36d2f82d7c1c01d7d35d5a1874"
+    },
+    {
+      "path": "software/cora-ofdm-demo/cora_ofdm_transfer.py",
+      "size": 11781,
+      "sha256": "09416aa2e23cb5ef579b67c3b875fb41bb7cef3ab6bfef2a58bca07ec77eefda"
+    },
+    {
+      "path": "software/cora-ofdm-demo/init/cora-ofdm-dashboard",
+      "size": 1071,
+      "sha256": "0d561fa537fea2d54a80866447c17bf61fcd76634d057b4c1d1f6e0df0b4401f"
+    },
+    {
+      "path": "software/cora-ofdm-demo/tests/test_transfer.py",
+      "size": 2790,
+      "sha256": "e52d156ad8e2101a74545c426b05edceff0aa551f4cec213d62d550cfca041e1"
+    },
+    {
+      "path": "software/cora-ofdm-demo/www/index.html",
+      "size": 13718,
+      "sha256": "a5a87ad54db1ac0e198f170c3fc3e9e0c2d8512aef70117b310af0da4e0e9caa"
+    },
+    {
+      "path": "software/cora-ofdm-text-demo/README.md",
+      "size": 9934,
+      "sha256": "ecae1dce81db02019394407df6f960430a673fdd49451e60c18fe6e34aa3d7e5"
+    },
+    {
+      "path": "software/cora-ofdm-text-demo/config/cora-ofdm-text-dashboard",
+      "size": 387,
+      "sha256": "46e45e3c61a6020a5d951a604e52325edd15e6865ef3c9fc6cdeaf7510588681"
+    },
+    {
+      "path": "software/cora-ofdm-text-demo/cora_ofdm_text_dashboard.py",
+      "size": 22402,
+      "sha256": "e4ef16840cfb4ee12ed7b855e0cd5cab6029ea069d0dd95673cfb643629db03f"
+    },
+    {
+      "path": "software/cora-ofdm-text-demo/cora_ofdm_text_transfer.py",
+      "size": 40785,
+      "sha256": "01e03ce5a7831973ccdcaca5355805f775814774100305299e7598696a1d738d"
+    },
+    {
+      "path": "software/cora-ofdm-text-demo/init/cora-ofdm-text-dashboard",
+      "size": 1171,
+      "sha256": "0e80f36dfbce7340c2599926a904b2710b715ce221d95c86de0b441a920857d8"
+    },
+    {
+      "path": "software/cora-ofdm-text-demo/tests/test_text_transfer.py",
+      "size": 21643,
+      "sha256": "794b3703049005dfd507f1d91f072f045377e3710e547c994c0d4663110bf8ca"
+    },
+    {
+      "path": "software/cora-ofdm-text-demo/www/index.html",
+      "size": 20182,
+      "sha256": "74a7ebb7797aa6595dea1e3a152493cfe85e2f1c8df6684283ad81e53d042837"
+    },
+    {
+      "path": "software/cora-ofdm/cora_ofdm.py",
+      "size": 31349,
+      "sha256": "25c19a7fc991e437f4f8b5a4b56037ea65eb18ad0362688629cc3aa0c3cbf8bb"
+    },
+    {
+      "path": "software/cora-ofdm/tests/test_cora_ofdm.py",
+      "size": 5801,
+      "sha256": "f7b35c55fa4fe039eed189abed26d376c6ff84555b04e6506e55d5ecad31304f"
+    },
+    {
+      "path": "software/cora-ofdm/tools/cora_ofdm_monitor.py",
+      "size": 3779,
+      "sha256": "7fe63b2fe362877e640841924ee96b69de2513e9432163c34555b9d7b25f33fc"
+    },
+    {
+      "path": "software/cora-pwm/README.md",
+      "size": 2448,
+      "sha256": "4eed13614538fe983e5b5e03393c742950b07e809ac6f06bb3d75c59a64823bb"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/CMakeLists.txt",
+      "size": 2959,
+      "sha256": "fa8274c5151fe2999b4ad4eef8b31220850b3d560964796a05362d7bf8af3190"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/examples/cora-adc-fft-pwm",
+      "size": 2647,
+      "sha256": "6ce672d8d3c37f8f0b640aa032419bcca99cd03db3d8145b1ff654a2e12abef3"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/examples/cora-adc-smoke",
+      "size": 3522,
+      "sha256": "e5934bb981e84465ae4bb88c5e768e869265d9db57a3f20e6c558736ce5a02f8"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/examples/cora-adc-to-pwm",
+      "size": 3301,
+      "sha256": "20bacc7a030073d45747a8c63225aeadd41564ba8d184bc9fb1438100c0a492e"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/examples/cora-dsp-benchmark",
+      "size": 3730,
+      "sha256": "0910dfae0c6ffc37f731a5da7c9fd6a694330c1e95b264b373e82d80dfaaf3cf"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/examples/cora-pwm-smoke",
+      "size": 1247,
+      "sha256": "04472fe03981dcf7703d7c27b5ebcd7ce30f29535be8ee9f0a51169347394891"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/examples/cora-remote-io",
+      "size": 5569,
+      "sha256": "047dcd94ec47e1c3cc987d1a555b9d0d14181ea9009b7f5804706bb92ece30e3"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/examples/cora_remote_io_pc.grc",
+      "size": 4560,
+      "sha256": "f26f829c53e3925b2d3dfff515fa2439b60edec5024184aeb09514f88035ce05"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/grc/cora_hw_fft_filter.block.yml",
+      "size": 588,
+      "sha256": "03ed1614569b0c41a15abf7ff180ecfba21560a09f6082ca41f82cddd1e5b8b3"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/grc/cora_iio_adc_source.block.yml",
+      "size": 1320,
+      "sha256": "92826a7b707922379b923013cc707b161cc7a9f3fe61f627792111a3968c4a6f"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/grc/cora_pwm_sink.block.yml",
+      "size": 583,
+      "sha256": "8a3452ef36f05b98a754e9fa2c2d781d747fd9c30181b0478bea38575b098c6a"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/grc/cora_tcp_float_sink.block.yml",
+      "size": 604,
+      "sha256": "d99097bd4b62d1dbffff85915b4d9cc0c4d1760eca0094ce564a73bcee65b32d"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/include/gnuradio/cora/api.h",
+      "size": 257,
+      "sha256": "f85eac1ebd7fa0d2ce249b767818b61d643b99f8303219529e58a6c790139223"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/include/gnuradio/cora/pwm_sink.h",
+      "size": 742,
+      "sha256": "14a481f423831c4c6bca8251678af540c7cceb67f861a3f436556225430300d0"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/lib/cora_pwm_sink_impl.cc",
+      "size": 5182,
+      "sha256": "7d9cb36b17baf8864598604dd5108d669ac18847568ef33f1167b081c3c04f17"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/lib/cora_pwm_sink_impl.h",
+      "size": 1303,
+      "sha256": "9ebc110002eed6011da9d38d204a77e49fa9b3bb51ceced42c2277086023920c"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/python/cora/__init__.py",
+      "size": 254,
+      "sha256": "b86dbaf30fd65ac5c19444a7eed31f79da6e96f2862d6dd71098025c67f3eb3c"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/python/cora/adc.py",
+      "size": 8067,
+      "sha256": "cf08b0779d7a21aa08fe335e32d3a50b1f9b88804d607e47725b58188cf263c9"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/python/cora/bindings/cora_pwm_sink_python.cc",
+      "size": 728,
+      "sha256": "922785f7f3081499591a4b68485d077a81e9e6b4522cb34f303b4b8820cd119c"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/python/cora/bindings/python_bindings.cc",
+      "size": 254,
+      "sha256": "50a418d00f541038ade5993bd677bde63cc6081d3903789f932e40888cefc005"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/python/cora/dsp.py",
+      "size": 5572,
+      "sha256": "ef0fdfb15518506896983ec81858139d9c45f7eef5976c39b3d9da61a399e788"
+    },
+    {
+      "path": "software/cora-pwm/gnuradio/gr-cora/python/cora/remote.py",
+      "size": 4385,
+      "sha256": "d0c088c7adb779406e26c0894ad7a2e7e7d887dd68aa6e1897babb8dd3ce18c4"
+    },
+    {
+      "path": "software/cora-pwm/include/cora_pwm_ioctl.h",
+      "size": 1319,
+      "sha256": "6d3cdd2e0e874b95bf5b307b390adac63031dffba3091243b4b984f8c2039449"
+    },
+    {
+      "path": "software/cora-pwm/kernel/Makefile",
+      "size": 290,
+      "sha256": "cdad20199a42f2c1d4a725c46a892abbe4851d84d603e3bef53e55988fdffcde"
+    },
+    {
+      "path": "software/cora-pwm/kernel/cora_pwm.c",
+      "size": 21959,
+      "sha256": "533521f4bb6b5c094fee2f0eeab585101bb64c995e6425598854ef2dbdd25a6e"
+    },
+    {
+      "path": "software/cora-pwm/udev/99-cora-pwm.rules",
+      "size": 52,
+      "sha256": "28a38dda950748f0c43ed44c7d44039bb374373d9d8931ab5ddcac0a37a7d28f"
+    },
+    {
+      "path": "software/cora-sonar/README.md",
+      "size": 6964,
+      "sha256": "d28725936285a39cc561295e37b418fd925827a06188fbaafdf19b9d9f74e2a8"
+    },
+    {
+      "path": "software/cora-sonar/config/cora-sonar",
+      "size": 224,
+      "sha256": "67ff1db421bf0a6cdeb89df175f1f1a22d6da55219b44d85a4d51183934d1e3d"
+    },
+    {
+      "path": "software/cora-sonar/cora_sonar.py",
+      "size": 37123,
+      "sha256": "dd51639c988ac0df27e1d967babdf7c0f610406f713ed31cb3eb8d674ed55801"
+    },
+    {
+      "path": "software/cora-sonar/cora_sonar_service.py",
+      "size": 8847,
+      "sha256": "a851c9175e1cd484eaf7e2b22e9e113f1e414d98c59ac293da3e51357291bbe8"
+    },
+    {
+      "path": "software/cora-sonar/cora_sonar_smoke.py",
+      "size": 1751,
+      "sha256": "123a89163a715ecc585359d6bf622ee436fef3d8c7f6e7ac2f3834d14a1b4599"
+    },
+    {
+      "path": "software/cora-sonar/init/cora-sonar",
+      "size": 1068,
+      "sha256": "cc455d35d0a24fd97a97521e0ae9970cae9e9bb4a5f052b7c796c986af250962"
+    },
+    {
+      "path": "software/cora-sonar/tests/test_cora_sonar.py",
+      "size": 10282,
+      "sha256": "7a66e35a937db638e5cdd1d59c251d7f582f47c02dcc51eb965523d27e03cdf5"
+    },
+    {
+      "path": "software/cora-sonar/www/index.html",
+      "size": 40633,
+      "sha256": "0c94b81def1d29552bef50343d83e1da9c0bcc4af1828cbee5b8ab31f08b313e"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/attributes",
+      "size": 88,
+      "sha256": "6bed7505fef44d18f7969e864cbc0dc608d0ae2a93b496a4d232e00ce35d0920"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/.statistics",
+      "size": 302,
+      "sha256": "501c0f575de516ab438b4b123c223f04aeb91075e3d9ead7105952836e6b732a"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/busybox/inetd.conf",
+      "size": 1011,
+      "sha256": "70c8f784496158ba9504661d93013074e02bca225361a73992cd5e34c7058b96"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/config",
+      "size": 7340,
+      "sha256": "36220fe44a924ff89a561c3b53027c831488a04f719640ad80decac244f9d5b0"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/config.old",
+      "size": 7308,
+      "sha256": "517d400251f8f7dc80a17b18e6799785af13ad7368b342147bfa25831fbcea6f"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/configs/Kconfig",
+      "size": 589,
+      "sha256": "6a25867ea4fa18cd708c1db171c97b5991d39a43e2bf2aadaeaec1fa9fce7ec7"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/configs/Kconfig.autoconfigsettings",
+      "size": 1606,
+      "sha256": "6553fc0a07777a7bd6c03da233c74a4d28e4befb25267583c6e6312fd9728fdc"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/configs/Kconfig.bootcompconfigurations",
+      "size": 11546,
+      "sha256": "9759ef11ea410c9f450f9fb893d82d6b4b1545c05df512b4813cb632aac6f020"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/configs/Kconfig.bootcompselection",
+      "size": 5798,
+      "sha256": "7bb454b5878e8f0a803f8ec4060f77be2feeb75832ea01dc1323d21c36542f40"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/configs/Kconfig.dtgsettings",
+      "size": 5546,
+      "sha256": "2cc8f1fe80d18e1c54298efb05b3e4ab5eeff33cd6cc3e6b33099b56474ab15f"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/configs/Kconfig.imagepkgconfigurations",
+      "size": 5107,
+      "sha256": "8b1f0cca8c82093c428ae592e682101a665696083fb137ce4086269a481e7c20"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/configs/Kconfig.linuxcompselection",
+      "size": 15578,
+      "sha256": "ccdc51a2b99a2c5fce2b95a56e981e730c00ac3731cf0fc7d1327398464bd219"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/configs/Kconfig.main",
+      "size": 1984,
+      "sha256": "d3b573338f6c5a0f1f4540e62c76a7de7cdf492db01278862c12391f6b627ea0"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/configs/Kconfig.syshw",
+      "size": 9026,
+      "sha256": "d4d3c99994a87923964cd405fe91ef9fdd04373ddd8e0588e0010e8573a9ba0e"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/configs/Kconfig.yoctobuildsettings",
+      "size": 8465,
+      "sha256": "336fd2b5d685ce70e417781fe0a26b152338b88a047823dbdb64eecf563be2e0"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/configs/Kconfig.yoctomachinesettings",
+      "size": 3276,
+      "sha256": "db0e2fe7a2806b8813787946c93ac299a964fd4534fc32137b4dcd1d41d80a18"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/flash_parts.txt",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/gen-machineconf.log",
+      "size": 90037,
+      "sha256": "9c19e92d717d759b1ad98d7a01834fc55c992c1086649179f3837edf161449aa"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/gen-machineconf.log.old",
+      "size": 90037,
+      "sha256": "4ca63387ebfbba3031b88f402ced8443d23ebad1debb15ba75900aaa63715cc1"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/init-ifupdown/interfaces",
+      "size": 239,
+      "sha256": "995d526632051d463070a6ee551737fe125644d315a5f298dccb5f973e868ddb"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/plnx_syshw_data",
+      "size": 3013,
+      "sha256": "04eb8a21e2594e784351623eef0f7f2b2714191fb6949491385949cd388b3498"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/rootfs_config",
+      "size": 70402,
+      "sha256": "36aa7ed242c6a3d0b4a61206957cc43f26d4ecbfc9b0ad0f41e11f14f460fcc0"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/rootfs_config.old",
+      "size": 70402,
+      "sha256": "36aa7ed242c6a3d0b4a61206957cc43f26d4ecbfc9b0ad0f41e11f14f460fcc0"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/rootfsconfigs/Kconfig",
+      "size": 137968,
+      "sha256": "1d9ddd43e19d42a77bd2a91219aa2385fc4f774ddfd5b543fa8b540a85445147"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/rootfsconfigs/Kconfig.part",
+      "size": 137812,
+      "sha256": "bbc355280480a8e565cf1d17bfb58ab7c9ab2f5a41c2d49e1dba14b6ce530ddd"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/rootfsconfigs/Kconfig.user",
+      "size": 267,
+      "sha256": "ca1c703626d9dc7806e21dd79bdb0077058151f9a8a1cd1bf286da9538c9ce9e"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/rootfsconfigs/user-rootfsconfig",
+      "size": 192,
+      "sha256": "45e16bdd063f2047eb27d1945735c9011d3186a1ce208db30c04adff62622e29"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/configs/systemd-conf/wired.network",
+      "size": 136,
+      "sha256": "16e07c0ffc2455a7e597979623419bd9e07d5084accb1985047c8007f38b17b1"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/hw-description/cora-z7-10-pwm.bit",
+      "size": 2083866,
+      "sha256": "f836abaf7e884b3214aaf1aba666f6cf81550a2552457bd2d546209637826c53"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/hw-description/ps7_init.c",
+      "size": 541570,
+      "sha256": "6704da127903ed7fbcd7120e1114cdb8b15968fdaffe8d90358b3c645e7a9a52"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/hw-description/ps7_init.h",
+      "size": 3679,
+      "sha256": "8fc96f51cf387487f2f4f6dc8da957b597068fbeffa1cc70b546069faa2262fc"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/hw-description/ps7_init.html",
+      "size": 2858163,
+      "sha256": "7ed7ae48e024b43e9365c9b5babbb6d912cb25f813279344794006ef8fe8563b"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/hw-description/ps7_init.tcl",
+      "size": 35746,
+      "sha256": "61ccf6490b6048d3d1aea02618e3503d2480c8dc18c24bfd603532885a99f767"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/hw-description/ps7_init_gpl.c",
+      "size": 542174,
+      "sha256": "4f8174ec4b169f1fcf194f2532f7a9c29a1cadd744ef15c9d40066a041606241"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/hw-description/ps7_init_gpl.h",
+      "size": 4283,
+      "sha256": "3d36970bb65a9ff64688ab87682b718f91106ea426efe5bf3f33d0ad23bf860b"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/hw-description/system.xsa",
+      "size": 926982,
+      "sha256": "ed455ee00c12994dab54d383af6491b1218ea1a59c5e6b22537bee56b17484b4"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/COPYING.MIT",
+      "size": 1023,
+      "sha256": "89807acf2309bd285f033404ee78581602f3cd9b819a16ac2f0e5f60ff4a473e"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/README",
+      "size": 1389,
+      "sha256": "b560ff187bdb50f89a69e347f89ef64b529c0c2250b68dd495f45d55519030d1"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/conf/layer.conf",
+      "size": 479,
+      "sha256": "1fc96981d5cc7cec9ea250547dab05741432792d846dbf6140cf66a9a817ebc7"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/conf/petalinuxbsp.conf",
+      "size": 272,
+      "sha256": "f505078aa4ef7a764849d431f468a9ac259d1b89f5b40c2500c2cdf95b5b0af6"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/conf/user-rootfsconfig",
+      "size": 192,
+      "sha256": "45e16bdd063f2047eb27d1945735c9011d3186a1ce208db30c04adff62622e29"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/meta-xilinx-tools/recipes-bsp/uboot-device-tree/files/system-user.dtsi",
+      "size": 36,
+      "sha256": "b2f3935b762c42f5cdab24f8f3c2655cde4d2ea95aae7d76ddf2169aedb3c612"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/meta-xilinx-tools/recipes-bsp/uboot-device-tree/uboot-device-tree.bbappend",
+      "size": 93,
+      "sha256": "befbcd78c45f1d5752d7d4109bb63e512dff85cbcbc045a80e079bee22d52c2e"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-bsp/device-tree/device-tree-sdt.inc",
+      "size": 168,
+      "sha256": "e9f04d07811cf673ff74618bfa049561ca7097c8a40b5debb7c0d098f4e689b7"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-bsp/device-tree/device-tree.bbappend",
+      "size": 170,
+      "sha256": "cc6404091022602e779cee44c1c6db73e33e41f1240c079070eb0e06b842a49f"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-bsp/device-tree/files/system-user.dtsi",
+      "size": 2534,
+      "sha256": "38324410b39f9977c8e2fd79fd142c0643595e94bdc19697c456788e33d545ec"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-bsp/u-boot/files/bsp.cfg",
+      "size": 73,
+      "sha256": "a32db0d90ab0459753634d308e250d15c7483cd330c3cd63664f2bf28db58def"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-bsp/u-boot/files/platform-top.h",
+      "size": 417,
+      "sha256": "3f97d9f60aeac56b467607555531935a6a68471cf99923405463a1ed9f2ed1db"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-bsp/u-boot/u-boot-xlnx_%.bbappend",
+      "size": 105,
+      "sha256": "d095f2a8c38d1b5dc08cb646a17364734b458496f6fdcdd40c579a0c064f8d42"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-kernel/linux/linux-xlnx/bsp.cfg",
+      "size": 53,
+      "sha256": "16b48c0663bdb36e185431e42a0fe3df2c172fb7d288e072c0329176018c008d"
+    },
+    {
+      "path": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user/recipes-kernel/linux/linux-xlnx_%.bbappend",
+      "size": 119,
+      "sha256": "c499a187f55b20a35f29668103a2a353a29e03acb39544fc887d5328ce57c285"
+    },
+    {
+      "path": "software/petalinux/meta-platform-common/conf/layer.conf",
+      "size": 479,
+      "sha256": "ecd54e985453df45511c8f86133d082beb544c124f1e967cdef820e7a1a8eff5"
+    },
+    {
+      "path": "software/petalinux/meta-platform-common/recipes-apps/cora-dashboard/cora-dashboard.bb",
+      "size": 1724,
+      "sha256": "62a8ff9dd2a122bd25b4f4a839b46e81d61dd9a45782753fed7bf51993b5f31d"
+    },
+    {
+      "path": "software/petalinux/meta-platform-common/recipes-modules/cora-dsp/cora-dsp.bb",
+      "size": 739,
+      "sha256": "e987bf34217deb3139584fc24b601dd3f046162778b0540c0d0ebe60f83bfba8"
+    },
+    {
+      "path": "software/petalinux/meta-platform-common/recipes-modules/cora-pwm/cora-pwm.bb",
+      "size": 731,
+      "sha256": "543d90089d5406249448ddee28e93ddb2697237b10296ce947fdf05b47add0a5"
+    },
+    {
+      "path": "software/petalinux/meta-platform-common/recipes-navigation/cora-navigation/cora-navigation.bb",
+      "size": 4088,
+      "sha256": "8d715a2ab669cb3034b22275cb55fcf7c8d3623c3b5cc2f6ab819c7f8426df09"
+    },
+    {
+      "path": "software/petalinux/meta-platform-common/recipes-radio/cora-ofdm-acoustic/cora-ofdm-acoustic.bb",
+      "size": 1405,
+      "sha256": "d11a6b91d323bd77dda9954d0721ff61e96b9f914320e4af20e607692b2fe5af"
+    },
+    {
+      "path": "software/petalinux/meta-platform-common/recipes-radio/cora-ofdm-demo/cora-ofdm-demo.bb",
+      "size": 2034,
+      "sha256": "b1719b15cc9a19cb4d8ef05f1dda90e84bb48d5503ec47c7fff820b01e06ede2"
+    },
+    {
+      "path": "software/petalinux/meta-platform-common/recipes-radio/cora-ofdm-text-demo/cora-ofdm-text-demo.bb",
+      "size": 2310,
+      "sha256": "0cbd23ff2c08020097d440deda3f8bb682ffa93cd1598ab53dc3f424d9942bbb"
+    },
+    {
+      "path": "software/petalinux/meta-platform-common/recipes-radio/cora-ofdm/cora-ofdm.bb",
+      "size": 887,
+      "sha256": "650f4ecb69786d5bd76a0486ecf82757400874e27deea72b4c573a0f84703bfb"
+    },
+    {
+      "path": "software/petalinux/meta-platform-common/recipes-radio/gnuradio/gnuradio_%.bbappend",
+      "size": 1017,
+      "sha256": "2669cad75787db8a3f7324fd968f704527527148fbf90b309263221785c25e4f"
+    },
+    {
+      "path": "software/petalinux/meta-platform-common/recipes-radio/gr-cora/gr-cora.bb",
+      "size": 1066,
+      "sha256": "64e69cac938a636545592e7dc3e2157ffaa140118ea6026bcb8d7ef4c314882a"
+    },
+    {
+      "path": "software/petalinux/meta-platform-common/recipes-radio/volk/volk_%.bbappend",
+      "size": 586,
+      "sha256": "2ba5555ef6b1891cc0eb915cda59ca64aab4654c8c24852c9d4fe14770dd6fcb"
+    },
+    {
+      "path": "software/petalinux/meta-platform-common/recipes-sonar/cora-sonar/cora-sonar.bb",
+      "size": 1999,
+      "sha256": "bda38070c848e3dbd3b44419bc75678069f19cdcc949b182467581cca38d94d4"
+    }
+  ],
+  "source_archive": {
+    "path": "platforms/cora-z7-10/snapshots/20260813T112540Z-pre-ultrazed-baseline-archived.tar.gz",
+    "sha256": "d4acd2cf57fae7c5abca46ab3f6eddd7161a7fac2761dc05f8b6f4da344c059d"
+  },
+  "live": {
+    "target": "petalinux@192.168.10.2",
+    "commands": {
+      "identity": {
+        "returncode": 0,
+        "output": "Warning: Permanently added '192.168.10.2' (ED25519) to the list of known hosts.\npetalinux\ncora-z7-10-baseline\nLinux cora-z7-10-baseline 6.12.10-xilinx-g0a0f70e531c7 #1 SMP PREEMPT Sat May 17 14:01:06 UTC 2025 armv7l GNU/Linux\nconsole=ttyPS0,115200 earlycon root=/dev/mmcblk0p2 ro rootwait net.ifnames=0"
+      },
+      "network": {
+        "returncode": 0,
+        "output": "Warning: Permanently added '192.168.10.2' (ED25519) to the list of known hosts.\n1: lo    inet 127.0.0.1/8 scope host lo\\       valid_lft forever preferred_lft forever\n1: lo    inet6 ::1/128 scope host proto kernel_lo \\       valid_lft forever preferred_lft forever\n2: eth0    inet 192.168.10.2/24 brd 192.168.10.255 scope global eth0\\       valid_lft forever preferred_lft forever\n2: eth0    inet6 fe80::20a:35ff:fe00:1e53/64 scope link proto kernel_ll \\       valid_lft forever preferred_lft forever"
+      },
+      "services": {
+        "returncode": 0,
+        "output": "Warning: Permanently added '192.168.10.2' (ED25519) to the list of known hosts.\ncora-sonar: Cora forward-sonar laboratory is stopped\ncora-dashboard: Cora dashboard is stopped\ncora-navigation: Cora navigation laboratory is stopped\ncora-ofdm-dashboard: Cora OFDM dashboard is stopped\ncora-ofdm-text-dashboard: Cora acoustic OFDM text dashboard is stopped"
+      },
+      "deployed-hashes": {
+        "returncode": 0,
+        "output": "Warning: Permanently added '192.168.10.2' (ED25519) to the list of known hosts.\n0c94b81def1d29552bef50343d83e1da9c0bcc4af1828cbee5b8ab31f08b313e  /usr/share/cora-sonar/www/index.html\ndd51639c988ac0df27e1d967babdf7c0f610406f713ed31cb3eb8d674ed55801  /usr/lib/python3.12/site-packages/cora_sonar.py\na851c9175e1cd484eaf7e2b22e9e113f1e414d98c59ac293da3e51357291bbe8  /usr/sbin/cora-sonar"
+      }
+    }
+  }
+}

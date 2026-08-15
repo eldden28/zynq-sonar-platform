@@ -1,0 +1,1 @@
+KERNEL=="cora-dsp*", GROUP="petalinux", MODE="0660"

@@ -1,3 +1,108 @@
 /include/ "system-conf.dtsi"
 / {
+	/*
+	 * USB0 uses an external USB3320 ULPI transceiver whose reset is wired
+	 * to PS GPIO/MIO 46.  Linux 6.12's Zynq ChipIdea glue requires a
+	 * legacy usb-phy phandle before it will bind the host controller.
+	 */
+	usb_phy0: phy0 {
+		compatible = "usb-nop-xceiv";
+		#phy-cells = <0>;
+		reset-gpios = <&gpio0 46 1>; /* GPIO_ACTIVE_LOW */
+	};
+};
+
+/*
+ * The Cora Z7 implements USB0 as an embedded host.  Declare the fixed role
+ * explicitly so Linux does not fall back to OTG role detection.
+ */
+&usb0 {
+	dr_mode = "host";
+	usb-phy = <&usb_phy0>;
+	status = "okay";
+};
+
+&axis_pwm_s16_0 {
+	compatible = "eldden28,cora-pwm-1.0";
+	dmas = <&axi_dma_0 0>;
+	dma-names = "tx";
+	status = "okay";
+};
+
+&axis_spectral_filter_0 {
+	compatible = "eldden28,cora-dsp-1.0";
+	dmas = <&axi_dma_dsp 0>, <&axi_dma_dsp 1>;
+	dma-names = "tx", "rx";
+	status = "okay";
+};
+
+/*
+ * The Cora Z7 Ethernet PHY is an RTL8211E at MDIO address 0.  Describing it
+ * explicitly prevents the MACB driver from scanning all 32 MDIO addresses,
+ * where each absent address can consume the one-second controller timeout.
+ */
+&gem0 {
+	phy-handle = <&ethernet_phy>;
+
+	mdio {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		ethernet_phy: ethernet-phy@0 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <0>;
+		};
+	};
+};
+
+/*
+ * Cora Z7 user-accessible XADC inputs.  Keep this order synchronized with
+ * CORA_XADC_USER_CHANNELS in cora_dashboard.py: Linux numbers external IIO
+ * voltage channels in device-tree order, beginning at in_voltage9.
+ *
+ * A0-A5 are single-ended 0..3.3 V inputs with board-level scaling.
+ * A6-A11 form three differential 0..1.0 V pairs.  VP/VN is the dedicated
+ * differential input.  Bipolar channels report signed sysfs raw values; the
+ * dashboard also exposes their underlying 12-bit two's-complement code.
+ */
+&adc {
+	status = "okay";
+	xlnx,channels {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		channel@2 {
+			reg = <2>;  /* VAUX1  = A0 */
+		};
+		channel@a {
+			reg = <10>; /* VAUX9  = A1 */
+		};
+		channel@7 {
+			reg = <7>;  /* VAUX6  = A2 */
+		};
+		channel@10 {
+			reg = <16>; /* VAUX15 = A3 */
+		};
+		channel@6 {
+			reg = <6>;  /* VAUX5  = A4 */
+		};
+		channel@e {
+			reg = <14>; /* VAUX13 = A5 */
+		};
+		channel@d {
+			reg = <13>; /* VAUX12 = A6-A7 */
+			xlnx,bipolar;
+		};
+		channel@1 {
+			reg = <1>;  /* VAUX0  = A8-A9 */
+			xlnx,bipolar;
+		};
+		channel@9 {
+			reg = <9>;  /* VAUX8  = A10-A11 */
+			xlnx,bipolar;
+		};
+		channel@0 {
+			reg = <0>;  /* dedicated VP/VN */
+			xlnx,bipolar;
+		};
+	};
 };

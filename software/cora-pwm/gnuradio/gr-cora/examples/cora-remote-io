@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+"""Expose Cora ADC and PWM streams to a GNU Radio host over Ethernet.
+
+Remote I/O v1 uses two raw IEEE-754 little-endian float32 TCP streams:
+50000 is ADC board-to-host and 50001 is PWM host-to-board. Both streams use
+the common Cora normalized range -1.0 through +1.0.
+"""
+
+import argparse
+import select
+import socket
+import struct
+import threading
+import time
+from pathlib import Path
+
+from gnuradio import blocks, cora, gr
+
+
+def discover_xadc() -> str:
+    for candidate in sorted(Path("/sys/bus/iio/devices").glob("iio:device*")):
+        try:
+            name = (candidate / "name").read_text(encoding="ascii").strip().lower()
+        except FileNotFoundError:
+            continue
+        if "xadc" in name:
+            return str(candidate)
+    raise RuntimeError("no XADC IIO device found; pass --adc-device explicitly")
+
+
+class AdcTcpPublisher:
+    """Publish the low-rate XADC control stream without queueing stale data."""
+
+    def __init__(self, args):
+        self._adc = cora.IioAdc(
+            args.adc_device or discover_xadc(),
+            args.channel,
+            args.full_scale_volts,
+            args.scale_multiplier,
+        )
+        self._host = args.bind
+        self._port = args.adc_port
+        self._period = 1.0 / args.adc_sample_rate
+        self._stopping = threading.Event()
+        self._listener = None
+        self._client = None
+        self._thread = None
+
+    def start(self):
+        self._listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self._listener.bind((self._host, self._port))
+        self._listener.listen(1)
+        self._listener.setblocking(False)
+        self._thread = threading.Thread(target=self._run, name="cora-adc-tcp", daemon=True)
+        self._thread.start()
+
+    def stop(self):
+        self._stopping.set()
+        if self._thread is not None:
+            self._thread.join(timeout=2)
+        if self._client is not None:
+            self._client.close()
+            self._client = None
+        if self._listener is not None:
+            self._listener.close()
+            self._listener = None
+
+    def _accept_client(self):
+        if self._client is not None:
+            return
+        readable, _, _ = select.select([self._listener], [], [], 0)
+        if readable:
+            self._client, _address = self._listener.accept()
+            self._client.settimeout(1)
+
+    def _run(self):
+        while not self._stopping.is_set():
+            self._accept_client()
+            value = self._adc.read_normalized()
+            if self._client is not None:
+                try:
+                    self._client.sendall(struct.pack("<f", value))
+                except OSError:
+                    self._client.close()
+                    self._client = None
+            self._stopping.wait(self._period)
+
+
+def run_pwm_session(args):
+    flowgraph = gr.top_block("cora_remote_pwm")
+    source = cora.tcp_float_source(args.bind, args.pwm_port)
+    rate_limit = blocks.throttle(gr.sizeof_float, args.pwm_sample_rate, True)
+    convert = blocks.float_to_short(1, 32767.0)
+    sink = cora.pwm_sink(
+        args.pwm_device, args.period_ticks, args.invert, not args.no_dither
+    )
+    flowgraph.connect(source, rate_limit, convert, sink)
+    print(
+        f"PWM TCP server listening on {args.bind}:{args.pwm_port}; "
+        "waiting for a GNU Radio host client",
+        flush=True,
+    )
+    flowgraph.run()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--bind", default="0.0.0.0",
+                        help="board address to listen on (default: all IPv4 addresses)")
+    parser.add_argument("--adc-port", type=int, default=50000)
+    parser.add_argument("--pwm-port", type=int, default=50001)
+    parser.add_argument("--adc-device", help="IIO device directory")
+    parser.add_argument("--channel", default="auto")
+    parser.add_argument("--full-scale-volts", type=float, default=3.3)
+    parser.add_argument("--scale-multiplier", type=float, default=3.3)
+    parser.add_argument("--adc-sample-rate", type=float, default=1000.0,
+                        help="XADC acquisition and outbound stream rate in samples/s (default: 1000)")
+    parser.add_argument("--pwm-sample-rate", type=float, default=100000.0,
+                        help="maximum inbound PWM stream rate in samples/s (default: 100000)")
+    parser.add_argument("--pwm-device", default="/dev/cora-pwm0")
+    parser.add_argument("--period-ticks", type=int, default=2000)
+    parser.add_argument("--invert", action="store_true")
+    parser.add_argument("--no-dither", action="store_true")
+    args = parser.parse_args()
+
+    if args.adc_sample_rate <= 0 or args.pwm_sample_rate <= 0:
+        parser.error("sample rates must be positive")
+    for port in (args.adc_port, args.pwm_port):
+        if not 1 <= port <= 65535:
+            parser.error("TCP ports must be between 1 and 65535")
+
+    adc_publisher = AdcTcpPublisher(args)
+    print(
+        f"ADC TCP server listening on {args.bind}:{args.adc_port} "
+        f"at {args.adc_sample_rate:g} samples/s",
+        flush=True,
+    )
+    adc_publisher.start()
+    try:
+        while True:
+            run_pwm_session(args)
+            print("PWM client disconnected; PWM stopped. Listening again.", flush=True)
+            time.sleep(0.2)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        adc_publisher.stop()
+        print("Cora Remote I/O stopped.")
+
+
+if __name__ == "__main__":
+    main()

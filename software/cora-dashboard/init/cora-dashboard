@@ -1,0 +1,40 @@
+#!/bin/sh
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/cora-dashboard
+PIDFILE=/var/run/cora-dashboard.pid
+DASHBOARD_ARGS="--bind 0.0.0.0 --port 8080 --web-root /usr/share/cora-dashboard --token-file /var/lib/cora-dashboard/token --terminal-user petalinux"
+
+[ -r /etc/default/cora-dashboard ] && . /etc/default/cora-dashboard
+
+case "$1" in
+    start)
+        echo "Starting Cora dashboard"
+        start-stop-daemon --start --quiet --background --make-pidfile \
+            --pidfile "$PIDFILE" --exec "$DAEMON" -- $DASHBOARD_ARGS
+        ;;
+    stop)
+        echo "Stopping Cora dashboard"
+        start-stop-daemon --stop --quiet --retry TERM/5/KILL/2 \
+            --pidfile "$PIDFILE"
+        rm -f "$PIDFILE"
+        ;;
+    restart|force-reload)
+        "$0" stop
+        "$0" start
+        ;;
+    status)
+        if [ -s "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+            echo "Cora dashboard is running"
+            exit 0
+        fi
+        echo "Cora dashboard is stopped"
+        exit 3
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+
+exit 0

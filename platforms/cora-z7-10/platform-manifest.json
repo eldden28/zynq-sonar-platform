@@ -20,15 +20,33 @@
     "petalinux": null
   },
   "source": {
-    "git_commit": null,
+    "git_commit": "2555a0f3a4d4b7d98a29719abb4e2c629eac98e1",
     "dirty": true
   },
   "artifacts": [
     {
       "role": "xsa",
-      "path": "hardware/export/cora-z7-10/cora_z7_10_base.xsa",
-      "sha256": "a7eb0e57830e1544a5b197207a6f389645e46b78d83fce6a8cb2f43b83fc9f85"
+      "path": "hardware/export/cora-z7-10-pwm/cora-z7-10-pwm.xsa",
+      "sha256": "ad7a1c4405e05403dac1be6cc56006f11e4420aec94b577714ab3f761c3b4d8c"
+    },
+    {
+      "role": "bitstream",
+      "path": "build/vivado/cora-z7-10-pwm/cora_z7_10_pwm.runs/impl_1/system_wrapper.bit",
+      "sha256": "987be08e434c5b65d7cab29257a7e42a2b6f982e9e3a320eaa6c3ab19daf7321"
     }
   ],
-  "accelerators": []
+  "accelerators": [
+    {
+      "type": "pwm",
+      "instance": 0,
+      "version": 1,
+      "base_address": "0x43c00000"
+    },
+    {
+      "type": "spectral_filter",
+      "instance": 0,
+      "version": 1,
+      "base_address": "0x43c10000"
+    }
+  ]
 }
