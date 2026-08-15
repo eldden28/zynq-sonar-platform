@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "id": "ultrazed-3eg-pcie",
+  "display_name": "Avnet UltraZed-EG 3EG on PCIe Carrier",
+  "status": "development",
+  "platform_id": "0x00020001",
+  "soc": {
+    "family": "zynq-ultrascale-plus",
+    "device": "xczu3eg-sfva625-1-i",
+    "architecture": "aarch64",
+    "petalinux_template": "zynqMP"
+  },
+  "board": {
+    "module": "Avnet UltraZed-EG 3EG SOM",
+    "carrier": "Avnet AES-ZU-PCIECC-G UltraZed-EG PCIe Carrier Card",
+    "revision": null,
+    "board_part": "avnet-tria:ultrazed_eg_pciecc_production:part0:1.4"
+  },
+  "hardware": {
+    "build_script": "scripts/build-ultrazed-3eg-pcie-hardware.sh",
+    "xsa": "hardware/export/ultrazed-3eg-pcie/ultrazed-3eg-pcie.xsa",
+    "bitstream": "software/petalinux/ultrazed-3eg-pcie/images/linux/system.bit",
+    "platform_overlay": "platforms/ultrazed-3eg-pcie/hardware"
+  },
+  "linux": {
+    "project": "software/petalinux/ultrazed-3eg-pcie",
+    "platform_overlay": "platforms/ultrazed-3eg-pcie/petalinux/overlay/project-spec/meta-user",
+    "shared_layers": [
+      "software/petalinux/meta-platform-common",
+      "third_party/meta-sdr"
+    ],
+    "image": "software/petalinux/ultrazed-3eg-pcie/images/linux/petalinux-sdimage.wic",
+    "init_system": "sysvinit"
+  },
+  "software": {
+    "common_components": [
+      "cora-dashboard",
+      "cora-navigation",
+      "cora-ofdm",
+      "cora-ofdm-acoustic",
+      "cora-ofdm-demo",
+      "cora-ofdm-text-demo",
+      "cora-sonar"
+    ],
+    "required_capabilities": ["ethernet", "sonar-cpu"]
+  },
+  "deployment": {
+    "hostname": "ultrazed-3eg-pcie",
+    "ssh_user": "petalinux",
+    "addresses": []
+  },
+  "snapshot": {
+    "include": [
+      "platforms/ultrazed-3eg-pcie/**",
+      "hardware/rtl/**",
+      "software/cora-*/**",
+      "software/petalinux/meta-platform-common/**",
+      "schemas/platform*.json"
+    ],
+    "live_commands": [
+      {"name": "identity", "command": "id -un; hostname; uname -a; cat /proc/cmdline"},
+      {"name": "network", "command": "ip -o addr 2>/dev/null || ifconfig -a 2>/dev/null || true"}
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+/include/ "system-conf.dtsi"
+
+/*
+ * UltraZed 3EG PCIe carrier platform additions belong here. Keep generated
+ * PS and PL nodes in system-conf.dtsi; use labels to add only reviewed board
+ * policy and common accelerator bindings.
+ *
+ * Do not copy Cora USB PHY, Ethernet PHY, XADC channel, or fixed-address
+ * nodes into this file. The carrier schematic and exported XSA are the
+ * authority for those resources.
+ */
+
+/ {
+};
+
+&axis_spectral_filter_0 {
+	compatible = "eldden28,cora-dsp-1.0";
+	dmas = <&axi_dma_dsp 0>, <&axi_dma_dsp 1>;
+	dma-names = "tx", "rx";
+	status = "okay";
+};
