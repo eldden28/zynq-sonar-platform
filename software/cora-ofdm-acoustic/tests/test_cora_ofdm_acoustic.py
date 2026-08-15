@@ -28,6 +28,8 @@ from cora_ofdm_acoustic import (  # noqa: E402
     interleave_bits,
     make_acoustic_config,
     puncture_rate_two_thirds,
+    psk8_demap,
+    psk8_map,
     read_wav,
     viterbi_decode,
     write_wav,
@@ -69,6 +71,29 @@ def test_cached_carrier_geometry_and_batched_waveform_are_exact():
 def test_bit_conversion_round_trip():
     payload = bytes(range(251))
     assert bits_to_bytes(bytes_to_bits(payload)) == payload
+
+
+def test_8psk_gray_constellation_and_clean_packet_round_trip():
+    labels = np.arange(8, dtype=np.uint8)
+    bits = np.unpackbits(labels[:, None], axis=1)[:, -3:].reshape(-1)
+    symbols = psk8_map(bits)
+    np.testing.assert_array_equal(psk8_demap(symbols), bits)
+    np.testing.assert_allclose(np.abs(symbols), 1.0)
+
+    cfg = make_acoustic_config(
+        "v3-r2/3",
+        1500.0,
+        15000.0,
+        modulation="8psk",
+    )
+    payload = bytes(range(251)) * 2
+    packet = encode_packet(payload, sequence=19, cfg=cfg)
+    result = decode_packet(packet.samples, cfg=cfg)
+    assert result.valid, result.error
+    assert result.sequence == 19
+    assert result.payload == payload
+    assert cfg.bits_per_carrier == 3
+    assert cfg.gross_bit_rate == 30_600.0
 
 
 def test_waveform_parameters_and_real_samples():

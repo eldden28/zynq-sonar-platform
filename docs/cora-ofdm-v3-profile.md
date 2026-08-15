@@ -230,6 +230,10 @@ refresh once, then decodes both known slots as soon as their samples arrive.
 Capture, playback, acquisition, and slot decoding therefore overlap instead
 of waiting for the complete superframe. Fixed-size padded slots allow a later
 packet to remain locatable even when an earlier header or payload is corrupt.
+Validated results are now committed to the dashboard as each ordered decoder
+future completes; the live waterfall remains attached directly to PCM capture.
+Invalid slots are retained for retry only after the primary ALSA session has
+closed, preventing retry playback from contending with the continuous stream.
 
 The matched control and continuous tests used rate-2/3, FFT256, CP64,
 48 ksample/s, 2.25--9.75 kHz, and 3,072 bytes split into eight 384-byte

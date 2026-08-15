@@ -30,6 +30,12 @@
     button.warn{background:#3a2b12;border-color:#765d28}.buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
     #notice{min-height:20px;color:var(--cyan);margin-top:8px}.metric{display:grid;grid-template-columns:80px 1fr 60px;gap:7px;align-items:center;padding:4px 0}
     .bar{height:7px;background:#070a10;border:1px solid #283750;border-radius:7px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan))}
+    .attitude-card{padding-bottom:11px}.attitude-stage{position:relative;overflow:hidden;border:1px solid #29364d;border-radius:9px;background:#03070d}
+    #attitudeCanvas{display:block;width:100%;height:410px;touch-action:none;cursor:grab}#attitudeCanvas:active{cursor:grabbing}
+    .attitude-hud{position:absolute;left:12px;right:12px;bottom:12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;pointer-events:none}
+    .attitude-hud div{padding:7px 9px;border:1px solid #3a4a62;border-radius:7px;background:#07101bd9;box-shadow:0 3px 12px #0008}
+    .attitude-hud span{display:block;color:var(--muted);font:700 9px/1.2 ui-monospace,monospace;letter-spacing:.12em}.attitude-hud strong{display:block;margin-top:3px;color:var(--cyan);font:700 17px/1 ui-monospace,monospace}
+    .attitude-note{display:flex;justify-content:space-between;gap:10px;margin-top:7px;color:var(--muted);font-size:11px}.attitude-source{color:var(--cyan);font-family:ui-monospace,monospace}
     @media(max-width:1050px){.card{grid-column:span 6}.wide,.full{grid-column:1/-1}.controls{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){header{align-items:flex-start}.pills{display:none}main{padding:10px}.card{grid-column:1/-1}.controls{grid-template-columns:1fr}}
   </style>
 </head>
@@ -53,6 +59,17 @@
     </div>
     <div id="navMap" role="application" aria-label="Cora navigation mission map"></div>
   </section>
+  <section class="card wide attitude-card"><h2>Live vehicle attitude · fused INS</h2>
+    <div class="attitude-stage">
+      <canvas id="attitudeCanvas" role="img" aria-label="Live three-dimensional vehicle attitude model"></canvas>
+      <div class="attitude-hud">
+        <div><span>Heading</span><strong id="modelHeading">—</strong></div>
+        <div><span>Roll</span><strong id="modelRoll">—</strong></div>
+        <div><span>Pitch</span><strong id="modelPitch">—</strong></div>
+      </div>
+    </div>
+    <div class="attitude-note"><span class="attitude-source">FUSED INS · BODY → NED</span><span>Drag to orbit · wheel/pinch to zoom · double-tap to reset view</span></div>
+  </section>
   <section class="card wide"><h2>Four-hydrophone timing aperture</h2><canvas id="arrayCanvas"></canvas><div id="metrics"></div></section>
   <section class="card full"><h2>Simulation and fault controls</h2>
     <div class="controls">
@@ -70,9 +87,11 @@
 </div></main>
 <script src="/vendor/leaflet/leaflet.js"></script>
 <script src="/map.js"></script>
+<script src="/attitude.js"></script>
 <script>
 const $=id=>document.getElementById(id),history=[];let cursor=-1,last=null,clockLocked=true;
 const navigationMap=window.navigationMap=new CoraNavigationMap({notice:message=>$('notice').textContent=message});
+const attitudeViewer=window.attitudeViewer=new CoraAttitudeViewer($('attitudeCanvas'));
 const fmt=(v,n=2,u='')=>Number.isFinite(v)?`${v.toFixed(n)}${u}`:'—';const pill=(el,ok,text)=>{el.textContent=text;el.className='pill '+(ok?'good':'bad')};
 function fit(canvas,height){const r=canvas.getBoundingClientRect(),d=devicePixelRatio||1;if(canvas.width!==Math.round(r.width*d)){canvas.width=Math.round(r.width*d);canvas.height=Math.round(height*d)}const c=canvas.getContext('2d');c.setTransform(d,0,0,d,0,0);return[c,r.width,height]}
 function arrayPlot(s){const [c,w,h]=fit($('arrayCanvas'),260);c.fillStyle='#03060b';c.fillRect(0,0,w,h);const ac=s.acoustic,center=[w/2,h/2],radius=Math.min(w,h)*.28,pts=[[-1,-1],[-1,1],[1,1],[1,-1]];
@@ -84,7 +103,7 @@ function render(s){last=s;const a=s.acoustic||{},i=s.ins||{},cl=s.clock||{};cloc
   $('range').textContent=fmt(a.range_m,2,' m');if(a.bearing_body_unit){const u=a.bearing_body_unit;$('bearing').textContent=`[${u.map(v=>v.toFixed(3)).join(', ')}]`}else $('bearing').textContent='—';$('rangeStatus').textContent=a.range_valid?'VALID':'UNAVAILABLE';$('fixStatus').textContent=a.valid?'VALID':(a.error||'WAITING');
   $('position').textContent=i.position_ned_m?`N ${i.position_ned_m[0].toFixed(1)} · E ${i.position_ned_m[1].toFixed(1)}`:'—';$('depth').textContent=fmt(i.depth_m,2,' m');$('attitude').textContent=i.heading_deg===undefined?'—':`${i.heading_deg.toFixed(1)}° / ${i.roll_deg.toFixed(1)}° / ${i.pitch_deg.toFixed(1)}°`;$('sigma').textContent=fmt(i.horizontal_sigma_m,2,' m');
   $('uncertainty').textContent=fmt(cl.uncertainty_ns/1000,1,' µs');$('clockLock').textContent=cl.locked?'LOCKED':'UNLOCKED';$('offset').textContent=fmt(cl.offset_ns/1000,1,' µs');$('drift').textContent=fmt(cl.drift_ppm,2,' ppm');
-  $('metrics').innerHTML=a.peak_metrics?a.peak_metrics.map((v,n)=>`<div class="metric"><span>Hydro ${n+1}</span><div class="bar"><i style="width:${Math.min(100,v*100)}%"></i></div><span>${v.toFixed(3)}</span></div>`).join(''):'Waiting for ping…';navigationMap.update(s,history);arrayPlot(s)}
+  $('metrics').innerHTML=a.peak_metrics?a.peak_metrics.map((v,n)=>`<div class="metric"><span>Hydro ${n+1}</span><div class="bar"><i style="width:${Math.min(100,v*100)}%"></i></div><span>${v.toFixed(3)}</span></div>`).join(''):'Waiting for ping…';navigationMap.update(s,history);attitudeViewer.update(i);arrayPlot(s)}
 async function refresh(){try{const r=await fetch('/api/status',{cache:'no-store'});if(!r.ok)throw Error(r.status);render(await r.json())}catch(e){pill($('live'),false,'Disconnected')}}
 async function fetchHistory(){try{const r=await fetch(`/api/history?after=${cursor}`,{cache:'no-store'}),j=await r.json();if(j.reset){history.length=0;navigationMap.resetTracks()}for(const v of j.history)history.push(v);while(history.length>900)history.shift();cursor=j.latest_id;if(last)navigationMap.update(last,history)}catch(_){}}
 async function control(action,values){$('notice').textContent='Working…';try{const r=await fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,values})}),j=await r.json();$('notice').textContent=j.message||j.error||'Done';if(!r.ok)throw Error(j.error);if(action==='reset'){history.length=0;cursor=-1;navigationMap.resetTracks()}}catch(e){$('notice').textContent=`Request failed: ${e}`}}

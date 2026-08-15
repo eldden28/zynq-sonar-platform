@@ -321,7 +321,9 @@ class DashboardAssetTests(unittest.TestCase):
         web_root = Path(__file__).parents[1] / "www" / "acoustic"
         index = (web_root / "index.html").read_text(encoding="utf-8")
         map_js = (web_root / "map.js").read_text(encoding="utf-8")
+        attitude_js = (web_root / "attitude.js").read_text(encoding="utf-8")
         for relative in (
+            "attitude.js",
             "map.css",
             "map.js",
             "vendor/leaflet/leaflet.css",
@@ -330,6 +332,12 @@ class DashboardAssetTests(unittest.TestCase):
         ):
             self.assertTrue((web_root / relative).is_file(), relative)
         self.assertIn('id="navMap"', index)
+        self.assertIn('id="attitudeCanvas"', index)
+        self.assertIn('src="/attitude.js"', index)
+        self.assertIn("new CoraAttitudeViewer", index)
+        self.assertIn("attitudeViewer.update(i)", index)
+        self.assertIn("bodyToScene", attitude_js)
+        self.assertIn("Four independent stern control planes", attitude_js)
         self.assertIn('value="satellite"', index)
         self.assertIn(
             "https://api.maptiler.com/maps/satellite-v4/256/{z}/{x}/{y}.jpg?key=",

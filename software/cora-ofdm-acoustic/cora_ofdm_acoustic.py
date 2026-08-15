@@ -21,7 +21,7 @@ import tempfile
 import time
 import wave
 import zlib
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from functools import cached_property
 from pathlib import Path
 
@@ -34,6 +34,7 @@ class AcousticConfig:
     fft_len: int = 256
     cp_len: int = 64
     modem_version: int = 2
+    modulation: str = "qpsk"
     first_bin: int = 12
     last_bin: int = 52
     pilot_bins: tuple[int, ...] = (16, 24, 32, 40, 48)
@@ -64,7 +65,11 @@ class AcousticConfig:
 
     @cached_property
     def bits_per_symbol(self) -> int:
-        return int(self.data_bins.size * 2)
+        return int(self.data_bins.size * self.bits_per_carrier)
+
+    @property
+    def bits_per_carrier(self) -> int:
+        return 3 if self.modulation == "8psk" else 2
 
     @property
     def low_frequency_hz(self) -> float:
@@ -156,6 +161,8 @@ UNCODED_WIRE_VERSION = 0
 V2_WIRE_VERSION = 1
 V3_RATE_TWO_THIRDS_WIRE_VERSION = 2
 V3_WIRE_VERSION = 3
+V3_RATE_TWO_THIRDS_8PSK_WIRE_VERSION = 4
+V3_8PSK_WIRE_VERSION = 5
 HEADER_WITHOUT_CRC = struct.Struct("<2sBBH")
 HEADER = struct.Struct("<2sBBHH")
 HEADER_REPETITIONS = 3
@@ -181,6 +188,7 @@ def make_acoustic_config(
     fft_len: int = 256,
     cp_len: int = 64,
     sample_rate: int = 48_000,
+    modulation: str = "qpsk",
 ) -> AcousticConfig:
     """Create a validated modem configuration on the OFDM-bin grid."""
     if isinstance(modem_version, str):
@@ -206,6 +214,11 @@ def make_acoustic_config(
         raise ValueError(
             "modem version must be uncoded, v2, v3, or v3-r2/3"
         )
+    modulation = modulation.lower().replace("-", "")
+    if modulation not in ("qpsk", "8psk"):
+        raise ValueError("modulation must be qpsk or 8psk")
+    if modulation == "8psk" and modem_version not in (3, 4):
+        raise ValueError("8psk currently requires v3 convolutional FEC")
     if not (
         math.isfinite(low_frequency_hz)
         and math.isfinite(high_frequency_hz)
@@ -251,6 +264,7 @@ def make_acoustic_config(
         fft_len=fft_len,
         cp_len=cp_len,
         modem_version=modem_version,
+        modulation=modulation,
         first_bin=first_bin,
         last_bin=last_bin,
         pilot_bins=pilot_bins,
@@ -623,6 +637,52 @@ def qpsk_demap(symbols: np.ndarray) -> np.ndarray:
     return bits
 
 
+_PSK8_PHASE_BY_LABEL = np.asarray((0, 1, 3, 2, 7, 6, 4, 5))
+
+
+def psk8_map(bits: np.ndarray) -> np.ndarray:
+    bits = np.asarray(bits, dtype=np.uint8).reshape(-1)
+    if bits.size % 3:
+        bits = np.pad(bits, (0, 3 - bits.size % 3))
+    triples = bits.reshape(-1, 3)
+    labels = (
+        4 * triples[:, 0]
+        + 2 * triples[:, 1]
+        + triples[:, 2]
+    )
+    phases = _PSK8_PHASE_BY_LABEL[labels] * (math.pi / 4.0)
+    return np.exp(1j * phases)
+
+
+def psk8_demap(symbols: np.ndarray) -> np.ndarray:
+    symbols = np.asarray(symbols).reshape(-1)
+    phase_indices = np.floor(
+        (np.mod(np.angle(symbols), 2.0 * math.pi) + math.pi / 8.0)
+        / (math.pi / 4.0)
+    ).astype(np.uint8) % 8
+    labels = phase_indices ^ (phase_indices >> 1)
+    bits = np.empty(labels.size * 3, dtype=np.uint8)
+    bits[0::3] = (labels >> 2) & 1
+    bits[1::3] = (labels >> 1) & 1
+    bits[2::3] = labels & 1
+    return bits
+
+
+def _map_bits(cfg: AcousticConfig, bits: np.ndarray) -> np.ndarray:
+    if cfg.modulation == "8psk":
+        return psk8_map(bits)
+    return qpsk_map(bits)
+
+
+def _demap_symbols(
+    cfg: AcousticConfig,
+    symbols: np.ndarray,
+) -> np.ndarray:
+    if cfg.modulation == "8psk":
+        return psk8_demap(symbols)
+    return qpsk_demap(symbols)
+
+
 def _training_grids(cfg: AcousticConfig) -> tuple[np.ndarray, ...]:
     rng = np.random.default_rng(cfg.training_seed)
     grids = []
@@ -648,7 +708,7 @@ def _bits_to_grid(
         raise ValueError("too many bits for one OFDM symbol")
     padded = np.pad(bits, (0, cfg.bits_per_symbol - bits.size))
     grid = np.zeros(cfg.fft_len, dtype=np.complex128)
-    grid[cfg.data_bins] = qpsk_map(padded)
+    grid[cfg.data_bins] = _map_bits(cfg, padded)
     grid[np.asarray(cfg.pilot_bins)] = pilot_sign
     grid[-cfg.active_bins] = np.conj(grid[cfg.active_bins])
     return grid
@@ -659,7 +719,7 @@ def _bit_rows_to_grids(
     bit_rows: np.ndarray,
     pilot_signs: np.ndarray,
 ) -> np.ndarray:
-    """Map several QPSK payload rows into Hermitian OFDM grids."""
+    """Map several payload rows into Hermitian OFDM grids."""
     rows = np.asarray(bit_rows, dtype=np.uint8)
     if rows.ndim == 1:
         rows = rows.reshape(1, -1)
@@ -677,11 +737,10 @@ def _bit_rows_to_grids(
             rows,
             ((0, 0), (0, cfg.bits_per_symbol - rows.shape[1])),
         )
-    pairs = rows.reshape(rows.shape[0], cfg.data_bins.size, 2)
-    mapped = (
-        (1.0 - 2.0 * pairs[:, :, 0])
-        + 1j * (1.0 - 2.0 * pairs[:, :, 1])
-    ) / math.sqrt(2.0)
+    mapped = _map_bits(cfg, rows.reshape(-1)).reshape(
+        rows.shape[0],
+        cfg.data_bins.size,
+    )
 
     grids = np.zeros(
         (rows.shape[0], cfg.fft_len),
@@ -691,6 +750,28 @@ def _bit_rows_to_grids(
     grids[:, np.asarray(cfg.pilot_bins)] = signs[:, None]
     grids[:, -cfg.active_bins] = np.conj(grids[:, cfg.active_bins])
     return grids
+
+
+def _encode_header_grids(
+    cfg: AcousticConfig,
+    header_bits: np.ndarray,
+) -> np.ndarray:
+    """Keep control headers on robust QPSK in every body mode."""
+    header_cfg = (
+        replace(cfg, modulation="qpsk")
+        if cfg.modulation != "qpsk"
+        else cfg
+    )
+    header_rows = np.repeat(
+        np.asarray(header_bits, dtype=np.uint8).reshape(1, -1),
+        HEADER_REPETITIONS,
+        axis=0,
+    )
+    return _bit_rows_to_grids(
+        header_cfg,
+        header_rows,
+        np.ones(HEADER_REPETITIONS),
+    )
 
 
 def _grids_to_symbols(
@@ -714,8 +795,12 @@ def _wire_version(cfg: AcousticConfig) -> int:
     if cfg.modem_version == 2:
         return V2_WIRE_VERSION
     if cfg.modem_version == 4:
+        if cfg.modulation == "8psk":
+            return V3_RATE_TWO_THIRDS_8PSK_WIRE_VERSION
         return V3_RATE_TWO_THIRDS_WIRE_VERSION
     if cfg.modem_version == 3:
+        if cfg.modulation == "8psk":
+            return V3_8PSK_WIRE_VERSION
         return V3_WIRE_VERSION
     raise ValueError(f"unsupported modem version v{cfg.modem_version}")
 
@@ -779,16 +864,7 @@ def encode_packet(
     coded_body_bits = _encode_body(cfg, body_bits)
     payload_symbols = math.ceil(coded_body_bits.size / cfg.bits_per_symbol)
 
-    header_rows = np.repeat(
-        header_bits.reshape(1, -1),
-        HEADER_REPETITIONS,
-        axis=0,
-    )
-    header_grids = _bit_rows_to_grids(
-        cfg,
-        header_rows,
-        np.ones(HEADER_REPETITIONS),
-    )
+    header_grids = _encode_header_grids(cfg, header_bits)
 
     padded_body = np.pad(
         coded_body_bits,
@@ -873,18 +949,7 @@ def encode_superframe(
         header_bits = bytes_to_bits(
             _make_header(cfg, sequence, len(payload))
         )
-        header_rows = np.repeat(
-            header_bits.reshape(1, -1),
-            HEADER_REPETITIONS,
-            axis=0,
-        )
-        grids.extend(
-            _bit_rows_to_grids(
-                cfg,
-                header_rows,
-                np.ones(HEADER_REPETITIONS),
-            )
-        )
+        grids.extend(_encode_header_grids(cfg, header_bits))
 
         body = (
             payload
@@ -1136,7 +1201,7 @@ def decode_superframe_slot(
                 pilot_sign,
             )
             received_body_bits.append(
-                qpsk_demap(equalized[cfg.data_bins])
+                _demap_symbols(cfg, equalized[cfg.data_bins])
             )
         body_bits = _decode_body(
             cfg,
@@ -1294,7 +1359,7 @@ def decode_superframe(
                     pilot_sign,
                 )
                 received_body_bits.append(
-                    qpsk_demap(equalized[cfg.data_bins])
+                    _demap_symbols(cfg, equalized[cfg.data_bins])
                 )
                 cursor += cfg.symbol_len
             if header_error is not None:
@@ -1410,7 +1475,9 @@ def decode_packet(
             equalized = _equalize_symbol(
                 cfg, received, channel, pilot_sign
             )
-            received_body_bits.append(qpsk_demap(equalized[cfg.data_bins]))
+            received_body_bits.append(
+                _demap_symbols(cfg, equalized[cfg.data_bins])
+            )
         body_bits = _decode_body(
             cfg,
             np.concatenate(received_body_bits)[:coded_bits],

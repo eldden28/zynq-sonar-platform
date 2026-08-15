@@ -4,12 +4,15 @@
 from __future__ import annotations
 
 import argparse
+from collections import deque
 import http.server
 import json
 from pathlib import Path
 import threading
 from typing import Sequence
 from urllib.parse import parse_qs, urlparse
+
+import numpy as np
 
 from cora_ofdm_acoustic import make_acoustic_config
 from cora_ofdm_text_transfer import (
@@ -26,14 +29,23 @@ from cora_ofdm_text_transfer import (
 DEFAULT_WEB_ROOT = Path("/usr/share/cora-ofdm-text-demo/www")
 MAX_REQUEST_BYTES = MAX_TEXT_BYTES * 8 + 4096
 MAX_DATA_RESPONSE = 4096
-DEFAULT_MODEM_VERSION = "v3"
+DEFAULT_MODEM_VERSION = "v3-r2/3"
 DEFAULT_FFT_LENGTH = 256
 UNCODED_CHUNK_BYTES = 192
-DEFAULT_LOW_FREQUENCY_HZ = 2250.0
-DEFAULT_HIGH_FREQUENCY_HZ = 9750.0
+DEFAULT_LOW_FREQUENCY_HZ = 2000.0
+DEFAULT_HIGH_FREQUENCY_HZ = 15000.0
+SPECTRUM_FFT_SIZE = 1024
+SPECTRUM_HOP_SIZE = 2048
+SPECTRUM_HISTORY_ROWS = 180
+SPECTRUM_FLOOR_DBFS = -100
+SPECTRUM_CEILING_DBFS = 0
 
 
-def idle_state(air_enabled: bool, port: int) -> dict:
+def idle_state(
+    air_enabled: bool,
+    port: int,
+    output_channel: str = "left",
+) -> dict:
     cfg = make_acoustic_config(
         DEFAULT_MODEM_VERSION,
         DEFAULT_LOW_FREQUENCY_HZ,
@@ -45,7 +57,10 @@ def idle_state(air_enabled: bool, port: int) -> dict:
         "status": "idle",
         "backend": None,
         "framing": "continuous-superframe",
+        "output_channel": output_channel,
         "modem_version": cfg.modem_name,
+        "modulation": cfg.modulation,
+        "bits_per_carrier": cfg.bits_per_carrier,
         "body_code": cfg.body_code,
         "low_frequency_hz": cfg.low_frequency_hz,
         "high_frequency_hz": cfg.high_frequency_hz,
@@ -82,6 +97,106 @@ def idle_state(air_enabled: bool, port: int) -> dict:
     }
 
 
+class ReceiverSpectrumMonitor:
+    """Convert captured PCM into a bounded sequence of waterfall rows."""
+
+    def __init__(
+        self,
+        *,
+        sample_rate: int = 48_000,
+        fft_size: int = SPECTRUM_FFT_SIZE,
+        hop_size: int = SPECTRUM_HOP_SIZE,
+        history_rows: int = SPECTRUM_HISTORY_ROWS,
+    ):
+        self.sample_rate = sample_rate
+        self.fft_size = fft_size
+        self.hop_size = hop_size
+        self.lock = threading.Lock()
+        self.byte_tail = b""
+        self.pending = np.empty(0, dtype=np.float32)
+        self.rows: deque[dict] = deque(maxlen=history_rows)
+        self.next_id = 0
+        self.window = np.hanning(fft_size).astype(np.float32)
+        self.amplitude_scale = max(
+            float(np.sum(self.window)) / 2.0,
+            1.0,
+        )
+
+    def reset(self) -> None:
+        with self.lock:
+            self.byte_tail = b""
+            self.pending = np.empty(0, dtype=np.float32)
+            self.rows.clear()
+            self.next_id = 0
+
+    def ingest_pcm(self, pcm: bytes) -> None:
+        if not pcm:
+            return
+        with self.lock:
+            pcm = self.byte_tail + pcm
+            even_length = len(pcm) & ~1
+            self.byte_tail = pcm[even_length:]
+            if not even_length:
+                return
+            samples = (
+                np.frombuffer(pcm[:even_length], dtype="<i2")
+                .astype(np.float32)
+                / 32768.0
+            )
+            self.pending = np.concatenate((self.pending, samples))
+            while self.pending.size >= self.hop_size:
+                frame = self.pending[: self.fft_size]
+                self.pending = self.pending[self.hop_size :]
+                spectrum = np.fft.rfft(frame * self.window)
+                amplitude = np.abs(spectrum) / self.amplitude_scale
+                dbfs = 20.0 * np.log10(np.maximum(amplitude, 1e-5))
+                dbfs = np.clip(
+                    dbfs,
+                    SPECTRUM_FLOOR_DBFS,
+                    SPECTRUM_CEILING_DBFS,
+                )
+                peak_bin = 1 + int(np.argmax(dbfs[1:]))
+                self.rows.append(
+                    {
+                        "id": self.next_id,
+                        "values": np.rint(dbfs).astype(np.int8).tolist(),
+                        "peak_hz": round(
+                            peak_bin * self.sample_rate / self.fft_size,
+                            1,
+                        ),
+                        "peak_dbfs": round(float(dbfs[peak_bin]), 1),
+                    }
+                )
+                self.next_id += 1
+
+    def snapshot(self, after: int) -> dict:
+        if after < -1:
+            raise ValueError("spectrum cursor cannot be less than -1")
+        with self.lock:
+            latest_id = self.next_id - 1
+            oldest_id = self.rows[0]["id"] if self.rows else self.next_id
+            reset = (
+                after > latest_id
+                or (
+                    after != -1
+                    and self.rows
+                    and after < oldest_id - 1
+                )
+            )
+            rows = list(self.rows) if reset else [
+                row for row in self.rows if row["id"] > after
+            ]
+        return {
+            "sample_rate": self.sample_rate,
+            "fft_size": self.fft_size,
+            "floor_dbfs": SPECTRUM_FLOOR_DBFS,
+            "ceiling_dbfs": SPECTRUM_CEILING_DBFS,
+            "latest_id": latest_id,
+            "reset": reset,
+            "rows": rows,
+        }
+
+
 class TextDemoController:
     def __init__(self, args: argparse.Namespace):
         self.args = args
@@ -89,7 +204,13 @@ class TextDemoController:
         self.stop_event = threading.Event()
         self.worker: threading.Thread | None = None
         self.received = bytearray()
-        self.state = idle_state(args.allow_air, args.port)
+        self.spectrum = ReceiverSpectrumMonitor()
+        self.output_channel = getattr(args, "output_channel", "left")
+        self.state = idle_state(
+            args.allow_air,
+            args.port,
+            self.output_channel,
+        )
         self.state["burst_packets"] = args.burst_packets
 
     def status(self) -> dict:
@@ -110,6 +231,9 @@ class TextDemoController:
                 committed,
             )
 
+    def spectrum_data(self, after: int) -> dict:
+        return self.spectrum.snapshot(after)
+
     def start(
         self,
         text: str,
@@ -118,6 +242,8 @@ class TextDemoController:
         fft_len: int,
         low_frequency_hz: float,
         high_frequency_hz: float,
+        output_channel: str = "left",
+        modulation: str = "qpsk",
     ) -> None:
         encoded_size = len(text.encode("utf-8"))
         if not text:
@@ -134,25 +260,38 @@ class TextDemoController:
                 "air mode is disabled until a speaker is connected and "
                 "--allow-air is configured"
             )
+        if output_channel not in ("left", "right", "stereo"):
+            raise ValueError(
+                "output channel must be left, right, or stereo"
+            )
         cfg = make_acoustic_config(
             modem_version,
             low_frequency_hz,
             high_frequency_hz,
             fft_len=fft_len,
+            modulation=modulation,
         )
 
         with self.lock:
             if self.worker is not None and self.worker.is_alive():
                 raise RuntimeError("a text transfer is already running")
             self.received.clear()
+            self.spectrum.reset()
             self.stop_event.clear()
-            self.state = idle_state(self.args.allow_air, self.args.port)
+            self.state = idle_state(
+                self.args.allow_air,
+                self.args.port,
+                self.output_channel,
+            )
             self.state.update(
                 {
                     "status": "warming",
                     "backend": backend_name,
                     "framing": "continuous-superframe",
+                    "output_channel": output_channel,
                     "modem_version": cfg.modem_name,
+                    "modulation": cfg.modulation,
+                    "bits_per_carrier": cfg.bits_per_carrier,
                     "body_code": cfg.body_code,
                     "low_frequency_hz": cfg.low_frequency_hz,
                     "high_frequency_hz": cfg.high_frequency_hz,
@@ -182,7 +321,7 @@ class TextDemoController:
             )
             self.worker = threading.Thread(
                 target=self._run,
-                args=(text, backend_name, cfg),
+                args=(text, backend_name, cfg, output_channel),
                 daemon=True,
                 name="cora-ofdm-text-transfer",
             )
@@ -193,6 +332,7 @@ class TextDemoController:
         text: str,
         backend_name: str,
         cfg,
+        output_channel: str = "left",
     ) -> None:
         if backend_name == "air":
             backend = AlsaAirBackend(
@@ -200,9 +340,15 @@ class TextDemoController:
                 capture_device=self.args.capture_device,
                 burst_packets=self.args.burst_packets,
                 cfg=cfg,
+                capture_callback=self.spectrum.ingest_pcm,
+                output_channel=output_channel,
             )
         else:
-            backend = ColoredRoomBackend(self.args.noise_dbfs, cfg=cfg)
+            backend = ColoredRoomBackend(
+                self.args.noise_dbfs,
+                cfg=cfg,
+                capture_callback=self.spectrum.ingest_pcm,
+            )
 
         def update(values: dict, chunk: bytes) -> None:
             with self.lock:
@@ -210,6 +356,7 @@ class TextDemoController:
                 values["air_enabled"] = self.args.allow_air
                 values["burst_packets"] = self.args.burst_packets
                 values["dashboard_port"] = self.args.port
+                values["output_channel"] = output_channel
                 self.state = values
 
         try:
@@ -234,6 +381,7 @@ class TextDemoController:
                 values["air_enabled"] = self.args.allow_air
                 values["burst_packets"] = self.args.burst_packets
                 values["dashboard_port"] = self.args.port
+                values["output_channel"] = output_channel
                 self.state = values
         except BaseException as error:
             with self.lock:
@@ -261,7 +409,12 @@ class TextDemoController:
                 raise RuntimeError("transfer is still stopping")
             self.worker = None
             self.received.clear()
-            self.state = idle_state(self.args.allow_air, self.args.port)
+            self.spectrum.reset()
+            self.state = idle_state(
+                self.args.allow_air,
+                self.args.port,
+                self.output_channel,
+            )
             self.state["burst_packets"] = self.args.burst_packets
 
 
@@ -331,6 +484,17 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
                 },
             )
             return
+        if parsed.path == "/api/spectrum":
+            try:
+                after = int(
+                    parse_qs(parsed.query).get("after", ["-1"])[0]
+                )
+                payload = self.controller.spectrum_data(after)
+            except ValueError as error:
+                self.send_json(416, {"error": str(error)})
+                return
+            self.send_json(200, payload)
+            return
         self.send_error(404)
 
     def do_POST(self) -> None:
@@ -380,6 +544,13 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
                             DEFAULT_HIGH_FREQUENCY_HZ,
                         )
                     ),
+                    str(
+                        request.get(
+                            "output_channel",
+                            self.controller.output_channel,
+                        )
+                    ),
+                    str(request.get("modulation", "qpsk")),
                 )
                 message = "text transfer started"
             elif parsed.path == "/api/stop":
@@ -420,9 +591,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--web-root", type=Path, default=DEFAULT_WEB_ROOT)
     parser.add_argument("--chunk-bytes", type=int, default=DEFAULT_CHUNK_BYTES)
     parser.add_argument("--max-retries", type=int, default=2)
-    parser.add_argument("--noise-dbfs", type=float, default=-48.0)
+    parser.add_argument("--noise-dbfs", type=float, default=-60.0)
     parser.add_argument("--playback-device", default="plughw:0,0")
     parser.add_argument("--capture-device", default="plughw:0,0")
+    parser.add_argument(
+        "--output-channel",
+        choices=("left", "right", "stereo"),
+        default="left",
+        help="speaker output routing; left is the single-speaker default",
+    )
     parser.add_argument(
         "--burst-packets",
         type=int,

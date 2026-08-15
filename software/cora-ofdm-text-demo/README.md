@@ -5,14 +5,18 @@ through the acoustic OFDM modem. Validated chunks appear progressively in a
 read-only receive terminal.
 
 The version selector offers v2 triple repetition; v3 interleaved K=7
-rate-1/2 convolutional FEC; an experimental punctured rate-2/3 variant; and an
+rate-1/2 convolutional FEC; a punctured rate-2/3 fast default; and an
 experimental uncoded body with CRC detection. Both convolutional modes use the
-64-state Viterbi decoder. The FFT selector offers the validated 256-point
-default and an experimental 512-point mode.
+64-state Viterbi decoder. A separate modulation selector preserves the
+validated QPSK default and adds experimental Gray-coded 8-PSK with rate-2/3
+FEC. The FFT selector offers the validated 256-point default and an
+experimental 512-point mode.
 Low and high carrier edges are independently programmable and snap to the
 selected 187.5 or 93.75 Hz FFT-bin grid. Five pilots are redistributed across
-the selected band. Standard 2.25--9.75 kHz, wide 1.5--12 kHz, experimental
-1.5--15 kHz, voice-band 3--9 kHz, and custom profiles are available.
+the selected band. The validated fast default requests 2--15 kHz and realizes
+2.0625--15 kHz on the FFT-256 grid. Standard 2.25--9.75 kHz, wide
+1.5--12 kHz, experimental 1.5--15 kHz, voice-band 3--9 kHz, and custom
+profiles remain available.
 
 The service listens on port 8082:
 
@@ -23,20 +27,45 @@ http://192.168.10.2:8082/
 The safe default is the deterministic colored-room simulation. It exercises
 real audio waveform generation, multipath, spectral color, noise,
 synchronization, training, pilot correction, QPSK decoding, repetition
-recovery, and CRC validation without emitting sound.
+or 8-PSK decoding, repetition recovery, and CRC validation without emitting
+sound. Its deterministic noise
+floor is -60 dBFS so the validated 2--15 kHz rate-2/3 default also completes
+reliably in simulation.
 
 Air mode is available in the dashboard and uses the board's USB PnP Sound
-Device at `plughw:0,0` for both playback and capture. It remains opt-in on the
-page: select **Speaker → lapel microphone** before transmitting. Start with
-low headphone/speaker volume and use a fixed microphone gain.
+Device at `plughw:0,0` for both playback and capture. Playback drives only the
+left output channel by default, with the right channel held at digital zero,
+so two speakers do not create an avoidable second acoustic path. The dashboard
+can select the right channel instead or restore both channels for a multipath
+comparison. Air mode remains opt-in: select **Speaker → lapel microphone**
+before transmitting. Start with low headphone/speaker volume and use a fixed
+microphone gain.
 
-Air transfers use continuous superframes of up to eight fixed packet slots.
-One `aplay` process feeds raw stereo PCM continuously while one `arecord`
-process drains mono capture. Three-symbol channel training is refreshed every
+Air transfers use continuous superframes of up to 64 fixed packet slots.
+One `aplay` process feeds two-channel PCM continuously, with the selected
+speaker channel carrying the mono waveform and the other channel silent, while
+one `arecord` process drains mono capture. Three-symbol channel training is refreshed every
 two packets. Decoder workers acquire each refresh once and validate its two
 slots as soon as the required samples arrive, while playback and capture
-continue. A failed packet still falls back to the original stop-and-wait path
-for an isolated retry, so per-packet headers and CRC behavior are unchanged.
+continue. Each successful slot is outer-frame CRC checked and committed to the
+web receiver immediately in packet order, so text and image data build during
+the sound instead of appearing after the complete superframe. The waterfall
+continues consuming the same live capture chunks independently of packet
+decoding and dashboard commits. A failed packet is buffered until the main
+ALSA session closes, then falls back to the original stop-and-wait path for an
+isolated retry, so per-packet headers and CRC behavior are unchanged.
+The 64-packet session limit covers the complete 16,384-byte dashboard payload
+at the default 384-byte chunk size, eliminating the old ALSA restart gap after
+every eight packets.
+
+The dashboard waterfall is generated from the same mono receiver PCM used by
+the decoder. A 1,024-point Hann-windowed FFT produces 513 bins from DC through
+24 kHz approximately 23 times per second. The server retains only the newest
+180 rows and the browser fetches them with a cursor, so page refreshes do not
+copy an unbounded capture history. White guide lines mark the configured
+carrier edges, and the header reports the strongest received frequency and
+dBFS level. Spectrum monitoring errors are isolated from modem capture and
+cannot abort a transfer.
 
 The first live streaming checkpoint transferred 1,536 bytes as 16 packets in
 13.96 seconds with no retries or packet errors. Validated payload throughput
@@ -114,8 +143,26 @@ K=7 rate-1/2 mother code. Its accelerated Viterbi decoder ignores omitted
 parity positions as erasures. At 384-byte chunks in the standard band it was
 19.9% faster than rate-1/2 while retaining FEC and completing without a retry.
 It is only 2.9% behind the clean uncoded 192-byte result. The same mode failed
-twice in the wide band, so the dashboard labels it experimental and leaves
-rate-1/2 as the default.
+twice in the earlier 1.5--12 kHz wide-band test. A subsequent live 2--15 kHz
+run completed 2,415 bytes as seven 384-byte packets in 3.195 seconds at
+6,046.94 bit/s, with zero retries, zero packet errors, and matching SHA-256.
+That tested profile uses FFT-256, 65 data carriers, 19.5 kbit/s gross rate, and
+an actual bin-aligned band of 2.0625--15 kHz. It is now the dashboard default.
+
+Experimental 8-PSK retains the pilots, training, constant per-carrier
+magnitude, and 1.5--15 kHz band. Its 68 data carriers hold three bits each,
+raising the gross coded-body rate from 20.4 to 30.6 kbit/s. Gray coding limits
+an adjacent phase error to one hard-decision bit, but the decision margin falls
+from 45 degrees for QPSK to 22.5 degrees. The triplicated control header stays
+on QPSK while only the protected body uses 8-PSK.
+
+The physical rate-2/3 experiment was marginal: four packets completed with one
+retry, then an eight-packet run failed on packet three after five detected
+errors. Full rate-1/2 convolutional FEC proved reliable. It completed 3,072
+bytes at 7,242.09 bit/s and 6,450 bytes at 8,130.71 bit/s, both with zero
+errors/retries and matching hashes. Its post-FEC ceiling is 15.3 kbit/s before
+framing. The dashboard automatically selects v3 rate-1/2 when 8-PSK is chosen;
+validated QPSK rate-2/3 remains the default on page load.
 
 The continuous rate-2/3 result used three consecutive 3,072-byte,
 eight-by-384-byte air transfers. The individual payload rates were 4,696,

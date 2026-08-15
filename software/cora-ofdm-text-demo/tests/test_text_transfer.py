@@ -36,6 +36,107 @@ DASHBOARD = load(
 
 
 class TextTransferTest(unittest.TestCase):
+    def test_dashboard_defaults_to_validated_fast_profile(self):
+        state = DASHBOARD.idle_state(True, 8082)
+        self.assertEqual(state["modem_version"], "v3-r2/3")
+        self.assertEqual(
+            state["body_code"],
+            "punctured-convolutional-k7-r2/3",
+        )
+        self.assertEqual(state["fft_len"], 256)
+        self.assertEqual(state["low_frequency_hz"], 2062.5)
+        self.assertEqual(state["high_frequency_hz"], 15000.0)
+        self.assertEqual(state["data_subcarriers"], 65)
+        self.assertEqual(state["gross_bit_rate"], 19_500.0)
+        self.assertEqual(state["output_channel"], "left")
+        self.assertEqual(state["modulation"], "qpsk")
+        self.assertEqual(state["bits_per_carrier"], 2)
+
+    def test_8psk_gray_constellation_round_trip(self):
+        labels = np.arange(8, dtype=np.uint8)
+        bits = np.unpackbits(labels[:, None], axis=1)[:, -3:].reshape(-1)
+        symbols = ACOUSTIC.psk8_map(bits)
+
+        self.assertTrue(
+            np.array_equal(ACOUSTIC.psk8_demap(symbols), bits)
+        )
+        np.testing.assert_allclose(np.abs(symbols), 1.0)
+        phases = np.mod(np.angle(symbols), 2.0 * np.pi)
+        nearest = np.round(phases / (np.pi / 4.0)).astype(int) % 8
+        around_ring = np.empty(8, dtype=np.uint8)
+        around_ring[nearest] = labels
+        adjacent_changes = np.count_nonzero(
+            np.unpackbits(
+                np.bitwise_xor(
+                    around_ring,
+                    np.roll(around_ring, -1),
+                )[:, None],
+                axis=1,
+            ),
+            axis=1,
+        )
+        np.testing.assert_array_equal(adjacent_changes, 1)
+
+    def test_air_output_routes_mono_to_one_speaker(self):
+        samples = np.array((-1.0, -0.25, 0.0, 0.25, 1.0))
+
+        left_backend = TRANSFER.AlsaAirBackend(output_channel="left")
+        left = np.frombuffer(
+            left_backend._stereo_pcm(samples),
+            dtype="<i2",
+        ).reshape(-1, 2)
+        np.testing.assert_array_equal(left[:, 1], 0)
+        self.assertTrue(np.any(left[:, 0]))
+
+        right_backend = TRANSFER.AlsaAirBackend(output_channel="right")
+        right = np.frombuffer(
+            right_backend._stereo_pcm(samples),
+            dtype="<i2",
+        ).reshape(-1, 2)
+        np.testing.assert_array_equal(right[:, 0], 0)
+        np.testing.assert_array_equal(right[:, 1], left[:, 0])
+
+        stereo_backend = TRANSFER.AlsaAirBackend(output_channel="stereo")
+        stereo = np.frombuffer(
+            stereo_backend._stereo_pcm(samples),
+            dtype="<i2",
+        ).reshape(-1, 2)
+        np.testing.assert_array_equal(stereo[:, 0], stereo[:, 1])
+
+        with self.assertRaisesRegex(ValueError, "output channel"):
+            TRANSFER.AlsaAirBackend(output_channel="center")
+
+    def test_receiver_waterfall_tracks_pcm_tone_and_cursor(self):
+        monitor = DASHBOARD.ReceiverSpectrumMonitor(
+            fft_size=1024,
+            hop_size=1024,
+            history_rows=4,
+        )
+        sample_count = 4096
+        time_axis = np.arange(sample_count) / 48_000.0
+        samples = 0.25 * np.sin(2.0 * np.pi * 6000.0 * time_axis)
+        pcm = np.rint(samples * 32767.0).astype("<i2").tobytes()
+        monitor.ingest_pcm(pcm[:3073])
+        monitor.ingest_pcm(pcm[3073:])
+
+        snapshot = monitor.snapshot(-1)
+        self.assertEqual(snapshot["sample_rate"], 48_000)
+        self.assertEqual(snapshot["fft_size"], 1024)
+        self.assertEqual(len(snapshot["rows"]), 4)
+        self.assertEqual(len(snapshot["rows"][-1]["values"]), 513)
+        self.assertAlmostEqual(
+            snapshot["rows"][-1]["peak_hz"],
+            6000.0,
+            delta=48.0,
+        )
+        cursor = snapshot["latest_id"]
+        self.assertEqual(monitor.snapshot(cursor)["rows"], [])
+
+        monitor.reset()
+        reset_snapshot = monitor.snapshot(cursor)
+        self.assertTrue(reset_snapshot["reset"])
+        self.assertEqual(reset_snapshot["latest_id"], -1)
+
     def test_frame_round_trip_and_crc_detection(self):
         payload = "packet ✓".encode()
         frame = TRANSFER.encode_text_frame(
@@ -165,6 +266,49 @@ class TextTransferTest(unittest.TestCase):
         )
         self.assertEqual(state["fft_len"], 256)
 
+    def test_8psk_rate_two_thirds_transfer_reports_higher_gross_rate(self):
+        cfg = ACOUSTIC.make_acoustic_config(
+            "v3-r2/3",
+            1500.0,
+            15000.0,
+            fft_len=256,
+            modulation="8psk",
+        )
+        text = "Constant-envelope 8-PSK experiment ✓\n" * 20
+        output, state = TRANSFER.transfer_text(
+            text,
+            backend=TRANSFER.ColoredRoomBackend(-60.0, cfg=cfg),
+            chunk_bytes=192,
+        )
+
+        self.assertEqual(output, text.encode())
+        self.assertEqual(state["status"], "complete")
+        self.assertEqual(state["modulation"], "8psk")
+        self.assertEqual(state["bits_per_carrier"], 3)
+        self.assertEqual(state["data_subcarriers"], 68)
+        self.assertEqual(state["gross_bit_rate"], 30_600.0)
+
+    def test_8psk_rate_half_transfer_uses_stronger_fec(self):
+        cfg = ACOUSTIC.make_acoustic_config(
+            "v3",
+            1500.0,
+            15000.0,
+            fft_len=256,
+            modulation="8psk",
+        )
+        text = "Rate-half 8-PSK experiment ✓\n" * 20
+        output, state = TRANSFER.transfer_text(
+            text,
+            backend=TRANSFER.ColoredRoomBackend(-60.0, cfg=cfg),
+            chunk_bytes=192,
+        )
+
+        self.assertEqual(output, text.encode())
+        self.assertEqual(state["modulation"], "8psk")
+        self.assertEqual(state["body_code"], "convolutional-k7-r1/2")
+        self.assertEqual(state["packet_errors"], 0)
+        self.assertEqual(state["gross_bit_rate"], 30_600.0)
+
     def test_dashboard_uses_measured_uncoded_chunk_size(self):
         args = SimpleNamespace(
             allow_air=False,
@@ -284,6 +428,179 @@ class TextTransferTest(unittest.TestCase):
             [sequence for sequence, _chunk in updates],
             list(range(1, 11)),
         )
+
+    def test_streaming_results_reach_dashboard_before_batch_returns(self):
+        updates = []
+
+        class StreamingBackend:
+            name = "air"
+            framing = "continuous-superframe"
+            burst_size = 64
+
+            def __init__(self):
+                self.returned = False
+                self.commits_seen_inside_batch = []
+
+            @staticmethod
+            def _result(payload, sequence):
+                return ACOUSTIC.DecodeResult(
+                    valid=True,
+                    sequence=sequence,
+                    payload=payload,
+                    payload_length=len(payload),
+                    start_sample=0,
+                    sync_metric=1.0,
+                    payload_symbols=1,
+                    crc_expected=0,
+                    crc_received=0,
+                )
+
+            def transceive_batch(self, _items):
+                raise AssertionError("streaming batch method was not used")
+
+            def transceive_batch_stream(self, items, result_callback):
+                results = [
+                    self._result(payload, sequence)
+                    for payload, sequence in items
+                ]
+                for index, result in enumerate(results):
+                    result_callback(index, result)
+                    self.commits_seen_inside_batch.append(len(updates))
+                self.returned = True
+                return results
+
+            def transceive(self, _payload, _sequence):
+                raise AssertionError("single-packet fallback was not expected")
+
+        backend = StreamingBackend()
+        text = "stream these chunks while the sound is playing"
+        output, state = TRANSFER.transfer_text(
+            text,
+            backend=backend,
+            chunk_bytes=12,
+            packet_callback=lambda values, chunk: updates.append(
+                (
+                    values["packets_received"],
+                    chunk,
+                    backend.returned,
+                )
+            ),
+        )
+
+        self.assertEqual(output, text.encode())
+        self.assertEqual(state["status"], "complete")
+        self.assertEqual(
+            backend.commits_seen_inside_batch,
+            list(range(1, state["packets_total"] + 1)),
+        )
+        self.assertTrue(all(not returned for _, _, returned in updates))
+
+    def test_streaming_failure_defers_retry_and_preserves_order(self):
+        updates = []
+
+        class RetryBackend:
+            name = "air"
+            framing = "continuous-superframe"
+            burst_size = 64
+
+            def __init__(self):
+                self.session_open = False
+
+            @staticmethod
+            def _result(payload, sequence, valid=True):
+                return ACOUSTIC.DecodeResult(
+                    valid=valid,
+                    sequence=sequence,
+                    payload=payload if valid else b"",
+                    payload_length=len(payload) if valid else 0,
+                    start_sample=0,
+                    sync_metric=1.0,
+                    payload_symbols=1,
+                    crc_expected=0,
+                    crc_received=0,
+                    error=None if valid else "injected CRC failure",
+                )
+
+            def transceive_batch(self, _items):
+                raise AssertionError("streaming batch method was not used")
+
+            def transceive_batch_stream(self, items, result_callback):
+                results = [
+                    self._result(*items[0], valid=False),
+                    self._result(*items[1]),
+                ]
+                self.session_open = True
+                result_callback(1, results[1])
+                result_callback(0, results[0])
+                self.session_open = False
+                return results
+
+            def transceive(self, payload, sequence):
+                self.assert_session_closed()
+                return self._result(payload, sequence)
+
+            def assert_session_closed(self):
+                if self.session_open:
+                    raise AssertionError("retry overlapped the main session")
+
+        backend = RetryBackend()
+        text = "abcdefgh"
+        output, state = TRANSFER.transfer_text(
+            text,
+            backend=backend,
+            chunk_bytes=4,
+            packet_callback=lambda values, chunk: updates.append(
+                (values["packets_received"], chunk)
+            ),
+        )
+
+        self.assertEqual(output, text.encode())
+        self.assertEqual([number for number, _chunk in updates], [1, 2])
+        self.assertEqual(state["retries"], 1)
+        self.assertEqual(state["packet_errors"], 1)
+
+    def test_default_session_covers_maximum_coded_dashboard_transfer(self):
+        class PerfectSessionBackend:
+            name = "air"
+            framing = "continuous-superframe"
+            burst_size = TRANSFER.DEFAULT_BURST_PACKETS
+
+            def __init__(self):
+                self.batch_lengths = []
+
+            def transceive_batch(self, items):
+                self.batch_lengths.append(len(items))
+                return [
+                    ACOUSTIC.DecodeResult(
+                        valid=True,
+                        sequence=sequence,
+                        payload=payload,
+                        payload_length=len(payload),
+                        start_sample=0,
+                        sync_metric=1.0,
+                        payload_symbols=1,
+                        crc_expected=0,
+                        crc_received=0,
+                    )
+                    for payload, sequence in items
+                ]
+
+            def transceive(self, payload, sequence):
+                raise AssertionError("single-packet fallback was not expected")
+
+        backend = PerfectSessionBackend()
+        text = "x" * 16_184
+        output, state = TRANSFER.transfer_text(
+            text,
+            backend=backend,
+            chunk_bytes=384,
+        )
+
+        self.assertEqual(TRANSFER.DEFAULT_BURST_PACKETS, 64)
+        self.assertEqual(state["packets_total"], 43)
+        self.assertEqual(backend.batch_lengths, [43])
+        self.assertEqual(output, text.encode())
+        self.assertEqual(state["status"], "complete")
 
 
 if __name__ == "__main__":

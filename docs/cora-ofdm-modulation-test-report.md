@@ -56,6 +56,8 @@ stable recommended profile.
 | v3 rate-1/2 | K=7, 171/133 convolutional code and Viterbi decoding | Robust coded mode | Validated default |
 | v3 rate-2/3 | v3 mother code punctured with repeating `1110` pattern | Higher coded throughput | Best standard-band result; wide band failed |
 | Uncoded | Raw QPSK body with CRC-32 | Isolate FEC cost and channel threshold | Fast at 192 bytes; unreliable at 384 bytes |
+| v3 rate-1/2 8-PSK | Gray-coded constant-envelope 8-PSK body; QPSK control header | Increase bits/carrier with stronger FEC | Fastest physical result |
+| v3 rate-2/3 8-PSK | Gray-coded 8-PSK with punctured FEC | Maximum nominal rate | Physical path too fragile |
 
 Each mode has a distinct wire version, preventing a receiver configured for
 one body code from silently accepting another.
@@ -78,6 +80,9 @@ the physical audio path.
 | Uncoded, FFT256, 2.25--9.75 kHz | 16 x 192 B | 5.978 s | 4,111 bit/s | 0 / 0 | PASS |
 | Uncoded, FFT256, 2.25--9.75 kHz | 8 x 384 B | 8.496 s | 2,893 bit/s | 3 / 3 | PASS, unstable |
 | v3 rate-2/3 continuous, FFT256, 2.25--9.75 kHz | 8 x 384 B | 5.223 s mean | 4,706 bit/s mean | 0 / 0 across 3 runs | PASS |
+| v3 rate-1/2 8-PSK continuous, FFT256, 1.5--15 kHz | 8 x 384 B | 3.393 s | 7,242 bit/s | 0 / 0 | PASS |
+| v3 rate-1/2 8-PSK continuous, FFT256, 1.5--15 kHz | 17 packets / 6,450 B | 6.346 s | 8,131 bit/s | 0 / 0 | PASS |
+| v3 rate-2/3 8-PSK continuous, FFT256, 1.5--15 kHz | 8 x 384 B planned | -- | -- | Packet 3 exhausted retries | FAIL |
 
 The separate first uncoded 384-byte attempt failed after packet 5 exhausted
 all retries. The first complete FFT512 attempt failed at packet 7; the
@@ -170,17 +175,14 @@ microphone, and acoustic retransmissions.
 
 ## Conclusions and next tests
 
-1. Keep QPSK and FFT256 for the current USB audio path.
-2. Use v3 rate-1/2 when robustness or the 1.5--12 kHz wide profile matters.
-3. Use v3 rate-2/3 continuous framing for the fastest demonstrated standard
-   band configuration; keep its experimental label until it is exercised over
-   longer runs and changing channels.
-4. Do not use FFT512, uncoded 384-byte packets, the 15 kHz edge, or wide-band
-   rate-2/3 as defaults.
-5. The next true modulation comparison should test BPSK versus QPSK under a
-   controlled SNR sweep. Later candidates are differential QPSK and 16-QAM,
-   but 16-QAM should wait until gain stability and soft-decision decoding are
-   available.
+1. Keep QPSK rate-2/3 and FFT256 as the validated page default.
+2. Use v3 rate-1/2 8-PSK for the fastest demonstrated mono bench path; its
+   8,131 bit/s long result is clean but still experimental.
+3. Do not use rate-2/3 8-PSK on this path; its reduced angular and coding
+   margins exhausted retries during the eight-packet test.
+4. Do not use FFT512 or uncoded 384-byte packets as defaults.
+5. The next controlled comparison should sweep SNR and distance for QPSK
+   rate-2/3 versus 8-PSK rate-1/2.
 6. Repeat the selected modes with the intended underwater transducer path.
    The current report validates the bench audio hardware, not underwater
    performance.

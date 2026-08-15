@@ -98,6 +98,23 @@
     .stat { padding:14px; background:#08110f }
     .stat span { display:block; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em }
     .stat strong { display:block; margin-top:5px; color:var(--green); font-size:15px }
+    .waterfall-wrap { position:relative; padding:10px 12px 5px; background:#020506 }
+    #waterfall {
+      display:block; width:100%; height:245px; border:1px solid #29483f;
+      background:#010203; image-rendering:pixelated;
+    }
+    .waterfall-axis {
+      display:flex; justify-content:space-between; padding:4px 1px 0;
+      color:var(--muted); font-size:10px;
+    }
+    .waterfall-legend {
+      display:flex; align-items:center; gap:9px; padding:0 13px 10px;
+      color:var(--muted); font-size:10px;
+    }
+    .waterfall-gradient {
+      width:180px; height:8px; border:1px solid #34524b;
+      background:linear-gradient(90deg,#000207,#061b4b,#00a5c8,#59ff9b,#ffe45b,#ff553d);
+    }
     .foot { padding:11px 15px; color:#66877c; border-top:1px solid var(--line); font-size:11px }
     @media(max-width:900px){.terminals{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,1fr)}}
     @media(max-width:600px){header{padding:13px}.sub{display:none}main{padding:9px}.tools{grid-template-columns:1fr}.counter{text-align:left}.stats{grid-template-columns:repeat(2,1fr)}textarea{min-height:270px}}
@@ -125,6 +142,23 @@ This text is being split into numbered packets, modulated as real audio OFDM, pa
     </div>
   </section>
   <section class="panel">
+    <div class="bar">
+      <span>RX / live spectral waterfall</span>
+      <span id="waterfall-peak">Awaiting receiver samples…</span>
+    </div>
+    <div class="waterfall-wrap">
+      <canvas id="waterfall" width="513" height="180"></canvas>
+      <div class="waterfall-axis">
+        <span>0</span><span>5 kHz</span><span>10 kHz</span>
+        <span>15 kHz</span><span>20 kHz</span><span>24 kHz</span>
+      </div>
+    </div>
+    <div class="waterfall-legend">
+      <span>−100 dBFS</span><span class="waterfall-gradient"></span>
+      <span>0 dBFS</span><span>· newest samples at bottom · selected band outlined</span>
+    </div>
+  </section>
+  <section class="panel">
     <div class="tools">
       <div>
         <div class="controls">
@@ -132,17 +166,27 @@ This text is being split into numbered packets, modulated as real audio OFDM, pa
             <option value="loopback">Colored-room simulation</option>
             <option value="air">Speaker → lapel microphone</option>
           </select>
+          <select id="output-channel" title="Air-mode speaker output">
+            <option value="left" selected>Mono · left speaker only</option>
+            <option value="right">Mono · right speaker only</option>
+            <option value="stereo">Both speakers · multipath diagnostic</option>
+          </select>
           <select id="modem-version">
-            <option value="v3" selected>v3 · convolutional FEC</option>
-            <option value="v3-r2/3">v3 · punctured 2/3 FEC · experimental</option>
+            <option value="v3">v3 · convolutional FEC</option>
+            <option value="v3-r2/3" selected>v3 · punctured 2/3 FEC · validated fast default</option>
             <option value="v2">v2 · triple repetition</option>
             <option value="uncoded">Uncoded experimental · CRC only · 192 B</option>
+          </select>
+          <select id="modulation">
+            <option value="qpsk" selected>QPSK · validated default</option>
+            <option value="8psk">8-PSK · experimental</option>
           </select>
           <select id="fft-length">
             <option value="256" selected>FFT 256 · 187.5 Hz bins</option>
             <option value="512">FFT 512 experimental · 93.75 Hz bins</option>
           </select>
           <select id="band-preset">
+            <option value="2000,15000" selected>Validated fast · 2–15 kHz</option>
             <option value="2250,9750">Standard · 2.25–9.75 kHz</option>
             <option value="1500,12000">Wide · 1.5–12 kHz</option>
             <option value="1500,15000">Experimental · 1.5–15 kHz</option>
@@ -150,11 +194,11 @@ This text is being split into numbered packets, modulated as real audio OFDM, pa
             <option value="custom">Custom carrier band</option>
           </select>
           <label class="field">Low
-            <input id="low-frequency" type="number" value="2250"
+            <input id="low-frequency" type="number" value="2000"
               min="375" max="22000" step="187.5">
           </label>
           <label class="field">High
-            <input id="high-frequency" type="number" value="9750"
+            <input id="high-frequency" type="number" value="15000"
               min="375" max="23625" step="187.5">
           </label>
           <button id="send" class="primary">Transmit text</button>
@@ -174,23 +218,85 @@ This text is being split into numbered packets, modulated as real audio OFDM, pa
       <div class="stat"><span>Retries</span><strong id="retries">0</strong></div>
       <div class="stat"><span>Packet errors</span><strong id="errors">0</strong></div>
       <div class="stat"><span>Sync metric</span><strong id="sync">—</strong></div>
-      <div class="stat"><span>Modem / FEC</span><strong id="version">v3</strong></div>
-      <div class="stat"><span>Carrier band</span><strong id="band">2.25–9.75 kHz</strong></div>
+      <div class="stat"><span>Modem / modulation / FEC</span><strong id="version">v3-r2/3 · QPSK</strong></div>
+      <div class="stat"><span>Carrier band</span><strong id="band">2.06–15.00 kHz</strong></div>
       <div class="stat"><span>FFT / CP</span><strong id="fft">256 / 64</strong></div>
       <div class="stat"><span>Framing</span><strong id="framing">continuous</strong></div>
     </div>
-    <div class="foot">48 ksample/s · FFT 256 default / FFT 512 experimental · CP 64 · five adaptive pilots · v2 repetition / v3 rate-1/2 or punctured rate-2/3 / uncoded experimental bodies · CRC-32.</div>
+    <div class="foot">48 ksample/s · single-speaker mono output by default · FFT 256 default / FFT 512 experimental · CP 64 · five adaptive pilots · v2 repetition / v3 rate-1/2 or punctured rate-2/3 / uncoded experimental bodies · CRC-32.</div>
   </section>
 </main>
 <script>
 const $=id=>document.getElementById(id);
 const encoder=new TextEncoder();
 let offset=0,decoder=new TextDecoder(),lastStatus='idle',loading=false,airEnabled=false;
+let spectrumAfter=-1,spectrumLoading=false,waterfallRows=[];
+let spectrumRate=48000,currentLow=2062.5,currentHigh=15000;
 const bytes=n=>n>=1024?`${(n/1024).toFixed(2)} KiB`:`${n} B`;
 const rate=n=>n>=1000?`${(n/1000).toFixed(2)} kbit/s`:`${Math.round(n||0)} bit/s`;
 const seconds=n=>n==null||!Number.isFinite(n)?'—':`${Number(n).toFixed(1)} s`;
 function setStatus(name){const el=$('status');el.textContent=name;el.className=`status ${name}`}
 function clearReceiver(){offset=0;decoder=new TextDecoder();$('rx').value='';$('rx-bytes').textContent='0 B'}
+function spectrumColor(db){
+  const stops=[
+    [0,0,2,7],[.2,6,27,75],[.4,0,165,200],
+    [.62,89,255,155],[.82,255,228,91],[1,255,85,61]
+  ];
+  const t=Math.max(0,Math.min(1,(Number(db)+100)/100));
+  let upper=1;while(upper<stops.length-1&&t>stops[upper][0])upper++;
+  const a=stops[upper-1],b=stops[upper],mix=(t-a[0])/(b[0]-a[0]);
+  return [
+    Math.round(a[1]+mix*(b[1]-a[1])),
+    Math.round(a[2]+mix*(b[2]-a[2])),
+    Math.round(a[3]+mix*(b[3]-a[3]))
+  ];
+}
+function drawWaterfall(){
+  const canvas=$('waterfall'),ctx=canvas.getContext('2d');
+  const width=canvas.width,height=canvas.height,image=ctx.createImageData(width,height);
+  for(let i=0;i<image.data.length;i+=4){image.data[i]=0;image.data[i+1]=2;image.data[i+2]=5;image.data[i+3]=255}
+  const rows=waterfallRows.slice(-height);
+  rows.forEach((row,rowIndex)=>{
+    const y=height-rows.length+rowIndex,values=row.values||[];
+    for(let x=0;x<width;x++){
+      const source=Math.min(values.length-1,Math.floor(x*values.length/width));
+      if(source<0)continue;
+      const [r,g,b]=spectrumColor(values[source]),pixel=4*(y*width+x);
+      image.data[pixel]=r;image.data[pixel+1]=g;image.data[pixel+2]=b;
+    }
+  });
+  ctx.putImageData(image,0,0);
+  const nyquist=spectrumRate/2;
+  ctx.save();ctx.strokeStyle='#e9fff7cc';ctx.lineWidth=1;
+  for(const frequency of [currentLow,currentHigh]){
+    const x=Math.max(0,Math.min(width-1,frequency/nyquist*width));
+    ctx.beginPath();ctx.moveTo(x,.5);ctx.lineTo(x,height);ctx.stroke();
+  }
+  if(!rows.length){
+    ctx.fillStyle='#86a89c';ctx.font='13px ui-monospace,monospace';
+    ctx.textAlign='center';ctx.fillText('Waterfall starts with the next transfer',width/2,height/2);
+  }
+  ctx.restore();
+}
+async function refreshSpectrum(){
+  if(spectrumLoading)return;spectrumLoading=true;
+  try{
+    const response=await fetch(`/api/spectrum?after=${spectrumAfter}`,{cache:'no-store'});
+    if(!response.ok)throw Error(response.status);
+    const data=await response.json();
+    if(data.reset){waterfallRows=[];spectrumAfter=-1}
+    spectrumRate=Number(data.sample_rate)||48000;
+    for(const row of data.rows||[])waterfallRows.push(row);
+    waterfallRows=waterfallRows.slice(-$('waterfall').height);
+    spectrumAfter=Number(data.latest_id);
+    const latest=waterfallRows[waterfallRows.length-1];
+    if(latest)$('waterfall-peak').textContent=`Peak ${(Number(latest.peak_hz)/1000).toFixed(2)} kHz · ${Number(latest.peak_dbfs).toFixed(1)} dBFS`;
+    else $('waterfall-peak').textContent='Awaiting receiver samples…';
+    drawWaterfall();
+  }catch(error){
+    $('waterfall-peak').textContent=`Spectrum unavailable: ${error}`;
+  }finally{spectrumLoading=false}
+}
 async function loadData(committed,status){
   if(loading||offset>=committed)return;loading=true;
   try{
@@ -216,13 +322,14 @@ function render(s){
   $('elapsed').textContent=seconds(s.elapsed_s||0);$('eta').textContent=seconds(s.eta_s);
   $('retries').textContent=s.retries||0;$('errors').textContent=s.packet_errors||0;
   $('sync').textContent=s.last_sync_metric==null?'—':Number(s.last_sync_metric).toFixed(3);
-  $('version').textContent=`${s.modem_version||'—'} · ${(s.body_code||'—').replace('convolutional-k7-r1/2','K7 R1/2').replace('punctured-convolutional-k7-r2/3','K7 R2/3')}`;
+  $('version').textContent=`${s.modem_version||'—'} · ${(s.modulation||'qpsk').toUpperCase()} · ${(s.body_code||'—').replace('convolutional-k7-r1/2','K7 R1/2').replace('punctured-convolutional-k7-r2/3','K7 R2/3')}`;
   const low=Number(s.low_frequency_hz),high=Number(s.high_frequency_hz);
+  if(Number.isFinite(low))currentLow=low;if(Number.isFinite(high))currentHigh=high;
   $('band').textContent=Number.isFinite(low)&&Number.isFinite(high)?`${(low/1000).toFixed(2)}–${(high/1000).toFixed(2)} kHz`:'—';
   $('fft').textContent=`${s.fft_len||'—'} / ${s.cp_len||'—'} · ${Number(s.subcarrier_spacing_hz||0).toFixed(2)} Hz`;
   $('framing').textContent=(s.framing||'—').replace('continuous-superframe','continuous superframe').replace('packet-burst','packet burst');
   const active=status==='running'||status==='warming';$('send').disabled=active;$('stop').disabled=!active;
-  for(const id of ['backend','modem-version','fft-length','band-preset','low-frequency','high-frequency'])$(id).disabled=active;
+  for(const id of ['backend','output-channel','modem-version','modulation','fft-length','band-preset','low-frequency','high-frequency'])$(id).disabled=active;
   airEnabled=Boolean(s.air_enabled);
   const airOption=$('backend').querySelector('option[value="air"]');
   airOption.disabled=!airEnabled;
@@ -256,11 +363,16 @@ $('fft-length').onchange=()=>{
   const spacing=48000/Number($('fft-length').value);
   $('low-frequency').step=spacing;$('high-frequency').step=spacing;
 };
+$('modulation').onchange=()=>{
+  if($('modulation').value==='8psk')$('modem-version').value='v3';
+};
 $('tx').addEventListener('input',updateTxCount);
 $('send').onclick=()=>{clearReceiver();action('/api/start',{
   text:$('tx').value,
   backend:$('backend').value,
+  output_channel:$('output-channel').value,
   modem_version:$('modem-version').value,
+  modulation:$('modulation').value,
   fft_len:Number($('fft-length').value),
   low_frequency_hz:Number($('low-frequency').value),
   high_frequency_hz:Number($('high-frequency').value)
@@ -269,6 +381,7 @@ $('stop').onclick=()=>action('/api/stop');
 $('reset').onclick=()=>action('/api/reset');
 $('copy').onclick=async()=>{await navigator.clipboard.writeText($('rx').value);$('notice').textContent='Received text copied.'};
 updateTxCount();setInterval(refresh,250);refresh();
+drawWaterfall();setInterval(refreshSpectrum,250);refreshSpectrum();
 </script>
 </body>
 </html>

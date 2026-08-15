@@ -39,8 +39,11 @@ from cora_ofdm_acoustic import (
 FRAME_MAGIC = b"CTXT"
 FRAME_HEADER = struct.Struct("<4sIHHHI")
 DEFAULT_CHUNK_BYTES = 384
-DEFAULT_BURST_PACKETS = 8
+DEFAULT_BURST_PACKETS = 64
 MAX_TEXT_BYTES = 16_384
+CaptureCallback = Callable[[bytes], None]
+BatchResultCallback = Callable[[int, DecodeResult], None]
+OUTPUT_CHANNELS = ("left", "right", "stereo")
 
 
 class TransferStopped(RuntimeError):
@@ -113,10 +116,23 @@ class ColoredRoomBackend:
         self,
         noise_dbfs: float = -48.0,
         cfg: AcousticConfig | None = None,
+        capture_callback: CaptureCallback | None = None,
     ):
         self.noise_dbfs = noise_dbfs
         self.cfg = cfg or AcousticConfig()
         self.burst_size = DEFAULT_BURST_PACKETS
+        self.capture_callback = capture_callback
+
+    def _publish_samples(self, samples: np.ndarray) -> None:
+        if self.capture_callback is None:
+            return
+        pcm = np.rint(
+            np.clip(np.asarray(samples), -1.0, 1.0) * 32767.0
+        ).astype("<i2")
+        try:
+            self.capture_callback(pcm.tobytes())
+        except Exception:
+            pass
 
     def transceive(self, payload: bytes, sequence: int) -> DecodeResult:
         packet = encode_packet(payload, sequence=sequence, cfg=self.cfg)
@@ -131,6 +147,7 @@ class ColoredRoomBackend:
                 ),
             )
         )
+        self._publish_samples(samples)
         return decode_packet(samples, cfg=self.cfg)
 
     def transceive_batch(
@@ -153,10 +170,12 @@ class ColoredRoomBackend:
                 ),
             )
         )
+        self._publish_samples(samples)
         return decode_superframe(
             samples,
             expected_sequences=[sequence for _payload, sequence in items],
             slot_payload_bytes=superframe.slot_payload_bytes,
+            sync_search_samples=round(0.20 * cfg.sample_rate),
             cfg=cfg,
         )
 
@@ -171,25 +190,52 @@ class AlsaAirBackend:
         burst_packets: int = DEFAULT_BURST_PACKETS,
         cfg: AcousticConfig | None = None,
         continuous_framing: bool = True,
+        capture_callback: CaptureCallback | None = None,
+        output_channel: str = "left",
     ):
         if burst_packets < 1:
             raise ValueError("burst packet count must be positive")
+        if output_channel not in OUTPUT_CHANNELS:
+            raise ValueError(
+                "output channel must be left, right, or stereo"
+            )
         self.playback_device = playback_device
         self.capture_device = capture_device
         self.burst_size = burst_packets
         self.cfg = cfg or AcousticConfig()
         self.continuous_framing = continuous_framing
+        self.capture_callback = capture_callback
+        self.output_channel = output_channel
         self.framing = (
             "continuous-superframe"
             if continuous_framing
             else "packet-burst"
         )
 
-    @staticmethod
-    def _stereo_pcm(samples: np.ndarray) -> bytes:
+    def _publish_capture(self, chunk: bytes) -> None:
+        if self.capture_callback is None:
+            return
+        try:
+            self.capture_callback(chunk)
+        except Exception:
+            # Monitoring must never interrupt modem capture or decoding.
+            pass
+
+    def _publish_samples(self, samples: np.ndarray) -> None:
+        pcm = np.rint(
+            np.clip(np.asarray(samples), -1.0, 1.0) * 32767.0
+        ).astype("<i2")
+        self._publish_capture(pcm.tobytes())
+
+    def _stereo_pcm(self, samples: np.ndarray) -> bytes:
         clipped = np.clip(np.asarray(samples), -1.0, 1.0)
         mono = np.rint(clipped * 32767.0).astype("<i2")
-        return np.repeat(mono[:, None], 2, axis=1).tobytes()
+        stereo = np.zeros((mono.size, 2), dtype="<i2")
+        if self.output_channel in ("left", "stereo"):
+            stereo[:, 0] = mono
+        if self.output_channel in ("right", "stereo"):
+            stereo[:, 1] = mono
+        return stereo.tobytes()
 
     @staticmethod
     def _window_bounds(
@@ -219,9 +265,25 @@ class AlsaAirBackend:
             return self._transceive_superframe(items)
         return self._transceive_packet_batch(items)
 
+    def transceive_batch_stream(
+        self,
+        items: list[tuple[bytes, int]],
+        result_callback: BatchResultCallback,
+    ) -> list[DecodeResult]:
+        if self.continuous_framing:
+            return self._transceive_superframe(
+                items,
+                result_callback=result_callback,
+            )
+        results = self._transceive_packet_batch(items)
+        for index, result in enumerate(results):
+            result_callback(index, result)
+        return results
+
     def _transceive_superframe(
         self,
         items: list[tuple[bytes, int]],
+        result_callback: BatchResultCallback | None = None,
     ) -> list[DecodeResult]:
         if not items:
             return []
@@ -287,6 +349,7 @@ class AlsaAirBackend:
                     with condition:
                         captured.extend(chunk)
                         condition.notify_all()
+                    self._publish_capture(chunk)
             except BaseException as error:
                 capture_error = error
             finally:
@@ -480,11 +543,13 @@ class AlsaAirBackend:
                             item_end,
                         )
                     )
-                results = [
-                    result
-                    for future in futures
-                    for result in future.result()
-                ]
+                results = []
+                for future in futures:
+                    for result in future.result():
+                        result_index = len(results)
+                        results.append(result)
+                        if result_callback is not None:
+                            result_callback(result_index, result)
 
             if finish_thread is not None:
                 finish_thread.join(
@@ -588,6 +653,7 @@ class AlsaAirBackend:
                     with condition:
                         captured.extend(chunk)
                         condition.notify_all()
+                    self._publish_capture(chunk)
             except BaseException as error:
                 capture_error = error
             finally:
@@ -791,6 +857,7 @@ class AlsaAirBackend:
                     f"capture returned {rate} sample/s, expected "
                     f"{cfg.sample_rate}"
                 )
+            self._publish_samples(samples)
             return decode_packet(samples, cfg=cfg)
 
 
@@ -831,7 +898,10 @@ def transfer_text(
         "status": "warming",
         "backend": backend.name,
         "framing": getattr(backend, "framing", "standalone-packets"),
+        "output_channel": getattr(backend, "output_channel", None),
         "modem_version": cfg.modem_name,
+        "modulation": cfg.modulation,
+        "bits_per_carrier": cfg.bits_per_carrier,
         "body_code": cfg.body_code,
         "low_frequency_hz": cfg.low_frequency_hz,
         "high_frequency_hz": cfg.high_frequency_hz,
@@ -878,6 +948,11 @@ def transfer_text(
         for sequence, chunk in enumerate(chunks)
     ]
     batch_method = getattr(backend, "transceive_batch", None)
+    stream_batch_method = getattr(
+        backend,
+        "transceive_batch_stream",
+        None,
+    )
     burst_size = (
         max(1, int(getattr(backend, "burst_size", 1)))
         if callable(batch_method)
@@ -897,6 +972,34 @@ def transfer_text(
             total_packets=total_packets,
         )
 
+    def commit_chunk(
+        sequence: int,
+        decoded_chunk: bytes,
+        result: DecodeResult,
+    ) -> None:
+        received.extend(decoded_chunk)
+        elapsed = time.perf_counter() - start
+        rate = 8.0 * len(received) / elapsed if elapsed else 0.0
+        remaining_bits = 8.0 * (len(source) - len(received))
+        state.update(
+            {
+                "status": "running",
+                "bytes_received": len(received),
+                "packets_received": sequence + 1,
+                "retries": retries,
+                "packet_errors": packet_errors,
+                "elapsed_s": elapsed,
+                "payload_throughput_bps": rate,
+                "eta_s": remaining_bits / rate if rate else None,
+                "progress_percent": (
+                    100.0 * len(received) / len(source)
+                ),
+                "last_sync_metric": result.sync_metric,
+            }
+        )
+        if packet_callback is not None:
+            packet_callback(state.copy(), decoded_chunk)
+
     try:
         for group_begin in range(0, total_packets, burst_size):
             if stop_event is not None and stop_event.is_set():
@@ -907,13 +1010,73 @@ def transfer_text(
                     min(total_packets, group_begin + burst_size),
                 )
             )
+            decoded_group: list[
+                tuple[bytes, DecodeResult] | None
+            ] = [None] * len(sequences)
+            first_errors: list[str | None] = [None] * len(sequences)
+            next_commit = 0
+
+            def commit_ready() -> None:
+                nonlocal next_commit
+                while (
+                    next_commit < len(decoded_group)
+                    and decoded_group[next_commit] is not None
+                ):
+                    decoded = decoded_group[next_commit]
+                    assert decoded is not None
+                    decoded_chunk, result = decoded
+                    commit_chunk(
+                        sequences[next_commit],
+                        decoded_chunk,
+                        result,
+                    )
+                    next_commit += 1
+
+            def accept_first_result(
+                result_index: int,
+                result: DecodeResult,
+            ) -> None:
+                nonlocal packet_errors
+                if stop_event is not None and stop_event.is_set():
+                    raise TransferStopped("transfer stopped")
+                if not (0 <= result_index < len(sequences)):
+                    raise RuntimeError(
+                        "streaming backend returned an invalid result index"
+                    )
+                if (
+                    decoded_group[result_index] is not None
+                    or first_errors[result_index] is not None
+                ):
+                    raise RuntimeError(
+                        "streaming backend returned a duplicate result"
+                    )
+                try:
+                    decoded_chunk = validate(
+                        result,
+                        sequences[result_index],
+                    )
+                except ValueError as error:
+                    first_errors[result_index] = str(error)
+                    packet_errors += 1
+                else:
+                    decoded_group[result_index] = (
+                        decoded_chunk,
+                        result,
+                    )
+                    commit_ready()
+
             if callable(batch_method) and len(sequences) > 1:
-                results = batch_method(
-                    [
-                        (frames[sequence], sequence & 0xFF)
-                        for sequence in sequences
-                    ]
-                )
+                batch_items = [
+                    (frames[sequence], sequence & 0xFF)
+                    for sequence in sequences
+                ]
+                if callable(stream_batch_method):
+                    results = stream_batch_method(
+                        batch_items,
+                        accept_first_result,
+                    )
+                else:
+                    results = batch_method(batch_items)
                 if len(results) != len(sequences):
                     raise RuntimeError(
                         "burst backend returned the wrong result count"
@@ -927,20 +1090,27 @@ def transfer_text(
                     for sequence in sequences
                 ]
 
-            decoded_group: list[tuple[bytes, DecodeResult]] = []
-            for sequence, first_result in zip(sequences, results):
+            for result_index, first_result in enumerate(results):
+                if (
+                    decoded_group[result_index] is None
+                    and first_errors[result_index] is None
+                ):
+                    accept_first_result(result_index, first_result)
+
+            for result_index, sequence in enumerate(sequences):
+                if decoded_group[result_index] is not None:
+                    continue
                 decoded_chunk = None
-                last_error = None
-                last_result = first_result
-                for attempt in range(max_retries + 1):
+                last_error = first_errors[result_index]
+                last_result = results[result_index]
+                for _attempt in range(max_retries):
                     if stop_event is not None and stop_event.is_set():
                         raise TransferStopped("transfer stopped")
-                    if attempt:
-                        retries += 1
-                        last_result = backend.transceive(
-                            frames[sequence],
-                            sequence & 0xFF,
-                        )
+                    retries += 1
+                    last_result = backend.transceive(
+                        frames[sequence],
+                        sequence & 0xFF,
+                    )
                     try:
                         decoded_chunk = validate(last_result, sequence)
                         break
@@ -953,33 +1123,16 @@ def transfer_text(
                         f"packet {sequence + 1}/{total_packets} failed after "
                         f"{max_retries + 1} attempts: {last_error}"
                     )
-                decoded_group.append((decoded_chunk, last_result))
-
-            for sequence, (decoded_chunk, last_result) in zip(
-                sequences, decoded_group
-            ):
-                received.extend(decoded_chunk)
-                elapsed = time.perf_counter() - start
-                rate = 8.0 * len(received) / elapsed if elapsed else 0.0
-                remaining_bits = 8.0 * (len(source) - len(received))
-                state.update(
-                    {
-                        "status": "running",
-                        "bytes_received": len(received),
-                        "packets_received": sequence + 1,
-                        "retries": retries,
-                        "packet_errors": packet_errors,
-                        "elapsed_s": elapsed,
-                        "payload_throughput_bps": rate,
-                        "eta_s": remaining_bits / rate if rate else None,
-                        "progress_percent": (
-                            100.0 * len(received) / len(source)
-                        ),
-                        "last_sync_metric": last_result.sync_metric,
-                    }
+                decoded_group[result_index] = (
+                    decoded_chunk,
+                    last_result,
                 )
-                if packet_callback is not None:
-                    packet_callback(state.copy(), decoded_chunk)
+                commit_ready()
+
+            if next_commit != len(sequences):
+                raise RuntimeError(
+                    "decoded packets could not be committed in order"
+                )
 
         output = bytes(received)
         output_sha256 = hashlib.sha256(output).hexdigest()

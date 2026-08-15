@@ -226,6 +226,46 @@ maximum of 1,024 bytes, one of three packets required a retry and throughput
 fell to 844.96 bit/s. The dashboard now defaults to 384-byte packets in
 eight-packet streaming bursts, which is the measured efficiency/retry knee.
 
+### Validated 2--15 kHz fast default
+
+A later live dashboard run combined the punctured v3 rate-2/3 code with a
+requested 2--15 kHz carrier band. FFT-256 bin alignment realizes the lower
+edge at 2,062.5 Hz and the upper edge exactly at 15,000 Hz. Five adaptive
+pilots leave 65 QPSK data carriers and a 19.5 kbit/s gross body-symbol rate.
+
+```text
+modem:              v3-r2/3
+FFT / CP:           256 / 64
+requested band:     2--15 kHz
+realized band:      2.0625--15.000 kHz
+chunk / packets:    384 bytes / 7
+payload bytes:      2415
+elapsed:            3.195 s
+payload throughput: 6046.94 bit/s
+retries / errors:   0 / 0
+SHA-256:            matched
+```
+
+This complete profile is now the text-dashboard default. The earlier standard
+band, rate-1/2 FEC, uncoded mode, FFT-512 mode, and custom frequency controls
+remain selectable for comparison and diagnostics.
+
+A longer follow-up transferred 16,184 bytes as 43 packets in 19.786 seconds:
+
+```text
+payload throughput: 6543.77 bit/s
+retries / errors:   0 / 0
+SHA-256:            matched
+```
+
+That run exposed an audible pause after each eight-packet group. The pause was
+not required by the waveform: the dashboard was closing and reopening ALSA
+after each configured group, adding a 150 ms pre-roll and 250 ms tail at five
+internal boundaries. The default continuous-session capacity is now 64
+packets, so the entire maximum coded dashboard payload fits under one
+playback/capture session while channel training still refreshes every two
+packets.
+
 ## V3 FEC and programmable carrier band
 
 The text dashboard now offers a wire-version selector:
@@ -277,12 +317,66 @@ Live speaker/microphone-loop measurements used 3,072 bytes in eight
 | v3, 2.25--9.75 kHz, pre-optimization | 15.217 s | 1,615 bit/s | 0 / 0 |
 | v3, 1.5--12 kHz, optimized | 5.731 s | 4,288 bit/s | 0 / 0 |
 
-The experimental v3 1.5--15 kHz profile failed the first packet after all
-three attempts on this physical audio path. It remains selectable for
-experimentation but is not a validated preset. The v3 standard profile
-improved payload throughput by 34%. After cached carrier geometry and batched
-grid/IFFT generation, the validated wide profile improved by 256% relative to
-the v2 standard baseline.
+The experimental v3 1.5--15 kHz profile initially failed the first packet
+after all three attempts when the same waveform drove two speakers. The
+microphone received two spatially delayed versions of the signal. Routing the
+waveform to the left output only, with digital silence on the right output,
+removed that avoidable second path. A 6,474-byte follow-up then validated all
+17 packets:
+
+```text
+output routing:      left speaker only
+realized band:       1.500--15.000 kHz
+payload bytes:       6474
+packets:             17
+elapsed:             6.681 s
+payload throughput:  7752.40 bit/s
+sync metric:         0.822
+retries / errors:    0 / 0
+SHA-256:             matched
+```
+
+This is the highest validated physical acoustic payload rate recorded so far.
+The v3 standard profile improved payload throughput by 34%. After cached
+carrier geometry and batched grid/IFFT generation, the validated wide profile
+improved by 256% relative to the v2 standard baseline.
+
+## Experimental 8-PSK
+
+The dashboard now permits Gray-coded 8-PSK with either v3 convolutional body.
+It retains unit magnitude on every data subcarrier, unlike QAM, so the OFDM
+carrier loading and peak normalization are unchanged. Training, pilots, and
+the triplicated control header remain on robust BPSK/QPSK; only the protected
+payload body uses 8-PSK. In the 1.5--15 kHz FFT-256 geometry:
+
+```text
+data carriers:             68
+bits per carrier:          3
+OFDM symbols per second:   150
+gross coded-body rate:     30.6 kbit/s
+post-FEC rate, R1/2:       15.3 kbit/s before framing
+post-FEC rate, R2/3:       20.4 kbit/s before framing
+```
+
+The constellation decision margin is 22.5 degrees rather than QPSK's 45
+degrees. Clean packet and superframe round trips pass. A deterministic
+6,474-byte colored-room rate-2/3 test passed without retries at -65 dBFS; at
+-60 dBFS it completed after three isolated packet retries.
+
+Physical mono-left tests confirmed that rate-2/3 is too aggressive. A
+four-packet run completed with one retry, but an eight-packet run failed on
+packet three after five detected errors. Switching only the 8-PSK body to the
+full rate-1/2 mother code produced two clean results:
+
+| Payload | Packets | Wall time | Payload rate | Errors/retries |
+|---:|---:|---:|---:|---:|
+| 3,072 bytes | 8 | 3.393 s | 7,242.09 bit/s | 0 / 0 |
+| 6,450 bytes | 17 | 6.346 s | 8,130.71 bit/s | 0 / 0 |
+
+Both source/output hashes matched, and the long run's final sync metric was
+0.823. This is the highest validated physical payload rate so far, 4.9% above
+the 7,752.40 bit/s QPSK rate-2/3 result. QPSK rate-2/3 remains the page
+default; selecting 8-PSK automatically selects v3 rate-1/2.
 
 The reproducible recipe is:
 
