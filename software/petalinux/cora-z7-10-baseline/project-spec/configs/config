@@ -244,5 +244,6 @@ CONFIG_YOCTO_NETWORK_SSTATE_FEEDS_URL="https://petalinux.xilinx.com/sswreleases/
 # User Layers
 #
 CONFIG_USER_LAYER_0="${PROOT}/../../../third_party/meta-sdr"
-CONFIG_USER_LAYER_1=""
+CONFIG_USER_LAYER_1="${PROOT}/../meta-platform-common"
+CONFIG_USER_LAYER_2=""
 CONFIG_SUBSYSTEM_BOOTARGS_GENERATED="console=ttyPS0,115200 earlycon root=/dev/mmcblk0p2 ro rootwait net.ifnames=0"

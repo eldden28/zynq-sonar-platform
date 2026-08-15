@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "id": "cora-z7-10",
+  "display_name": "Digilent Cora Z7-10 Rev. B",
+  "status": "validated",
+  "platform_id": "0x00010001",
+  "soc": {
+    "family": "zynq-7000",
+    "device": "xc7z010clg400-1",
+    "architecture": "armv7a",
+    "petalinux_template": "zynq"
+  },
+  "board": {
+    "module": "Digilent Cora Z7-10",
+    "carrier": "integrated",
+    "revision": "B.0",
+    "board_part": "digilentinc.com:cora-z7-10:part0:1.1"
+  },
+  "hardware": {
+    "build_script": "scripts/build-pwm-hardware.sh",
+    "xsa": "hardware/export/cora-z7-10-pwm/cora-z7-10-pwm.xsa",
+    "bitstream": "software/petalinux/cora-z7-10-baseline/images/linux/system.bit",
+    "platform_overlay": "platforms/cora-z7-10/hardware"
+  },
+  "linux": {
+    "project": "software/petalinux/cora-z7-10-baseline",
+    "platform_overlay": "software/petalinux/cora-z7-10-baseline/project-spec/meta-user",
+    "shared_layers": [
+      "software/petalinux/meta-platform-common",
+      "third_party/meta-sdr"
+    ],
+    "image": "software/petalinux/cora-z7-10-baseline/images/linux/petalinux-sdimage.wic",
+    "init_system": "sysvinit"
+  },
+  "software": {
+    "common_components": [
+      "cora-dashboard",
+      "cora-navigation",
+      "cora-ofdm",
+      "cora-ofdm-acoustic",
+      "cora-ofdm-demo",
+      "cora-ofdm-text-demo",
+      "cora-sonar"
+    ],
+    "required_capabilities": ["ethernet", "sonar-cpu"]
+  },
+  "deployment": {
+    "hostname": "cora-z7-10-baseline",
+    "ssh_user": "petalinux",
+    "addresses": ["192.168.10.2"]
+  },
+  "snapshot": {
+    "include": [
+      "platforms/cora-z7-10/**",
+      "hardware/constraints/**",
+      "hardware/rtl/**",
+      "hardware/vivado/tcl/**",
+      "software/cora-*/**",
+      "software/petalinux/cora-z7-10-baseline/project-spec/**",
+      "software/petalinux/meta-platform-common/**",
+      "scripts/activate-tools.sh",
+      "scripts/build-*.sh",
+      "schemas/platform*.json"
+    ],
+    "live_commands": [
+      {"name": "identity", "command": "id -un; hostname; uname -a; cat /proc/cmdline"},
+      {"name": "network", "command": "ip -o addr 2>/dev/null || ifconfig -a 2>/dev/null || true"},
+      {"name": "services", "command": "for s in cora-sonar cora-dashboard cora-navigation cora-ofdm-dashboard cora-ofdm-text-dashboard; do if [ -x /etc/init.d/$s ]; then printf '%s: ' $s; /etc/init.d/$s status 2>/dev/null | head -1; fi; done"},
+      {"name": "deployed-hashes", "command": "sha256sum /usr/share/cora-sonar/www/index.html /usr/lib/python3.12/site-packages/cora_sonar.py /usr/sbin/cora-sonar 2>/dev/null || true"}
+    ]
+  }
+}

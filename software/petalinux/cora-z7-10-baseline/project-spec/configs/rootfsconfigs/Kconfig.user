@@ -3,6 +3,10 @@ config cora-navigation
 	 bool "cora-navigation"
 	 help
 
+config cora-sonar
+	 bool "cora-sonar"
+	 help
+
 config gnuradio
 	 bool "gnuradio"
 	 help

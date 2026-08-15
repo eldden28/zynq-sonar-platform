@@ -54,7 +54,9 @@ local.env
 
 # Reproducibly fetched third-party source trees
 third_party/digilent-vivado-boards/
+third_party/avnet-vivado-boards/
 third_party/meta-sdr/
+platforms/*/snapshots/*.tar.gz
 software/petalinux/*/build/
 software/petalinux/*/images/
 software/petalinux/*/components/plnx_workspace/

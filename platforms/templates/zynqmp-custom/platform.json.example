@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "id": "replace-with-platform-id",
+  "display_name": "UltraZed 3EG on Custom Carrier",
+  "status": "scaffold",
+  "platform_id": "0x0002ffff",
+  "soc": {
+    "family": "zynq-ultrascale-plus",
+    "device": "xczu3eg-sfva625-1-e",
+    "architecture": "aarch64",
+    "petalinux_template": "zynqMP"
+  },
+  "board": {
+    "module": "Avnet UltraZed-EG 3EG SOM",
+    "carrier": "Replace with custom carrier name",
+    "revision": "A.0",
+    "board_part": null
+  },
+  "hardware": {
+    "build_script": null,
+    "xsa": "hardware/export/replace-with-platform-id/replace-with-platform-id.xsa",
+    "bitstream": "software/petalinux/replace-with-platform-id/images/linux/system.bit",
+    "platform_overlay": "platforms/replace-with-platform-id/hardware"
+  },
+  "linux": {
+    "project": "software/petalinux/replace-with-platform-id",
+    "platform_overlay": "platforms/replace-with-platform-id/petalinux/overlay/project-spec/meta-user",
+    "shared_layers": [
+      "software/petalinux/meta-platform-common",
+      "third_party/meta-sdr"
+    ],
+    "image": "software/petalinux/replace-with-platform-id/images/linux/petalinux-sdimage.wic",
+    "init_system": "sysvinit"
+  },
+  "software": {
+    "common_components": ["cora-sonar"],
+    "required_capabilities": ["ethernet", "sonar-cpu"]
+  },
+  "deployment": {
+    "hostname": "replace-with-platform-id",
+    "ssh_user": "petalinux",
+    "addresses": []
+  },
+  "snapshot": {
+    "include": [
+      "platforms/replace-with-platform-id/**",
+      "hardware/rtl/**",
+      "software/cora-sonar/**",
+      "software/petalinux/meta-platform-common/**",
+      "schemas/platform*.json"
+    ],
+    "live_commands": [
+      {"name": "identity", "command": "id -un; hostname; uname -a; cat /proc/cmdline"}
+    ]
+  }
+}
