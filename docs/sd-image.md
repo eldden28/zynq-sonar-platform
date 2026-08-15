@@ -76,8 +76,9 @@ sudo ip link set enp3s0 up
 ping 192.168.10.2
 ```
 
-The image targets the Digilent Cora Z7-10 revision B board preset and contains
-a minimal PS-only design. It includes the FSBL, U-Boot, Linux 6.12, the device
-tree, boot script, persistent ext4 root filesystem, GNU Radio, and VOLK. The
-current hardware export does not include an FPGA bitstream; a future FPGA
-accelerator will require one to be added to the boot package.
+The image targets the Digilent Cora Z7-10 revision B board preset. It includes
+the FSBL, current FPGA bitstream, U-Boot, Linux 6.12, device tree, boot script,
+persistent ext4 root filesystem, GNU Radio, and VOLK. The programmable-logic
+design contains the DMA/PWM path plus the bidirectional 512-point
+FFT/spectral-filter/IFFT accelerator described in
+`docs/cora-spectral-accelerator.md`.

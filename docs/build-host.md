@@ -32,6 +32,19 @@ mkdir -p reports
 scripts/check-host.sh > reports/host-$(date +%F).txt
 ```
 
+On a fresh Ubuntu 22.04 installation, install the validated host package set
+before running the AMD installers:
+
+```bash
+scripts/install-ubuntu-22.04-prerequisites.sh
+```
+
+This installs the Vivado GUI/runtime libraries, 32-bit compatibility support,
+Yocto/PetaLinux build utilities, and repository build tools. It verifies the
+Ubuntu release but deliberately leaves `/bin/sh`, locales, and swap under the
+operator's control. Follow the action messages it prints and the complete
+fresh-machine procedure in the repository `README.md`.
+
 ## Activate AMD/Xilinx tools
 
 The project does not modify global shell startup files. After installation,
@@ -79,6 +92,23 @@ PetaLinux 2025.1's `petalinux-util` command does not implement the historical
 ```bash
 printf '%s\n' "$PETALINUX_VER"
 ```
+
+## Installation problems reproduced on this host
+
+The first Vivado/Vitis 2025.1 installation reached post-processing and then
+stalled because `libtinfo.so.5` was absent. Install `libtinfo5`, `libncurses5`,
+and `libncurses5-dev` before rerunning the installer or its post-installation
+steps. These packages are included by the repository prerequisite script.
+
+AMD's installed `Vivado/scripts/installLibs.sh` also attempts to install
+`compat-openssl10`. Ubuntu 22.04 does not provide a package by that name. That
+lookup failed harmlessly on this host; Vivado and Vitis launched after the
+terminal compatibility libraries were installed.
+
+PetaLinux additionally checks that `/bin/sh` is Bash, that a usable UTF-8
+locale exists, and that commands are not being run as root. The validated host
+uses `/usr/bin/bash` for `/bin/sh`, `en_US.UTF-8`, and a 24 GiB swap file to
+support its approximately 8 GiB of physical RAM.
 
 ## Launch GNU Radio Companion
 

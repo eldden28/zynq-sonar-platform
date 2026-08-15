@@ -4,21 +4,21 @@ This file is the source of truth for host, vendor-tool, target, and build-tool
 compatibility. A selected version is a project decision; a detected version is
 what is visible in the current environment. Do not infer one from the other.
 
-Last host/target inspection: 2026-07-19
+Last host/target inspection: 2026-08-15
 
 | Component | Selected Version | Detected Version | Status | Notes |
 |---|---:|---:|---|---|
-| Ubuntu | TBD | 22.04.5 LTS | Unknown | Vendor support must be checked against every selected tool. |
+| Ubuntu | 22.04.5 LTS | 22.04.5 LTS | Validated | Supported by Vivado and PetaLinux 2025.1; both platform hardware builds completed on this host. |
 | Vivado | 2025.1 | 2025.1 build 6140274 | Detected | Installed at `/tools/Xilinx/2025.1/Vivado`; command-line launch verified. |
-| Vitis | TBD | 2025.1 build 6137779 | Detected | Installed at `/tools/Xilinx/2025.1/Vitis`; launcher version verified. Selection remains open until PetaLinux/BSP compatibility is decided. |
+| Vitis | 2025.1 | 2025.1 build 6137779 | Detected | Installed at `/tools/Xilinx/2025.1/Vitis`; optional for the current scripted Vivado/PetaLinux builds. |
 | PetaLinux | 2025.1 | 2025.1 ARM | Detected | Installed at `/tools/Xilinx/2025.1/PetaLinux/tool`; environment and host prerequisite checks pass with a nonfatal missing-TFTP warning. |
 | Target kernel | PetaLinux 2025.1 default | 6.12.10-xilinx | Validated | Boots from the SD card's ext4 partition on the 32-bit ARM Zynq-7000 target. |
-| GNU Radio host | TBD | 3.10.1.1 | Detected | Ubuntu package `3.10.1.1-2`; command and Python module verified. |
+| GNU Radio host | 3.10.1.1 | 3.10.1.1 | Detected | Ubuntu package `3.10.1.1-2`; command and Python module verified. |
 | GNU Radio target | 3.10.12 | 3.10.12.0 (`cd20ee25fb`) | Validated | Headless ARMv7 runtime, blocks, analog, digital, FFT, filter, network, Python bindings, and VOLK; on-board flowgraph passed. |
-| Python host | TBD | 3.10.12 | Detected | Ubuntu system `python3`. |
+| Python host | Ubuntu 3.10 | 3.10.12 | Detected | Ubuntu system `python3`. |
 | Python target | PetaLinux 2025.1 default | 3.12.9 | Validated | Python bindings and the GNU Radio smoke test run on the target. |
-| CMake | TBD | 3.22.1 | Detected | Ubuntu package `3.22.1-1ubuntu1.22.04.2`. |
-| GCC host | TBD | 11.4.0 | Detected | Ubuntu system compiler. |
+| CMake | Ubuntu 22.04 | 3.22.1 | Detected | Ubuntu package `3.22.1-1ubuntu1.22.04.2`. |
+| GCC host | Ubuntu 22.04 | 11.4.0 | Detected | Ubuntu system compiler. |
 | Cross compiler | PetaLinux 2025.1 default | GCC 13.3.0 | Validated | Produces ARMv7-A hard-float/NEON packages for the Cortex-A9 target. |
 | Board BSP | Repository baseline | Digilent board files 1.1 | Validated | Cora Z7-10 physical Rev. B uses the Digilent `B.0` Vivado definition and the repository's template-based PetaLinux project rather than a vendor BSP. |
 
@@ -53,9 +53,9 @@ missing. After installing the compatibility packages, Vivado and Vitis both
 launched successfully. The Vivado installed-device list was regenerated and
 the target `xc7z010clg400-1` was verified as family `zynq`.
 
-## Unresolved compatibility inputs
+## Remaining compatibility inputs
 
 - Vivado 2025.1 edition, installer filename, checksum, and license model
-- Host GNU Radio version alignment with the 3.10.12 target
-- Exact Vitis requirements for the future FPGA accelerator software
+- Long-term host GNU Radio alignment with the 3.10.12 target
+- Exact Vitis requirements for future standalone accelerator software
 - Long-term target package set once accelerator transport requirements are known
