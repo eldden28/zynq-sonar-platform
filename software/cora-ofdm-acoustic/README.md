@@ -9,6 +9,10 @@ The initial robust profile occupies 2.25--9.75 kHz. Five pilot carriers track
 common phase and timing drift on every symbol, while three known training
 symbols estimate the frequency response of the speaker, room, and microphone.
 Packets have a repeated header and CRC-32 payload validation.
+These mechanisms tolerate modest residual drift but do not constitute a
+wideband Doppler estimator or resampler. See the project-level
+[`OFDM Doppler handling`](../../docs/ofdm-doppler-handling.md) document for
+the processing order, limits, equations, and recommended extension.
 The first robust profile also sends three interleaved copies of the payload
 bits and majority-votes them at the receiver. This lowers the nominal payload
 rate from 10.8 kbit/s to 3.6 kbit/s before packet overhead, but gives the first

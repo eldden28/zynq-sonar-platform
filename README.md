@@ -19,7 +19,9 @@ Vivado implementation and timing but has not yet been booted on its target.
   captured NumPy arrays.
 - Acoustic OFDM modems and progressive image/text demonstrations with measured
   Cora profiles, convolutional coding, puncturing, interleaving, and 8-PSK
-  experiments.
+  experiments. See
+  [`docs/ofdm-doppler-handling.md`](docs/ofdm-doppler-handling.md) for the
+  implemented Doppler and timing-recovery behavior.
 - DVL and LBL/iUSBL navigation simulations and browser dashboards.
 - Reusable AXI4-Stream RTL for PWM and a 512-bin spectral filter.
 - Vivado Tcl builds with pinned Digilent and Avnet board definitions.
