@@ -35,6 +35,7 @@
   "software": {
     "common_components": [
       "cora-dashboard",
+      "cora-conventional-acoustic",
       "cora-navigation",
       "cora-ofdm",
       "cora-ofdm-acoustic",

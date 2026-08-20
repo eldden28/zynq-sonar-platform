@@ -1,0 +1,4 @@
+# Conventional modem dashboard is independent of the OFDM services. The Cora
+# image assigns its USB audio codec to ALSA card 0. Air mode is selectable in
+# the page but emits no audio until the user starts a transfer.
+DASHBOARD_ARGS="--bind 0.0.0.0 --port 8084 --noise-dbfs -48 --allow-air --playback-device plughw:0,0 --capture-device plughw:0,0"

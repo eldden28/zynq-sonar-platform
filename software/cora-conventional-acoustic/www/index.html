@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cora Conventional Acoustic Modem</title>
+  <style>
+    :root{color-scheme:dark;--bg:#071018;--panel:#0c1923;--line:#294253;--ink:#ebf8ff;--muted:#8ba6b5;--cyan:#58d7ff;--amber:#ffc857;--red:#ff6b81}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 0,#16364d,transparent 35%),linear-gradient(145deg,#050b10,#09151d 60%,#071016);color:var(--ink);font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}
+    header{padding:20px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:#061019e8;position:sticky;top:0;z-index:2}h1{margin:0;font-size:19px;letter-spacing:.07em;text-transform:uppercase}.sub,.muted{color:var(--muted)}.badge{padding:7px 12px;border:1px solid var(--line);border-radius:99px;text-transform:uppercase;color:var(--muted)}.badge.running,.badge.warming{color:var(--amber)}.badge.complete{color:var(--cyan)}.badge.failed{color:var(--red)}
+    main{max-width:1320px;margin:auto;padding:20px;display:grid;gap:16px}.panel{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#0a1620dd;box-shadow:0 16px 45px #0005}.bar{padding:10px 14px;border-bottom:1px solid var(--line);color:var(--muted);background:#0d1b26}.controls{padding:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}select,input,button{font:700 13px inherit;color:var(--ink);background:#102534;border:1px solid #38566a;border-radius:8px;padding:10px 12px}input{width:110px}button{cursor:pointer}button.primary{background:linear-gradient(135deg,#126388,#177d78)}button:disabled,select:disabled,input:disabled{opacity:.4;cursor:not-allowed}.field{display:flex;align-items:center;gap:6px;color:var(--muted)}
+    .terminals{display:grid;grid-template-columns:1fr 1fr;gap:16px}textarea{display:block;width:100%;min-height:240px;padding:16px;border:0;outline:0;resize:vertical;background:#030a0f;color:var(--ink);font:14px/1.55 inherit}textarea[readonly]{color:#a9efff}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line)}.stat{padding:13px;background:#09151e}.stat span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.07em}.stat strong{display:block;margin-top:5px;color:var(--cyan);font-size:14px}.plots{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}.plot{background:#050d13;padding:12px}canvas{display:block;width:100%;height:210px;background:#02070a;border:1px solid #263f50}.notice{padding:0 15px 14px;min-height:34px;color:var(--amber)}.foot{padding:12px 15px;border-top:1px solid var(--line);color:#678698;font-size:11px}
+    @media(max-width:850px){.terminals,.plots{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:540px){main{padding:9px}header{padding:13px}.sub{display:none}.stats{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header><div><h1>Conventional Acoustic Modem</h1><div class="sub">Single-carrier PSK and orthogonal FSK · independent of OFDM</div></div><div id="status" class="badge">connecting</div></header>
+<main>
+  <section class="panel">
+    <div class="bar">Waveform controls</div>
+    <div class="controls">
+      <select id="backend"><option value="loopback">Colored-channel simulation</option><option value="air">Speaker → microphone</option></select>
+      <select id="modulation"><option value="bpsk">BPSK · coherent</option><option value="qpsk" selected>QPSK · coherent</option><option value="fsk">2-FSK · noncoherent</option><option value="mfsk">MFSK · noncoherent</option></select>
+      <select id="mfsk-order" disabled><option value="4" selected>4-FSK</option><option value="8">8-FSK</option><option value="16">16-FSK</option></select>
+      <label class="field">Symbols/s <select id="symbol-rate"><option>125</option><option>200</option><option selected>250</option><option>300</option><option>375</option><option>400</option><option>500</option></select></label>
+      <label class="field">Center Hz <input id="carrier" type="number" min="1000" max="22000" step="250" value="6000"></label>
+      <button id="send" class="primary">Transmit text</button><button id="reset">Reset</button>
+    </div>
+    <div id="notice" class="notice">Ready. This page does not invoke the OFDM modem.</div>
+    <div class="stats">
+      <div class="stat"><span>Family</span><strong id="family">QPSK</strong></div>
+      <div class="stat"><span>Gross rate</span><strong id="gross">500 bit/s</strong></div>
+      <div class="stat"><span>Occupied band</span><strong id="band">—</strong></div>
+      <div class="stat"><span>Tones</span><strong id="tones">carrier only</strong></div>
+      <div class="stat"><span>Waveform duration</span><strong id="duration">0.0 s</strong></div>
+      <div class="stat"><span>Measured payload</span><strong id="throughput">0 bit/s</strong></div>
+      <div class="stat"><span>Sync metric</span><strong id="sync">—</strong></div>
+      <div class="stat"><span>Carrier offset</span><strong id="offset">—</strong></div>
+      <div class="stat"><span>Detector</span><strong id="detector">coherent phase</strong></div>
+      <div class="stat"><span>OFDM dependency</span><strong>none</strong></div>
+    </div>
+  </section>
+  <section class="terminals">
+    <div class="panel"><div class="bar">TX text · 512-byte dashboard limit</div><textarea id="tx" maxlength="512">Compare this message across BPSK, QPSK, 2-FSK, and MFSK without using the OFDM modulator.</textarea></div>
+    <div class="panel"><div class="bar">CRC-validated RX text</div><textarea id="rx" readonly placeholder="Awaiting a valid frame…"></textarea></div>
+  </section>
+  <section class="panel">
+    <div class="plots">
+      <div class="plot"><div class="bar">Transmit waveform preview</div><canvas id="wave" width="620" height="210"></canvas></div>
+      <div class="plot"><div class="bar">Transmit spectrum</div><canvas id="spectrum" width="620" height="210"></canvas></div>
+    </div>
+    <div class="foot">48 ksample/s · common BPSK synchronization preamble · PSK carrier recovery · per-tone FSK training · protected mode header · payload CRC-32 · no OFDM FFT, cyclic prefix, or subcarrier pilots.</div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);let last='';let air=false;
+function fmtRate(n){return n>=1000?`${(n/1000).toFixed(2)} kbit/s`:`${Math.round(n||0)} bit/s`}
+function setStatus(s){$('status').textContent=s;$('status').className=`badge ${s}`}
+function line(canvas,values,color,min,max){const c=$(canvas),x=c.getContext('2d'),w=c.width,h=c.height;x.clearRect(0,0,w,h);x.strokeStyle='#1e3543';x.beginPath();for(let i=1;i<5;i++){x.moveTo(0,i*h/5);x.lineTo(w,i*h/5)}x.stroke();if(!values.length)return;x.strokeStyle=color;x.lineWidth=1.5;x.beginPath();values.forEach((v,i)=>{const px=i*w/Math.max(1,values.length-1),py=h-(v-min)*h/(max-min);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke()}
+function render(s){setStatus(s.status);air=s.air_enabled;$('backend').querySelector('[value="air"]').disabled=!air;const active=s.process_running;for(const id of ['backend','modulation','mfsk-order','symbol-rate','carrier','send'])$(id).disabled=active||(id==='mfsk-order'&&$('modulation').value!=='mfsk');$('family').textContent=(s.modulation||'qpsk').toUpperCase().replace('MFSK',`${s.mfsk_order}-FSK`);$('gross').textContent=fmtRate(s.gross_bit_rate);$('band').textContent=s.occupied_band_hz?.length?`${(s.occupied_band_hz[0]/1000).toFixed(2)}–${(s.occupied_band_hz[1]/1000).toFixed(2)} kHz`:'—';$('tones').textContent=s.tone_frequencies_hz?.length>1?s.tone_frequencies_hz.map(v=>(v/1000).toFixed(2)).join(', ')+' kHz':'carrier only';$('duration').textContent=`${Number(s.waveform_duration_s||0).toFixed(2)} s`;$('throughput').textContent=fmtRate(s.payload_throughput_bps);$('sync').textContent=s.sync_metric==null?'—':Number(s.sync_metric).toFixed(3);$('offset').textContent=s.carrier_offset_hz==null?'not used':`${Number(s.carrier_offset_hz).toFixed(2)} Hz`;$('detector').textContent=['fsk','mfsk'].includes(s.modulation)?'noncoherent energy':'coherent phase';if(s.received_text)$('rx').value=s.received_text;$('notice').textContent=s.error||({idle:'Ready. This page does not invoke the OFDM modem.',running:'Modulating and decoding…',warming:'Starting audio capture…',complete:'Frame decoded and payload CRC passed.',failed:'Frame failed validation.'}[s.status]||s.status);line('wave',s.waveform_preview||[],'#58d7ff',-0.3,0.3);line('spectrum',s.spectrum_db||[],'#ffc857',-100,0);last=s.status}
+async function status(){try{const r=await fetch('/api/status',{cache:'no-store'});render(await r.json())}catch(e){setStatus('offline')}}
+async function post(path,data={}){const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Cora-Request':'1'},body:JSON.stringify(data)});const j=await r.json();if(!r.ok)throw new Error(j.error||`HTTP ${r.status}`);return j}
+$('modulation').onchange=()=>{$('mfsk-order').disabled=$('modulation').value!=='mfsk'};
+$('send').onclick=async()=>{try{await post('/api/start',{text:$('tx').value,backend:$('backend').value,modulation:$('modulation').value,mfsk_order:Number($('mfsk-order').value),symbol_rate:Number($('symbol-rate').value),carrier_frequency_hz:Number($('carrier').value)});$('rx').value='';await status()}catch(e){$('notice').textContent=e.message}};
+$('reset').onclick=async()=>{try{await post('/api/reset');$('rx').value='';await status()}catch(e){$('notice').textContent=e.message}};
+status();setInterval(status,350);
+</script>
+</body>
+</html>
