@@ -1,10 +1,11 @@
 # Zynq Sonar Platform
 
 Zynq Sonar Platform is a multi-board FPGA/Linux laboratory for forward-looking
-sonar, acoustic OFDM communication, underwater navigation, remote dashboards,
-and reusable streaming DSP accelerators. It keeps algorithms, web interfaces,
-drivers, and Yocto recipes common while isolating the hardware details that
-must differ between a Zynq-7000 board and a Zynq UltraScale+ MPSoC platform.
+sonar, acoustic OFDM and conventional communication, underwater navigation,
+remote dashboards, and reusable streaming DSP accelerators. It keeps
+algorithms, web interfaces, drivers, and Yocto recipes common while isolating
+the hardware details that must differ between a Zynq-7000 board and a Zynq
+UltraScale+ MPSoC platform.
 
 The repository currently supports the Digilent Cora Z7-10 and contains a
 development hardware build for an Avnet UltraZed-EG 3EG SOM on the Avnet PCIe
@@ -20,6 +21,10 @@ Vivado implementation and timing but has not yet been booted on its target.
 - Acoustic OFDM modems and progressive image/text demonstrations with measured
   Cora profiles, convolutional coding, puncturing, interleaving, and 8-PSK
   experiments.
+- A separate conventional acoustic modem and dashboard for coherent BPSK and
+  QPSK plus noncoherent 2-FSK and configurable 4/8/16-FSK. It shares no OFDM
+  modulation or receiver path. See
+  [`docs/conventional-acoustic-modulations.md`](docs/conventional-acoustic-modulations.md).
 - DVL and LBL/iUSBL navigation simulations and browser dashboards.
 - Reusable AXI4-Stream RTL for PWM and a 512-bin spectral filter.
 - Vivado Tcl builds with pinned Digilent and Avnet board definitions.
@@ -43,7 +48,7 @@ The platform registry is under [`platforms/`](platforms/). Run
 ```text
                          common source
        +------------------------------------------------+
-       | sonar, OFDM, navigation, dashboards, drivers   |
+       | sonar, acoustic modems, navigation, dashboards |
        | reusable RTL and software-visible ABI contracts |
        | software/petalinux/meta-platform-common        |
        +-------------------------+----------------------+
