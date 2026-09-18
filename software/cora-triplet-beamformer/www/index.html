@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cora 21-Channel Triplet BTR</title>
+<style>
+:root{color-scheme:dark;--bg:#050b10;--panel:#0b151d;--line:#243845;--text:#e8f4f8;--muted:#8eabb8;--cyan:#4ce7df;--green:#35e88d;--amber:#ffc85c;--red:#ff6b6b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 30% -20%,#173440 0,var(--bg) 42%);color:var(--text);font:14px/1.45 Inter,system-ui,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 28px;border-bottom:1px solid var(--line);background:#050b10ed;position:sticky;top:0;z-index:3}h1{font-size:18px;margin:0;letter-spacing:.08em;text-transform:uppercase}.sub{color:var(--muted);font-size:11px;letter-spacing:.05em}.badge{border:1px solid var(--green);color:var(--green);border-radius:2px;padding:5px 10px;text-transform:uppercase;font-size:10px;letter-spacing:.12em}.badge.paused{border-color:var(--amber);color:var(--amber)}.badge.failed{border-color:var(--red);color:var(--red)}
+main{max-width:1480px;margin:auto;padding:18px;display:grid;gap:14px}.metrics{display:grid;grid-template-columns:repeat(7,minmax(120px,1fr));gap:8px}.metric,.panel{background:linear-gradient(145deg,#0d1a22,#081118);border:1px solid var(--line);border-radius:3px;box-shadow:0 14px 32px #0005}.metric{padding:10px 13px}.metric span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.1em}.metric strong{font-size:18px;font-weight:500}.layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px}.diagnostics{display:grid;grid-template-columns:minmax(0,1fr) 470px;gap:14px}.spectral-stack{display:grid;gap:14px}.panel{padding:12px}.panel h2{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#b8d0da;margin:0 0 9px}.plot-wrap,.spectrum-wrap,.waterfall-wrap,.geometry-wrap{position:relative;background:#010609;border:1px solid #29404c;border-radius:2px;overflow:hidden}.plot-wrap{height:610px}.spectrum-wrap{height:190px}.waterfall-wrap{height:300px}.geometry-title{font-size:10px;text-transform:uppercase;letter-spacing:.11em;color:#b8d0da;margin:14px 0 7px}.geometry-wrap{height:230px}canvas{width:100%;height:100%;display:block}.axis-bearing{position:absolute;left:46px;right:10px;top:6px;display:flex;justify-content:space-between;color:#d8edf3;font-size:10px;text-shadow:0 1px 3px #000}.axis-time{position:absolute;left:8px;top:24px;bottom:10px;display:flex;flex-direction:column;justify-content:space-between;color:#d8edf3;font-size:10px;text-shadow:0 1px 3px #000}.axis-caption{position:absolute;right:10px;bottom:6px;color:#a8c1ca;font-size:10px;letter-spacing:.08em;text-shadow:0 1px 3px #000}.meter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.triplet-meter{border:1px solid #233946;background:#071118;padding:8px}.triplet-title{color:var(--cyan);font-size:9px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px}.element-meter{display:grid;grid-template-columns:32px minmax(50px,1fr) 48px;align-items:center;gap:5px;margin:5px 0;font-size:9px}.meter-label{color:#b8d0da}.meter-track{height:8px;background:#02070a;border:1px solid #29404c;overflow:hidden}.meter-fill{height:100%;width:0;background:linear-gradient(90deg,#087c87,#35e88d);transition:width .18s linear}.meter-value{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}.controls{display:grid;gap:14px}.control label{display:flex;justify-content:space-between;color:var(--muted);margin-bottom:5px}.control output{color:var(--text)}input[type=range]{width:100%;accent-color:var(--cyan)}input:disabled{opacity:.35}.toggle{display:flex;gap:10px;align-items:center;color:var(--muted)}.buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:6px}button{background:#11232d;color:var(--text);border:1px solid #36515f;border-radius:2px;padding:9px;cursor:pointer;text-transform:uppercase;font-size:10px;letter-spacing:.08em}button:hover{border-color:var(--cyan)}.legend{height:8px;border:1px solid #243845;background:linear-gradient(90deg,#01060b,#08254a,#006b8c,#18a889,#d6de48,#fff5b5);margin-top:9px}.legend-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.08em}.note{color:var(--muted);font-size:11px;margin-top:10px}.warning{color:var(--amber);font-size:11px;min-height:16px;margin-top:7px}.error{color:var(--red);min-height:20px;margin-top:4px}@media(max-width:1100px){.diagnostics{grid-template-columns:1fr}}@media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.plot-wrap{height:520px}.meter-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header><div><h1>Cora Passive Array · Operator Display</h1><div class="sub">7 × 30 MM TRIPLETS &nbsp;·&nbsp; 3 IN AXIAL SPACING &nbsp;·&nbsp; 360° DUAL CARDIOID &nbsp;·&nbsp; 48 KSAMPLE/S</div></div><div id="status" class="badge">connecting</div></header>
+<main>
+<section class="metrics">
+  <div class="metric"><span>Sample rate</span><strong id="sample-rate">48 kHz</strong></div>
+  <div class="metric"><span>Channels</span><strong>21</strong></div>
+  <div class="metric"><span>Carrier</span><strong id="carrier-card">—</strong></div>
+  <div class="metric"><span>Peak bearing</span><strong id="peak-bearing">—</strong></div>
+  <div class="metric"><span>Processing</span><strong id="processing">—</strong></div>
+  <div class="metric"><span>Real-time margin</span><strong id="margin">—</strong></div>
+  <div class="metric"><span>ADC payload</span><strong id="payload">—</strong></div>
+</section>
+<section class="layout">
+  <div class="panel"><h2>Bearing–Time Record (BTR) · newest data at top</h2><div class="plot-wrap"><canvas id="btr"></canvas><div class="axis-bearing"><span>−180° P</span><span>−90°</span><span>0° S</span><span>+90°</span><span>+180° P</span></div><div class="axis-time"><span>NOW</span><span id="history-mid">−</span><span id="history-span">−</span></div><div class="axis-caption">360° BEARING (DEG) →</div></div><div class="legend"></div><div class="legend-labels"><span>−REL LEVEL</span><span>PEAK</span></div><div class="note">0° is starboard broadside; ±180° is port broadside. The two cardioid modes use a smooth power overlap at ±90° endfire to disambiguate the line array's mirrored hemispheres without a display seam. Levels are relative to each frame's peak.</div></div>
+  <aside class="panel"><h2 id="scene-title">Synthetic scene</h2><div class="controls">
+    <div class="control"><label>Carrier <output id="carrier-out">8.0 kHz</output></label><input id="carrier" type="range" min="250" max="20000" step="250" value="8000"></div>
+    <div class="control"><label>Primary bearing <output id="primary-out">35°</output></label><input id="primary" data-synthetic type="range" min="-180" max="180" step="1" value="35"></div>
+    <div class="control"><label>Secondary bearing <output id="secondary-out">−125°</output></label><input id="secondary" data-synthetic type="range" min="-180" max="180" step="1" value="-125"></div>
+    <div class="control"><label>Secondary level <output id="secondary-level-out">32%</output></label><input id="secondary-level" data-synthetic type="range" min="0" max="100" step="1" value="32"></div>
+    <div class="control"><label>Noise RMS <output id="noise-out">2.5%</output></label><input id="noise" data-synthetic type="range" min="0" max="15" step="0.5" value="2.5"></div>
+    <div class="control"><label>Color dynamic range <output id="display-range-out">24 dB</output></label><input id="display-range" type="range" min="6" max="45" step="1" value="24"></div>
+    <div class="control"><label>Minimum relative level <output id="min-db-out">−24 dB</output></label><input id="min-db" type="range" min="-45" max="0" step="1" value="-24"></div>
+    <div class="control"><label>Ridge contrast <output id="ridge-contrast-out">2.5×</output></label><input id="ridge-contrast" type="range" min="1" max="6" step="0.25" value="2.5"></div>
+    <label class="toggle"><input id="motion" data-synthetic type="checkbox" checked> Move both synthetic sources</label>
+    <label class="toggle"><input id="ridge" type="checkbox" checked> Enhance instantaneous ridges</label>
+    <div class="buttons"><button id="apply">Apply scene</button><button id="pause">Pause</button><button id="reset">Clear history</button><button id="defaults">Defaults</button></div>
+  </div><div class="geometry-title">Source geometry · top view</div><div class="geometry-wrap"><canvas id="geometry"></canvas></div><div id="geometry-note" class="note">Bearing only; source range is not modeled. FWD is the positive array axis.</div><div id="source-state" class="note">Sources —</div><div id="array-warning" class="warning"></div><div id="error" class="error"></div></aside>
+</section>
+<section class="diagnostics">
+  <div class="spectral-stack">
+    <div class="panel"><h2>Short-time spectrum · center reference element</h2><div class="spectrum-wrap"><canvas id="spectrum"></canvas></div><div id="spectrum-note" class="note">1,024-point Hann FFT · Ch11 · dBFS</div></div>
+    <div class="panel"><h2>Spectral waterfall · newest data at top</h2><div class="waterfall-wrap"><canvas id="waterfall"></canvas></div><div class="legend"></div><div class="legend-labels"><span>−100 dBFS</span><span>0 dBFS</span></div></div>
+  </div>
+  <div class="panel"><h2>Element power · 21-channel ADC RMS</h2><div id="element-meters" class="meter-grid"></div><div class="note">Meters show per-frame RMS level in dBFS. Each triplet is ordered Ch1 starboard, Ch2 down, Ch3 port.</div></div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id),canvas=$('btr'),ctx=canvas.getContext('2d'),geometryCanvas=$('geometry'),geometryCtx=geometryCanvas.getContext('2d'),spectrumCanvas=$('spectrum'),spectrumCtx=spectrumCanvas.getContext('2d'),waterfallCanvas=$('waterfall'),waterfallCtx=waterfallCanvas.getContext('2d');let state=null,controlsInitialized=false,spectralHistory=[],lastSpectrumSequence=null,lastSpectrumCarrier=null;
+function colour(x){if(x<.2)return[0,Math.round(20+45*x*5),Math.round(35+105*x*5)];if(x<.45)return[0,Math.round(65+120*(x-.2)*4),Math.round(140+40*(x-.2)*4)];if(x<.72)return[Math.round(45*(x-.45)*3.7),Math.round(185+55*(x-.45)*3.7),Math.round(180-85*(x-.45)*3.7)];return[Math.round(45+210*(x-.72)*3.57),Math.round(240+15*(x-.72)*3.57),Math.round(95+85*(x-.72)*3.57)]}
+function drawBtr(b){
+  const bearings=b.bearings,columns=b.columns;if(!columns||!bearings)return;
+  const raw=Uint8Array.from(atob(b.data),c=>c.charCodeAt(0));
+  const image=ctx.createImageData(bearings,columns),displayDb=+$('display-range').value;
+  const minimumDb=+$('min-db').value;
+  const contrast=+$('ridge-contrast').value,ridge=$('ridge').checked;
+  const sourceDb=state&&state.config?state.config.dynamic_range_db:45;
+  const profile=new Float32Array(bearings),pixels=new Float32Array(bearings),ridges=[];
+  for(let y=0;y<columns;y++){
+    const time=columns-1-y;
+    for(let x=0;x<bearings;x++){
+      const db=(raw[x*columns+time]/255-1)*sourceDb;
+      if(db<minimumDb){profile[x]=-1;pixels[x]=-1;continue}
+      const normalized=Math.max(0,Math.min(1,1+db/displayDb));
+      profile[x]=Math.pow(normalized,contrast);
+      pixels[x]=profile[x]*(ridge ? .16 : 1);
+    }
+    if(ridge){
+      const candidates=[];
+      const uniqueBearings=bearings-1;
+      for(let x=0;x<uniqueBearings;x++){
+        const p=profile[x];
+        const previous=profile[(x-1+uniqueBearings)%uniqueBearings];
+        const next=profile[(x+1)%uniqueBearings];
+        if(p>.08&&p>=previous&&p>=next)candidates.push([p,x]);
+      }
+      candidates.sort((a,b)=>b[0]-a[0]);
+      const selected=[];
+      for(const candidate of candidates){
+        const separated=selected.every(item=>{const distance=Math.abs(item[1]-candidate[1]);return Math.min(distance,uniqueBearings-distance)>=8});
+        if(separated)selected.push(candidate);
+        if(selected.length===3)break;
+      }
+      for(const [power,x] of selected)ridges.push([y,x,power]);
+    }
+    for(let x=0;x<bearings;x++){
+      const target=(y*bearings+x)*4,[r,g,bl]=pixels[x]<0?[1,6,9]:colour(pixels[x]);
+      image.data[target]=r;image.data[target+1]=g;image.data[target+2]=bl;image.data[target+3]=255;
+    }
+  }
+  const off=document.createElement('canvas');off.width=bearings;off.height=columns;
+  off.getContext('2d').putImageData(image,0,0);
+  const dpr=devicePixelRatio||1,rect=canvas.getBoundingClientRect();
+  canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);
+  ctx.imageSmoothingEnabled=false;ctx.drawImage(off,0,0,canvas.width,canvas.height);
+  if(ridge){
+    const lineWidth=Math.max(1.5*dpr,canvas.width/bearings*.28);
+    const lineHeight=Math.max(1,canvas.height/columns+1);
+    for(const [y,x,power] of ridges){
+      const [r,g,bl]=colour(Math.max(.72,power));
+      ctx.fillStyle=`rgba(${r},${g},${bl},${Math.max(.55,power)})`;
+      const px=(x+.5)*canvas.width/bearings,py=y*canvas.height/columns;
+      ctx.fillRect(px-lineWidth/2,py,lineWidth,lineHeight);
+    }
+  }
+  ctx.strokeStyle='rgba(125,175,190,.12)';ctx.lineWidth=Math.max(1,dpr);
+  for(let i=1;i<4;i++){const x=Math.round(canvas.width*i/4)+.5;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke()}
+  for(let i=1;i<4;i++){const y=Math.round(canvas.height*i/4)+.5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke()}
+  const span=columns*b.seconds_per_column;$('history-mid').textContent=`−${(span/2).toFixed(1)} s`;$('history-span').textContent=`−${span.toFixed(1)} s`;
+}
+function spectrumBytes(s){return s&&s.data?Uint8Array.from(atob(s.data),c=>c.charCodeAt(0)):null}
+function sizeCanvas(target,context){const dpr=devicePixelRatio||1,rect=target.getBoundingClientRect(),width=Math.max(1,Math.round(rect.width*dpr)),height=Math.max(1,Math.round(rect.height*dpr));if(target.width!==width||target.height!==height){target.width=width;target.height=height}context.setTransform(1,0,0,1,0,0);return{width,height,dpr}}
+function drawGeometry(s){
+  const {width,height,dpr}=sizeCanvas(geometryCanvas,geometryCtx),cx=width/2,cy=height/2,r=Math.min(width,height)*.36,m=s.metrics||{},c=s.config||{},axi=(s.input||{}).mode==='axi',bearings=axi?[m.peak_bearing_deg]:(m.source_bearings_deg||[c.primary_bearing_deg,c.secondary_bearing_deg]);geometryCtx.fillStyle='#010609';geometryCtx.fillRect(0,0,width,height);geometryCtx.lineWidth=Math.max(1,dpr);geometryCtx.font=`${9*dpr}px system-ui`;
+  for(const scale of[.34,.67,1]){geometryCtx.strokeStyle='rgba(125,175,190,.16)';geometryCtx.beginPath();geometryCtx.arc(cx,cy,r*scale,0,Math.PI*2);geometryCtx.stroke()}geometryCtx.strokeStyle='rgba(125,175,190,.20)';geometryCtx.beginPath();geometryCtx.moveTo(cx-r,cy);geometryCtx.lineTo(cx+r,cy);geometryCtx.moveTo(cx,cy-r);geometryCtx.lineTo(cx,cy+r);geometryCtx.stroke();
+  geometryCtx.fillStyle='#8eabb8';geometryCtx.textAlign='center';geometryCtx.fillText('FWD  +90°',cx,12*dpr);geometryCtx.fillText('AFT  −90°',cx,height-5*dpr);geometryCtx.textAlign='left';geometryCtx.fillText('PORT  ±180°',5*dpr,cy-5*dpr);geometryCtx.textAlign='right';geometryCtx.fillText('STBD  0°',width-5*dpr,cy-5*dpr);
+  const aperture=r*.44;geometryCtx.strokeStyle='#d8edf3';geometryCtx.lineWidth=2*dpr;geometryCtx.beginPath();geometryCtx.moveTo(cx,cy+aperture);geometryCtx.lineTo(cx,cy-aperture);geometryCtx.stroke();for(let i=0;i<7;i++){const y=cy+aperture-2*aperture*i/6;geometryCtx.fillStyle='#081118';geometryCtx.strokeStyle='#4ce7df';geometryCtx.lineWidth=1.3*dpr;geometryCtx.beginPath();geometryCtx.arc(cx,y,3.4*dpr,0,Math.PI*2);geometryCtx.fill();geometryCtx.stroke()}geometryCtx.fillStyle='#d8edf3';geometryCtx.textAlign='left';geometryCtx.fillText('7 × TRIPLET',cx+7*dpr,cy+3*dpr);
+  const source=(bearing,label,color,level)=>{if(!Number.isFinite(bearing))return;const angle=bearing*Math.PI/180,x=cx+r*.88*Math.cos(angle),y=cy-r*.88*Math.sin(angle);geometryCtx.save();geometryCtx.setLineDash([4*dpr,4*dpr]);geometryCtx.strokeStyle=color+'88';geometryCtx.beginPath();geometryCtx.moveTo(cx,cy);geometryCtx.lineTo(x,y);geometryCtx.stroke();geometryCtx.restore();geometryCtx.fillStyle=color;geometryCtx.beginPath();geometryCtx.arc(x,y,(4+Math.max(0,level||0)*3)*dpr,0,Math.PI*2);geometryCtx.fill();geometryCtx.lineWidth=2*dpr;geometryCtx.strokeStyle='#e8f4f8';geometryCtx.stroke();geometryCtx.font=`${9*dpr}px system-ui`;geometryCtx.textAlign=x<cx?'right':'left';geometryCtx.fillStyle=color;geometryCtx.fillText(`${label} ${bearing>=0?'+':''}${bearing.toFixed(1)}°`,x+(x<cx?-8:8)*dpr,y-7*dpr)};
+  if(axi)source(bearings[0],'PEAK','#35e88d',1);else{source(bearings[0],'P','#35e88d',c.primary_level);source(bearings[1],'S','#ffc85c',c.secondary_level)}
+}
+function drawSpectrum(s,raw){
+  if(!raw||!raw.length)return;const {width,height,dpr}=sizeCanvas(spectrumCanvas,spectrumCtx),left=48*dpr,right=10*dpr,top=9*dpr,bottom=23*dpr,pw=width-left-right,ph=height-top-bottom,min=s.minimum_dbfs,max=s.maximum_dbfs;
+  spectrumCtx.fillStyle='#010609';spectrumCtx.fillRect(0,0,width,height);spectrumCtx.font=`${9*dpr}px system-ui`;spectrumCtx.lineWidth=Math.max(1,dpr);
+  for(let i=0;i<=4;i++){const y=top+ph*i/4,db=max-(max-min)*i/4;spectrumCtx.strokeStyle='rgba(125,175,190,.14)';spectrumCtx.beginPath();spectrumCtx.moveTo(left,y);spectrumCtx.lineTo(width-right,y);spectrumCtx.stroke();spectrumCtx.fillStyle='#8eabb8';spectrumCtx.fillText(`${db.toFixed(0)}`,4*dpr,y+3*dpr)}
+  for(let i=0;i<=4;i++){const x=left+pw*i/4,f=(s.frequency_max_hz/1000)*i/4;spectrumCtx.strokeStyle='rgba(125,175,190,.10)';spectrumCtx.beginPath();spectrumCtx.moveTo(x,top);spectrumCtx.lineTo(x,top+ph);spectrumCtx.stroke();spectrumCtx.fillStyle='#8eabb8';spectrumCtx.textAlign=i===0?'left':i===4?'right':'center';spectrumCtx.fillText(`${f.toFixed(0)}k`,x,height-6*dpr)}
+  spectrumCtx.textAlign='left';const gradient=spectrumCtx.createLinearGradient(0,top,0,top+ph);gradient.addColorStop(0,'rgba(76,231,223,.35)');gradient.addColorStop(1,'rgba(76,231,223,0)');spectrumCtx.beginPath();
+  for(let i=0;i<raw.length;i++){const x=left+pw*i/(raw.length-1),db=min+(raw[i]/255)*(max-min),y=top+ph*(max-db)/(max-min);if(i===0)spectrumCtx.moveTo(x,y);else spectrumCtx.lineTo(x,y)}
+  spectrumCtx.lineTo(left+pw,top+ph);spectrumCtx.lineTo(left,top+ph);spectrumCtx.closePath();spectrumCtx.fillStyle=gradient;spectrumCtx.fill();spectrumCtx.beginPath();
+  for(let i=0;i<raw.length;i++){const x=left+pw*i/(raw.length-1),db=min+(raw[i]/255)*(max-min),y=top+ph*(max-db)/(max-min);if(i===0)spectrumCtx.moveTo(x,y);else spectrumCtx.lineTo(x,y)}spectrumCtx.strokeStyle='#4ce7df';spectrumCtx.lineWidth=1.4*dpr;spectrumCtx.stroke();
+}
+function drawWaterfall(s){
+  const {width,height,dpr}=sizeCanvas(waterfallCanvas,waterfallCtx);waterfallCtx.fillStyle='#010609';waterfallCtx.fillRect(0,0,width,height);if(!spectralHistory.length)return;
+  const bins=spectralHistory[0].length,rows=spectralHistory.length,off=document.createElement('canvas');off.width=bins;off.height=rows;const image=off.getContext('2d').createImageData(bins,rows);
+  for(let y=0;y<rows;y++){const row=spectralHistory[rows-1-y];for(let x=0;x<bins;x++){const target=(y*bins+x)*4,[r,g,b]=colour(row[x]/255);image.data[target]=r;image.data[target+1]=g;image.data[target+2]=b;image.data[target+3]=255}}
+  off.getContext('2d').putImageData(image,0,0);waterfallCtx.imageSmoothingEnabled=false;waterfallCtx.drawImage(off,0,0,width,height);waterfallCtx.strokeStyle='rgba(125,175,190,.16)';waterfallCtx.lineWidth=Math.max(1,dpr);waterfallCtx.font=`${9*dpr}px system-ui`;waterfallCtx.fillStyle='#d8edf3';
+  for(let i=0;i<=4;i++){const x=Math.round(width*i/4)+.5;waterfallCtx.beginPath();waterfallCtx.moveTo(x,0);waterfallCtx.lineTo(x,height);waterfallCtx.stroke();waterfallCtx.textAlign=i===0?'left':i===4?'right':'center';waterfallCtx.fillText(`${(s.frequency_max_hz*i/4000).toFixed(0)}k`,x,12*dpr)}waterfallCtx.textAlign='left';waterfallCtx.fillText('NOW',5*dpr,27*dpr);
+}
+function initializeElementMeters(){let html='';for(let triplet=0;triplet<7;triplet++){html+=`<div class="triplet-meter"><div class="triplet-title">Triplet ${triplet+1}</div>`;for(let element=0;element<3;element++){const channel=triplet*3+element+1;html+=`<div class="element-meter"><span class="meter-label">CH${channel}</span><div class="meter-track"><div id="meter-fill-${channel}" class="meter-fill"></div></div><span id="meter-value-${channel}" class="meter-value">—</span></div>`}html+='</div>'}$('element-meters').innerHTML=html}
+function renderElementMeters(levels){for(let i=0;i<21;i++){const value=levels&&Number.isFinite(levels[i])?levels[i]:-100,normalized=Math.max(0,Math.min(1,(value+80)/80)),fill=$(`meter-fill-${i+1}`);fill.style.width=`${(normalized*100).toFixed(1)}%`;fill.style.background=value>-3?'#ff6b6b':value>-12?'#ffc85c':'linear-gradient(90deg,#087c87,#35e88d)';$(`meter-value-${i+1}`).textContent=`${value.toFixed(1)} dB`}}
+function drawSpectralTelemetry(s){const spec=s.spectrum,raw=spectrumBytes(spec);if(!spec||!raw)return;if(lastSpectrumCarrier!==s.config.carrier_hz){spectralHistory=[];lastSpectrumSequence=null;lastSpectrumCarrier=s.config.carrier_hz}if(lastSpectrumSequence!==s.sequence){spectralHistory.push(raw);if(spectralHistory.length>120)spectralHistory.shift();lastSpectrumSequence=s.sequence}drawSpectrum(spec,raw);drawWaterfall(spec);$('spectrum-note').textContent=`1,024-point Hann FFT · Ch${spec.reference_channel} · ${(spec.frequency_max_hz/1000).toFixed(0)} kHz span · dBFS`;renderElementMeters((s.metrics||{}).element_rms_dbfs)}
+function update(s){
+  state=s;const m=s.metrics||{},c=s.config||{},a=s.array||{},input=s.input||{},axi=input.mode==='axi';
+  if(!controlsInitialized){$('carrier').value=c.carrier_hz;$('primary').value=c.primary_bearing_deg;$('secondary').value=c.secondary_bearing_deg;$('secondary-level').value=c.secondary_level*100;$('noise').value=c.noise_rms*100;$('motion').checked=c.motion_enabled;controlsInitialized=true;labels()}
+  $('status').textContent=s.error?'input error':s.status;$('status').className=`badge ${s.error?'failed':s.status}`;
+  $('sample-rate').textContent=`${(c.sample_rate_hz/1000).toFixed(0)} kHz`;$('carrier-card').textContent=`${(c.carrier_hz/1000).toFixed(2)} kHz`;
+  const payload=m.input_payload_mb_s==null?input.payload_mb_s:m.input_payload_mb_s;$('peak-bearing').textContent=m.peak_bearing_deg==null?'—':`${m.peak_bearing_deg.toFixed(1)}°`;$('processing').textContent=m.processing_ms==null?'—':`${m.processing_ms.toFixed(2)} ms`;$('margin').textContent=m.realtime_margin_x==null?'—':`${m.realtime_margin_x.toFixed(1)}×`;$('payload').textContent=payload==null?'—':`${payload.toFixed(2)} MB/s`;
+  document.querySelectorAll('[data-synthetic]').forEach(element=>element.disabled=axi);$('scene-title').textContent=axi?'AXI acquisition':'Synthetic scene';$('apply').textContent=axi?'Apply carrier':'Apply scene';$('geometry-note').textContent=axi?'Live AXI data; the marker is the strongest beam estimate, not a tracked source position.':'Bearing only; source range is not modeled. FWD is the positive array axis.';
+  $('source-state').textContent=axi?`AXI: ${input.device||'device'} · ${input.frames_received||0} frames · ${input.sample_format||'32-bit samples'}`:(m.source_bearings_deg?`Actual sources: ${m.source_bearings_deg.map(v=>v.toFixed(1)+'°').join(' · ')} · peak via ${m.peak_cardioid_mode||'—'} cardioid`:'Sources —');
+  const aliasLimit=a.axial_maximum_unaliased_frequency_hz||Infinity;
+  $('array-warning').textContent=c.carrier_hz>aliasLimit?`Axial grating-lobe region: 3 in spacing is unaliased only through ${(aliasLimit/1000).toFixed(2)} kHz.`:'';
+  $('pause').textContent=s.status==='paused'?'Resume':'Pause';$('error').textContent=s.error||'';drawBtr(s.btr);drawGeometry(s);drawSpectralTelemetry(s)
+}
+async function poll(){try{const r=await fetch('/api/status',{cache:'no-store'});if(!r.ok)throw Error(`HTTP ${r.status}`);update(await r.json())}catch(e){$('status').textContent='offline';$('status').className='badge failed';$('error').textContent=e.message}}
+async function control(body){$('error').textContent='';const r=await fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json','X-Cora-Request':'1'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw Error(d.error||`HTTP ${r.status}`);update(d.status)}
+function labels(){$('carrier-out').textContent=`${(+$('carrier').value/1000).toFixed(2)} kHz`;$('primary-out').textContent=`${$('primary').value}°`;$('secondary-out').textContent=`${$('secondary').value}°`;$('secondary-level-out').textContent=`${$('secondary-level').value}%`;$('noise-out').textContent=`${$('noise').value}%`;$('display-range-out').textContent=`${$('display-range').value} dB`;$('min-db-out').textContent=`${$('min-db').value.replace('-','−')} dB`;$('ridge-contrast-out').textContent=`${(+$('ridge-contrast').value).toFixed(2).replace(/0$/,'')}×`}
+for(const id of['carrier','primary','secondary','secondary-level','noise'])$(id).addEventListener('input',labels);for(const id of['display-range','min-db','ridge-contrast'])$(id).addEventListener('input',()=>{labels();if(state)drawBtr(state.btr)});$('ridge').addEventListener('change',()=>{if(state)drawBtr(state.btr)});
+$('apply').onclick=()=>{const values={carrier_hz:+$('carrier').value};if(!state||!state.input||state.input.mode!=='axi')Object.assign(values,{primary_bearing_deg:+$('primary').value,secondary_bearing_deg:+$('secondary').value,secondary_level:+$('secondary-level').value/100,noise_rms:+$('noise').value/100,motion_enabled:$('motion').checked});control({action:'configure',values}).catch(e=>$('error').textContent=e.message)};
+$('pause').onclick=()=>control({action:state&&state.status==='paused'?'resume':'pause'}).catch(e=>$('error').textContent=e.message);
+$('reset').onclick=()=>{spectralHistory=[];lastSpectrumSequence=null;control({action:'reset'}).catch(e=>$('error').textContent=e.message)};
+$('defaults').onclick=()=>{$('carrier').value=8000;$('primary').value=35;$('secondary').value=-125;$('secondary-level').value=32;$('noise').value=2.5;$('display-range').value=24;$('min-db').value=-24;$('ridge-contrast').value=2.5;$('motion').checked=true;$('ridge').checked=true;labels();$('apply').click()};
+initializeElementMeters();labels();poll();setInterval(poll,250);
+</script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+BTR_ARGS="--bind 0.0.0.0 --port 8088 --web-root /usr/share/cora-triplet-beamformer/www --carrier-hz 8000 --source synthetic"

@@ -1,0 +1,35 @@
+#!/bin/sh
+
+DAEMON=/usr/sbin/cora-triplet-btr
+PIDFILE=/var/run/cora-triplet-btr.pid
+DEFAULTS=/etc/default/cora-triplet-btr
+
+[ -r "$DEFAULTS" ] && . "$DEFAULTS"
+
+case "$1" in
+    start)
+        echo "Starting Cora triplet BTR"
+        start-stop-daemon -S -b -m -p "$PIDFILE" -x "$DAEMON" -- $BTR_ARGS
+        ;;
+    stop)
+        echo "Stopping Cora triplet BTR"
+        start-stop-daemon -K -p "$PIDFILE" -x "$DAEMON"
+        rm -f "$PIDFILE"
+        ;;
+    restart)
+        "$0" stop
+        "$0" start
+        ;;
+    status)
+        if [ -r "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+            echo "Cora triplet BTR is running"
+            exit 0
+        fi
+        echo "Cora triplet BTR is stopped"
+        exit 1
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
