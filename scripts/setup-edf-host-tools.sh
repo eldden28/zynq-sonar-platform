@@ -13,7 +13,7 @@ mkdir -p "$tools/packages" "$tools/bin"
 cd "$tools/packages"
 apt-get download gawk chrpath diffstat socat libsigsegv2 libwrap0 lz4 \
     python3-jinja2 python3-markupsafe python3-git python3-gitdb python3-smmap \
-    python3-subunit device-tree-compiler libfdt1
+    python3-subunit python3-yaml device-tree-compiler libfdt1 mtools
 for package in ./*.deb; do
     dpkg-deb -x "$package" "$tools"
 done

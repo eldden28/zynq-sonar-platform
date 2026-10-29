@@ -1,7 +1,8 @@
 # EDF migration on Linux
 
-Status: native source setup, Cora SDT generation, and initial BitBake validation
-are implemented. An EDF image has not been built or boot-tested yet.
+Status: the Cora Z7-10 sonar WIC has been built with native EDF 25.05 on Linux
+and passed offline image verification. Board boot and hardware runtime checks
+remain; no board was flashed or restarted.
 
 ## Starting point
 
@@ -15,7 +16,7 @@ Ubuntu 22.04.5 x86-64 with Vivado/Vitis 2025.1 installed. It has about 8 GiB RAM
 24 GiB swap, and 107 GiB free on the source filesystem at the initial check.
 Limit build concurrency and plan disk usage before starting a full image build.
 
-## Initial EDF release candidate
+## Pinned EDF release
 
 AMD maps EDF 25.05 to Vivado 2025.1. Start by assessing that matching release
 instead of introducing a hardware-tool upgrade at the same time.
@@ -73,12 +74,25 @@ If all host prerequisites are installed system-wide, omit `EDF_HOST_TOOLS`.
 The local utility wrappers scope their libraries to the individual executable;
 they do not set a global `LD_LIBRARY_PATH`.
 
+`meta-sonar` backports the upstream pseudo `openat2` syscall fix and old-header
+compatibility definitions. Updated Ubuntu tar 1.34 packages use that syscall;
+the original EDF 25.05 pseudo cannot track its directory descriptors, causing
+`Cannot mkdir: Bad address` during packaging. The patched native tool passed
+an isolated nested-tar extraction test on this host. The patch is scoped to
+native/SDK pseudo and does not change the host's installed tar package.
+
 `activate-edf.sh` changes into the build directory using Poky's native
 `oe-init-build-env`. Its generated `bblayers.conf` includes the upstream EDF
-layers, SDR layer, the unchanged shared application layer, and `meta-sonar`.
+layers, SDR layer, the reused shared application layer, and `meta-sonar`.
 Maintained defaults are in `software/edf/conf/local.conf`; independently edited
 local configuration is never silently overwritten. Build defaults are two
-BitBake tasks, two parser processes, and `make -j2`, with free-space checks.
+BitBake tasks, three parser processes, and `make -j2`, with free-space checks.
+The Cora-specific sstate class uses 16 threads for HTTP cache lookup with a
+copy of the datastore; compilation remains limited to two tasks. Both Linux
+and baremetal multiconfigs use an explicit EDF release pin for mirror URLs.
+The image profile masks unused ROS recipes and excludes the vendor QEMU
+system-emulator dependencies. `rm_work` removes completed intermediate trees
+while preserving the native configuration tools needed for hardware import.
 `EDF_WORKSPACE` can select a different workspace when fetching, activating,
 and importing (use the corresponding `--workspace` argument to Python helpers).
 
@@ -93,8 +107,8 @@ SONAR_REPO=/absolute/path/to/zynq-sonar-platform
 SONAR_XSA=/absolute/path/to/cora-z7-10-pwm.xsa
 python3 "$SONAR_REPO/scripts/import-edf-hardware.py" "$SONAR_XSA"
 bitbake -p
-bitbake sonar-edf-minimal
-# After validating the minimal boot and driver interfaces:
+# Smaller optional bring-up image:
+# bitbake sonar-edf-minimal
 bitbake sonar-edf-image
 ```
 
@@ -111,49 +125,87 @@ selects `cora-z7-10-edf`, which requires the generated SDT machine plus maintain
 Cora settings. Generated Kconfig trees, DTS/domain outputs, machine files,
 bitstream, downloaded sources, and caches stay out of Git.
 
-The intended SD output is a WIC with a FAT boot partition and ext4 rootfs,
+The SD output is a WIC with a 512 MiB FAT32 boot partition and ext4 rootfs,
 containing FSBL/bitstream/U-Boot `BOOT.BIN`, `boot.scr`, `uImage`, and the Linux
-DTB. Boot partition contents, FSBL multiconfig, SD boot arguments, device-tree
-compilation, and driver/service behavior must pass build and board checks
-before these outputs are treated as deployable.
+DTB. The image explicitly installs `os-release` so SysV images expose the same
+OS identity interface as other EDF profiles. The Cora bootbin append strips
+whitespace left after removing the unsupported EDF optional version header.
 
-## Validation recorded on 2026-10-29
+After building, verify the actual image without mounting it:
 
-- All upstream manifest revisions and the gen-machine-conf submodule were
-  fetched at their pinned commits. Re-running source setup reused them.
-- The local Ubuntu host utilities run both directly and through the symlinks
-  BitBake uses for `HOSTTOOLS`.
-- Vitis 2025.1 `sdtgen` generated the Cora system device tree, bitstream, and
-  PS7 initialization sources from the existing PWM/acoustic-router XSA.
-- The generated SDT plus the maintained board include compiled with DTC 1.6.1;
-  its node references and DMA phandles resolved.
-- Native BitBake parsed 5,780 recipes: 8,290 targets, 1,643 skipped, 26 masked,
-  zero errors. The bootstrap-machine and unrelated ZynqMP QEMU ROM warnings
-  are expected before Cora machine import.
-- The first native build target is `esw-conf-native -c populate_sysroot`.
-  Logs are retained in `software/edf/workspace/logs/` (ignored).
-- Configuration generation passed repeat-run and unmanaged-file preservation
-  checks. Python compilation, Bash syntax, and Git whitespace checks passed.
+```bash
+EDF_IMAGES="$SONAR_REPO/software/edf/workspace/build/tmp/deploy/images/cora-z7-10-edf"
+python3 "$SONAR_REPO/scripts/verify-edf-wic.py" \
+  "$EDF_IMAGES/sonar-edf-image-cora-z7-10-edf.rootfs.wic" \
+  --manifest "$EDF_IMAGES/sonar-edf-image-cora-z7-10-edf.rootfs.manifest" \
+  --report "$EDF_IMAGES/sonar-edf-image-cora-z7-10-edf.validation.json"
+```
 
-These checks do not establish a completed cross-toolchain/image build or a
-board boot. The XSA input is local; rebuild it with Vivado before reproducing
-this from a clean clone. The existing PetaLinux flow remains available.
+The verifier needs `mcopy` and `debugfs`; the local host-tools setup includes
+mtools. EDF keeps the default `amd-edf` account: first login uses the serial
+console and requires setting a password before password-based SSH access.
 
-## Remaining integration work
 
-1. Complete the native configuration-tools build and run the Cora machine
-   import. Verify the Linux domain tree, minimal Cortex-A9 FSBL multiconfig,
-   and bootbin dependency graph with actual generated metadata.
-2. Parse the Cora-specific image targets, inspect the SD boot/rootfs settings,
-   and build the cross-toolchain, kernel, device tree, FSBL, and minimal image.
-3. Build the sonar application image. Audit runtime service startup, Python
-   modules, and shared driver packaging; add the remaining acoustic/GNU Radio
-   package set after the minimal system works.
-4. Verify clean-checkout setup and incremental builds. Record successful build
-   evidence and artifact hashes before treating the images as deployable.
-5. In a later board-validation step, check Ethernet, USB/XADC, FPGA/DMA
-   interfaces, and sonar/service behavior. No board has been flashed or
-   restarted as part of this initial migration work.
+## Completed image and evidence (2026-10-29)
+
+Outputs are under `software/edf/workspace/build/tmp/deploy/images/cora-z7-10-edf/`.
+The final image is `sonar-edf-image-cora-z7-10-edf.rootfs-20261029223652.wic`;
+the unversioned `.rootfs.wic` symlink points to it. It is 794,968,064 bytes
+(about 758 MiB). A `.wic.gz` and `.wic.bmap` are also provided.
+
+Raw WIC SHA-256:
+
+```text
+3b3cb82149f0fb957a3ed5aa6e3c75f35c6557c07404fda11ccaaec6ff627a0a
+```
+
+`SHA256SUMS`, `sonar-edf-image-cora-z7-10-edf.validation.json`, the transport
+validation report, package manifest, and provenance record accompany it.
+Build logs are in `software/edf/workspace/logs/`; the final run is
+`sonar-image-build-09.log`. Generated artifacts stay out of Git.
+
+- The final run completed all 8,494 tasks successfully, with 8,462 reused.
+  Its 14 warnings concern masked ROS layers and unrelated ZynqMP QEMU ROM
+  support. No build errors remain.
+- The image contains the dashboard, sonar service, triplet beamformer,
+  navigation service, acoustic modem, NumPy, and PWM/DSP kernel modules.
+  Verification checked their package entries and actual files in ext4,
+  including module autoload configuration.
+- The MBR has an active FAT32 partition at sector 8 (1,048,576 sectors) and
+  an ext4 partition at sector 1,048,584 (504,088 sectors). Boundaries,
+  non-overlap, and the ext4 superblock passed inspection.
+- `BOOT.BIN`, `boot.scr`, `uImage`, and `system.dtb` were extracted from FAT
+  and checked. The kernel and script headers and CRCs pass; the script selects
+  SD partition 2 and `ttyPS0,115200`. The DTB contains the maintained Cora
+  PWM/DSP/USB definitions. Boot-file hashes match deployed artifacts.
+- Bootgen readback confirms four bootbin partitions: FSBL, FPGA bitstream,
+  U-Boot, and the Linux domain DTB. Readback and bootbin input logs are retained
+  in `workspace/logs/checks/`.
+- The compressed image expands to the verified raw WIC, and all mapped ranges
+  in the bmap match their checksums.
+- The built kernel enables the SD controller, ext4, devtmpfs, Ethernet/PHY,
+  AXI DMA, USB host/generic PHY, and XADC. Correcting two USB fragment symbol
+  names produced a byte-identical final `.config`; the final kernel and
+  modules were rebuilt from the maintained fragment.
+- Native configuration tools, SDT generation, Linux domain import, Cortex-A9
+  FSBL multiconfig, and both cross-toolchains completed. Configuration helpers
+  passed repeat-run, timestamp stability, and unmanaged-file preservation
+  checks; Python/Bash syntax and Git whitespace checks passed.
+
+The XSA input hash is
+`76a951528cb8874b77f7e60acd11507cba4d0be9171bbe50f9aa34d0dcaffd19`.
+It came from the existing Vivado 2025.1 PWM/acoustic-router export. The build
+also uses inherited local application changes in the shared layer; source
+hashes and a tracked-source patch are retained with provenance. This is not
+proof that every input is already committed on GitHub. A clean-clone hardware
+rebuild must include those changes and regenerate the XSA.
+
+## Remaining board validation
+
+Boot this image in a separately authorized board-validation step and check
+serial startup, Ethernet, USB audio, XADC channels, FPGA DMA interfaces, module
+binding, and sonar/dashboard/navigation services. Offline verification does
+not establish hardware behavior. The existing PetaLinux workflow is preserved.
 
 ## References
 

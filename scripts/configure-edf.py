@@ -36,7 +36,10 @@ def main():
         if path.exists() and not path.read_text().startswith(MARKER):
             parser.error(f"Refusing to overwrite unmanaged configuration: {path}")
     for name, content in files.items():
-        (conf / name).write_text(MARKER + content)
+        path = conf / name
+        payload = MARKER + content
+        if not path.exists() or path.read_text() != payload:
+            path.write_text(payload)
     hardware = conf / "cora-hardware.conf"
     if not hardware.exists():
         hardware.write_text('# Bootstrap machine for native tooling only; import hardware before building an image.\nMACHINE = "zynq-generic"\n')

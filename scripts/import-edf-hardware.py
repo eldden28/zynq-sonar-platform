@@ -55,6 +55,10 @@ def main():
     machine = workspace / "build/conf/machine/zynq-cora-z7-10-sdt-full.conf"
     if machine.exists():
         parser.error(f"Machine already imported: {machine}")
+    # The generator reads tools and YAML from these recipes' own sysroots.
+    # populate_sysroot alone stages their outputs for consumers, not themselves.
+    subprocess.run(["bitbake", "esw-conf-native", "kconfig-frontends-native",
+                    "-c", "addto_recipe_sysroot"], check=True)
     subprocess.run([gen, "parse-sdt", "--hw-description", str(sdt),
                     "--soc-family", "zynq", "--machine-name", "zynq-cora-z7-10-sdt-full",
                     "--config-dir", str(workspace / "build/conf"),

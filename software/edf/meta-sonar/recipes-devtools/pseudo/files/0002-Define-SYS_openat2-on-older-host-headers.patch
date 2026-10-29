@@ -1,0 +1,25 @@
+From: Sonar platform maintainers
+Subject: [PATCH] ports/linux: define SYS_openat2 with older host headers
+
+Keep the openat2 syscall intercept enabled when pseudo is built with older
+Linux headers, including when its native sstate is reused on another host.
+Adapted to the EDF 25.05 pseudo source from the two upstream changes below.
+
+Upstream-Status: Backport [https://git.yoctoproject.org/pseudo/commit/?id=899736ef46bb903099e13d649cfe785c29135cab]
+Upstream-Status: Backport [https://git.yoctoproject.org/pseudo/commit/?id=43cbd8fb4914328094ccdb4bb827d74b1bac2046]
+
+--- a/ports/linux/portdefs.h
++++ b/ports/linux/portdefs.h
+@@ -53,3 +53,12 @@
+ #define _MKNOD_VER 1
+ #endif
+ #endif
++
++/* Ubuntu 20.04, Debian 11 and Opensuse 15.5 need this */
++#ifndef SYS_openat2
++/* openat2 has syscall number 437 on the supported Linux architectures. */
++#ifndef __NR_openat2
++#define __NR_openat2 437
++#endif
++#define SYS_openat2 __NR_openat2
++#endif
