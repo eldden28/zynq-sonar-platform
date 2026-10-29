@@ -1,8 +1,0 @@
-#Note: Mention Each package in individual line
-#These packages will get added into rootfs menu entry
-
-CONFIG_gpio-demo
-CONFIG_peekpoke
-CONFIG_gnuradio
-CONFIG_cora-navigation
-CONFIG_cora-sonar

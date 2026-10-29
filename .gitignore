@@ -18,6 +18,12 @@
 *.sim/
 
 # PetaLinux and Yocto build products
+# Generated Kconfig trees must be absent from a fresh source checkout.
+# Keep project-spec/configs/config, rootfs_config and meta-user/conf tracked.
+/petalinux/*/project-spec/configs/configs/
+/petalinux/*/project-spec/configs/rootfsconfigs/
+/software/petalinux/*/project-spec/configs/configs/
+/software/petalinux/*/project-spec/configs/rootfsconfigs/
 petalinux/build/
 petalinux/images/
 petalinux/components/
@@ -25,7 +31,7 @@ petalinux/.petalinux/
 petalinux/*/build/
 petalinux/*/images/
 petalinux/*/components/
-petalinux/*/.petalinux/
+petalinux/*/.petalinux/*
 build/
 downloads/
 sstate-cache/
@@ -61,4 +67,4 @@ software/petalinux/*/build/
 software/petalinux/*/images/
 software/petalinux/*/components/plnx_workspace/
 software/petalinux/*/project-spec/configs/gen-machineconf.log*
-software/petalinux/*/.petalinux/
+software/petalinux/*/.petalinux/*
