@@ -36,6 +36,9 @@ build/
 downloads/
 sstate-cache/
 
+# Independent native Yocto / EDF sources, generated machines, and caches
+/software/edf/workspace/
+
 # CMake and compiled products
 CMakeCache.txt
 CMakeFiles/
