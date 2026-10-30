@@ -6,7 +6,9 @@ the first board boot stopped after `Starting kernel ...`. Investigation found
 a missing Zynq platform identifier in the Linux device tree. The board policy
 now supplies that identifier, and the image verifier requires it. The user
 confirmed that the temporary U-Boot correction reaches `amd-edf login:`.
-Automatic boot of the corrected image and hardware runtime checks remain.
+The corrected WIC has been rebuilt and verified, including the static
+Ethernet configuration. Automatic boot of that WIC and hardware runtime
+checks remain.
 
 ## Starting point
 
@@ -150,9 +152,41 @@ mtools. EDF keeps the default `amd-edf` account: first login uses the serial
 console and requires setting a password before password-based SSH access.
 
 
+## Corrected image and evidence (2026-10-30)
+
+The current WIC is
+`sonar-edf-image-cora-z7-10-edf.rootfs-20261030162654.wic`, under
+`software/edf/workspace/build/tmp/deploy/images/cora-z7-10-edf/`. The
+unversioned `.rootfs.wic` symlink points to it. Its size is 794,968,064 bytes;
+compressed `.wic.gz` and `.wic.bmap` outputs accompany it.
+
+Raw WIC SHA-256:
+
+```text
+5a446fce4e1f4671f09ad83b99c7274c80525af02c194b06b6b2c34b7c01846e
+```
+
+`sonar-image-build-11.log` completed all 8,494 tasks, with 8,461 reused and
+14 expected ROS/QEMU warnings. The verifier passed partition boundaries,
+boot headers/CRCs, sonar applications and kernel modules, and OS identity.
+It also checked that the installed DTB root contains `xlnx,zynq-7000`, the
+boot script enables `earlycon`, and `/etc/network/interfaces` configures
+`eth0` at `192.168.10.2/24` with gateway `192.168.10.1`.
+
+The gzip output expands to the same raw WIC, all bmap range checksums match,
+and boot files extracted from the WIC match the deployed components.
+`SHA256SUMS`, the validation and transport reports, build log, and provenance
+record in the deploy directory now describe this corrected image. Initial
+reports are archived in `workspace/logs/boot-fix-20261030/`.
+
+Source fixes are committed as `57fece8` (Linux platform selection and early
+console) and `3b56f54` (static Ethernet). The corrected WIC has not yet been
+written to the user's card. The successful board boot used the initial card
+with the temporary commands below.
+
 ## Initial image and evidence (2026-10-29, superseded)
 
-Outputs are under `software/edf/workspace/build/tmp/deploy/images/cora-z7-10-edf/`.
+The following records the initial build; rebuilding replaced its artifacts.
 The initial image is `sonar-edf-image-cora-z7-10-edf.rootfs-20261029223652.wic`.
 It is 794,968,064 bytes
 (about 758 MiB). A `.wic.gz` and `.wic.bmap` are also provided.
