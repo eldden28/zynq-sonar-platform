@@ -2,6 +2,7 @@
 # compilation-task limit on an 8 GiB workstation.
 SONAR_SSTATE_MIRROR_THREADS ?= "16"
 BB_HASHCHECK_FUNCTION:cora-z7-10 = "sonar_sstate_checkhashes"
+BB_HASHCHECK_FUNCTION:ultrazed-3eg-iocc = "sonar_sstate_checkhashes"
 
 def sonar_sstate_checkhashes(sq_data, d, siginfo=False, currentcount=0, summary=True, **kwargs):
     lookup_data = bb.data.createCopy(d)
