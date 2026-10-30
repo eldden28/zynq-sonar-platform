@@ -214,6 +214,13 @@ def main():
         report["os_release"] = subprocess.check_output([debugfs, "-R", "cat /usr/lib/os-release", str(rootfs)], stderr=subprocess.DEVNULL, text=True)
         if 'ID=sonar-edf' not in report["os_release"] and 'ID="sonar-edf"' not in report["os_release"]:
             raise ValueError("Rootfs does not identify the sonar EDF distribution")
+        if ultrazed:
+            hostname = subprocess.check_output(
+                [debugfs, "-R", "cat /etc/hostname", str(rootfs)],
+                stderr=subprocess.DEVNULL, text=True).strip()
+            if hostname != "ultrazed-3eg-iocc":
+                raise ValueError(f"Unexpected UltraZed hostname: {hostname!r}")
+            report["hostname"] = hostname
         interfaces = subprocess.check_output(
             [debugfs, "-R", "cat /etc/network/interfaces", str(rootfs)],
             stderr=subprocess.DEVNULL, text=True)
