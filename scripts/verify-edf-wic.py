@@ -185,6 +185,17 @@ def main():
         report["os_release"] = subprocess.check_output([debugfs, "-R", "cat /usr/lib/os-release", str(rootfs)], stderr=subprocess.DEVNULL, text=True)
         if 'ID=sonar-edf' not in report["os_release"] and 'ID="sonar-edf"' not in report["os_release"]:
             raise ValueError("Rootfs does not identify the sonar EDF distribution")
+        interfaces = subprocess.check_output(
+            [debugfs, "-R", "cat /etc/network/interfaces", str(rootfs)],
+            stderr=subprocess.DEVNULL, text=True)
+        settings = {tuple(line.partition("#")[0].split()) for line in interfaces.splitlines()}
+        expected = {("auto", "eth0"), ("iface", "eth0", "inet", "static"),
+                    ("address", "192.168.10.2"), ("netmask", "255.255.255.0"),
+                    ("gateway", "192.168.10.1")}
+        if not expected.issubset(settings) or ("iface", "eth0", "inet", "dhcp") in settings:
+            raise ValueError("Rootfs lacks the Cora static Ethernet configuration")
+        report["ethernet"] = {"interface": "eth0", "address": "192.168.10.2/24",
+                              "gateway": "192.168.10.1", "method": "static"}
     report_path = args.report or wic.with_suffix(".validation.json")
     report_path.write_text(json.dumps(report, indent=2) + "\n")
     print(f"Verified sonar WIC: {wic}\nSHA-256: {report['sha256']}\nReport: {report_path}")

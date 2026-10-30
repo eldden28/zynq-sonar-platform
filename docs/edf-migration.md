@@ -4,8 +4,9 @@ Status: the Cora Z7-10 sonar WIC has been built with native EDF 25.05 on Linux.
 The initial image passed offline checks and SD-card readback verification, but
 the first board boot stopped after `Starting kernel ...`. Investigation found
 a missing Zynq platform identifier in the Linux device tree. The board policy
-now supplies that identifier, and the image verifier requires it. Hardware
-boot and runtime validation of the corrected image remain pending.
+now supplies that identifier, and the image verifier requires it. The user
+confirmed that the temporary U-Boot correction reaches `amd-edf login:`.
+Automatic boot of the corrected image and hardware runtime checks remain.
 
 ## Starting point
 
@@ -217,8 +218,11 @@ DTB did not select the Zynq platform's initialization callbacks. Maintained
 adds `earlycon` while keeping the existing 115200-baud console. The verifier
 parses the root property and requires the SoC identifier, and checks that the
 boot script enables early console output. Offline tests exercised the original
-and corrected DTBs, plus truncated blobs. Board testing is still needed to
-establish how far the corrected image boots.
+and corrected DTBs, plus truncated blobs. The user applied the temporary
+commands below to the original card and reported reaching `amd-edf login:`.
+This confirms Linux reaches the login prompt with the compatibility override
+and early console arguments. Automatic boot from the rebuilt image still
+needs verification.
 
 The `Loading Environment from FAT` / `bad env area` warning means U-Boot is
 using its compiled defaults because it found no valid saved environment. The
@@ -241,10 +245,27 @@ bootm 0x00300000 - 0x00200000
 
 ## Remaining board validation
 
-Boot this image in a separately authorized board-validation step and check
-serial startup, Ethernet, USB audio, XADC channels, FPGA DMA interfaces, module
-binding, and sonar/dashboard/navigation services. Offline verification does
-not establish hardware behavior. The existing PetaLinux workflow is preserved.
+The user confirmed a login prompt using the temporary boot correction, and
+the kernel reported the RTL8211E Ethernet link at 1 Gbps/full duplex. Its DHCP
+client obtained no lease on the direct cable. The original PetaLinux platform
+uses a fixed address, so the EDF layer now maintains the same configuration
+through an `init-ifupdown` append: `eth0` is `192.168.10.2/24`, with the
+workstation at `192.168.10.1` as gateway. The WIC verifier checks the installed
+network configuration. No DHCP server is required for this link.
+
+For temporary connectivity from the initial image's serial console:
+
+```sh
+sudo ip link set eth0 up
+sudo ip addr replace 192.168.10.2/24 dev eth0
+```
+
+The EDF login account is `amd-edf`, initially with an empty password and a
+required password change on first login. Continue validation with automatic
+serial startup from the corrected card, Ethernet addressing, USB audio, XADC
+channels, FPGA DMA interfaces, module binding, and sonar/dashboard/navigation
+services. Offline verification does not establish hardware behavior. The
+existing PetaLinux workflow is preserved.
 
 ## References
 
