@@ -39,13 +39,14 @@ fi
 
 git -C "$destination" checkout --detach "$REPOSITORY_COMMIT"
 
-board_dir="$destination/ultrazed_3eg_pciecc/1.4"
-for required_file in board.xml preset.xml part0_pins.xml; do
-    if [[ ! -r $board_dir/$required_file ]]; then
-        printf 'ERROR: required UltraZed board file is missing: %s\n' \
-            "$board_dir/$required_file" >&2
-        exit 1
-    fi
+for board in ultrazed_3eg_pciecc/1.4 ultrazed_3eg_iocc/1.3; do
+    for required_file in board.xml preset.xml part0_pins.xml; do
+        if [[ ! -r $destination/$board/$required_file ]]; then
+            printf 'ERROR: required UltraZed board file is missing: %s\n' \
+                "$destination/$board/$required_file" >&2
+            exit 1
+        fi
+    done
 done
 
 printf 'Avnet board files ready at commit %s\n' "$REPOSITORY_COMMIT"

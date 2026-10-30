@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "ultrazed-3eg-iocc",
+  "display_name": "Avnet UltraZed-EG 3EG on I/O Carrier (EDF)",
+  "status": "development",
+  "platform_id": "0x00020002",
+  "soc": {
+    "family": "zynq-ultrascale-plus",
+    "device": "xczu3eg-sfva625-1-i",
+    "architecture": "aarch64",
+    "petalinux_template": "zynqMP"
+  },
+  "board": {
+    "module": "Avnet UltraZed-EG 3EG production SOM",
+    "carrier": "Avnet AES-ZU-IOCC-G UltraZed-EG I/O Carrier",
+    "revision": null,
+    "board_part": "avnet-tria:ultrazed_eg_iocc_production:part0:1.3"
+  },
+  "hardware": {
+    "build_script": "scripts/build-ultrazed-3eg-iocc-hardware.sh",
+    "xsa": "hardware/export/ultrazed-3eg-iocc/ultrazed-3eg-iocc.xsa",
+    "bitstream": "build/vivado/ultrazed-3eg-iocc/ultrazed_3eg_iocc.runs/impl_1/system_wrapper.bit",
+    "platform_overlay": "platforms/ultrazed-3eg-iocc/hardware"
+  },
+  "linux": {
+    "build_system": "edf",
+    "project": "software/edf/workspace/ultrazed-3eg-iocc",
+    "platform_overlay": "software/edf/meta-sonar",
+    "shared_layers": ["software/petalinux/meta-platform-common", "software/edf/meta-sonar"],
+    "image": "software/edf/workspace/ultrazed-3eg-iocc/build/tmp/deploy/images/ultrazed-3eg-iocc-edf/sonar-edf-image-ultrazed-3eg-iocc-edf.rootfs.wic",
+    "init_system": "sysvinit"
+  },
+  "software": {
+    "common_components": ["cora-dashboard", "cora-sonar", "cora-triplet-beamformer", "cora-navigation", "cora-dsp", "cora-ofdm-acoustic"],
+    "required_capabilities": ["ethernet", "sonar-cpu"]
+  },
+  "deployment": {
+    "hostname": "ultrazed-3eg-iocc",
+    "ssh_user": "amd-edf",
+    "addresses": ["192.168.10.3"]
+  },
+  "snapshot": {
+    "include": ["platforms/ultrazed-3eg-iocc/**", "hardware/rtl/**", "hardware/vivado/tcl/create_ultrazed_3eg_pcie.tcl", "software/edf/meta-sonar/**", "software/edf/conf/**", "software/edf/manifests/**", "software/edf/generate-sdt.tcl", "software/cora-*/**", "software/petalinux/meta-platform-common/**", "scripts/*edf*", "scripts/build-ultrazed-3eg-iocc-hardware.sh", "schemas/platform*.json"],
+    "live_commands": [
+      {"name": "identity", "command": "id -un; hostname; uname -a; cat /proc/cmdline"},
+      {"name": "network", "command": "ip -o addr"}
+    ]
+  }
+}

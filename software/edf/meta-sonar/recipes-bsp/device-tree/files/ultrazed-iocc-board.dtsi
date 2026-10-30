@@ -1,0 +1,146 @@
+// Production UltraZed-EG 3EG SOM and AES-ZU-IOCC-G carrier wiring.
+// Reference: Avnet/meta-avnet 8a0946581dbc37475459414b7a85e75916a0e226,
+// recipes-bsp/device-tree/files/uz3eg-iocc/system-bsp.dtsi.
+/ {
+	compatible = "avnet,ultrazed-3eg-iocc", "xlnx,zynqmp";
+	model = "Avnet UltraZed-EG 3EG on I/O Carrier";
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+		nvmem = <&ultrazed_mac_eeprom>;
+	};
+
+	aliases {
+		serial0 = &uart0;
+		serial1 = &uart1;
+		ethernet0 = &gem3;
+	};
+
+	ultrazed_ref25: ref25m {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <25000000>;
+	};
+	ultrazed_gtr0: gtr-ref0 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <52000000>;
+	};
+	ultrazed_gtr1: gtr-ref1 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <125000000>;
+	};
+	ultrazed_gtr3: gtr-ref3 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <27000000>;
+	};
+};
+
+&gem3 {
+	status = "okay";
+	phy-mode = "rgmii-id";
+	phy-handle = <&ultrazed_phy>;
+	nvmem-cells = <&ultrazed_mac_address>;
+	nvmem-cell-names = "mac-address";
+
+	mdio {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		ultrazed_phy: ethernet-phy@9 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <9>;
+			ti,rx-internal-delay = <5>;
+			ti,tx-internal-delay = <5>;
+			ti,fifo-depth = <1>;
+		};
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	i2c-mux@70 {
+		compatible = "nxp,pca9543";
+		reg = <0x70>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		i2c@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			ultrazed_mac_eeprom: eeprom@51 {
+				compatible = "atmel,24c02";
+				reg = <0x51>;
+				nvmem-layout {
+					compatible = "fixed-layout";
+					#address-cells = <1>;
+					#size-cells = <1>;
+					ultrazed_mac_address: mac-address@fa {
+						reg = <0xfa 6>;
+					};
+				};
+			};
+			clock-generator@6a {
+				compatible = "idt,5p49v5935";
+				reg = <0x6a>;
+				#clock-cells = <1>;
+				clocks = <&ultrazed_ref25>;
+				clock-names = "xin";
+				OUT1 {
+					idt,drive-mode = <5>; /* VC5_CMOSD */
+					idt,voltage-microvolts = <1800000>;
+					idt,slew-percent = <80>;
+				};
+				OUT4 {
+					idt,drive-mode = <3>; /* VC5_LVDS */
+				};
+			};
+		};
+	};
+};
+
+&sdhci0 {
+	status = "okay";
+	bus-width = <8>;
+	non-removable;
+	max-frequency = <50000000>;
+};
+
+&sdhci1 {
+	status = "okay";
+	max-frequency = <50000000>;
+	no-1-8-v;
+};
+
+&psgtr {
+	clocks = <&ultrazed_gtr0>, <&ultrazed_gtr1>, <&ultrazed_gtr3>;
+	clock-names = "ref0", "ref1", "ref3";
+};
+
+&usb0 {
+	status = "okay";
+};
+
+&dwc3_0 {
+	status = "okay";
+	dr_mode = "host";
+	maximum-speed = "super-speed";
+	snps,usb3_lpm_capable;
+	snps,enable_auto_retry;
+	phy-names = "usb3-phy";
+	phys = <&psgtr 0 4 0 0>; /* PHY_TYPE_USB3, lane 0, ref0 */
+};
+
+&sata {
+	status = "okay";
+	phy-names = "sata-phy";
+	phys = <&psgtr 1 1 1 1>; /* PHY_TYPE_SATA, lane 1, ref1 */
+};
+
+&axis_spectral_filter_0 {
+	compatible = "eldden28,cora-dsp-1.0";
+	dmas = <&axi_dma_dsp 0>, <&axi_dma_dsp 1>;
+	dma-names = "tx", "rx";
+	status = "okay";
+};

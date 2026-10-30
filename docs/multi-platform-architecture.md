@@ -20,7 +20,7 @@ power sequencing, and validation evidence differ.
 | Yocto application recipes | `software/petalinux/meta-platform-common` | Yes |
 | Platform registry and routing | `platforms/<platform>/platform.json` | No |
 | Vivado PS preset, carrier pins and block-design wrapper | `platforms/<platform>/hardware` | No |
-| Device tree, kernel/U-Boot fragments, boot policy | platform PetaLinux overlay | No |
+| Device tree, kernel/U-Boot fragments, boot policy | platform PetaLinux overlay or EDF machine policy | No |
 | Generated XSA, bitstream, DTB, rootfs and boot image | paths named by `platform.json` | Rebuilt per platform |
 | Release hashes | `platform-manifest.json` in a release bundle | Rebuilt per release |
 
@@ -43,6 +43,13 @@ captures:
 - available common components and required capabilities;
 - deployment identity;
 - files and read-only commands used for snapshots.
+
+The optional `linux.build_system` field is `edf` or `petalinux`; existing
+records default to `petalinux`. The `ultrazed-3eg-iocc` target uses native EDF
+and reuses the common application layer, with carrier settings in
+`software/edf/meta-sonar`. Its build workspace is independent of Cora's while
+sharing downloaded sources and sstate. See its
+[build instructions](../platforms/ultrazed-3eg-iocc/hardware/README.md).
 
 Use:
 

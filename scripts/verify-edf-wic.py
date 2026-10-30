@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import zlib
+from edf_platforms import PLATFORMS
 
 
 def sha256(path):
@@ -85,7 +86,13 @@ def main():
     parser.add_argument("wic", type=Path)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--platform", choices=PLATFORMS, default="cora-z7-10")
     args = parser.parse_args()
+    ultrazed = args.platform == "ultrazed-3eg-iocc"
+    kernel_name = "Image" if ultrazed else "uImage"
+    soc_compatible = "xlnx,zynqmp" if ultrazed else "xlnx,zynq-7000"
+    drivers = ["cora-dsp"] if ultrazed else ["cora-pwm", "cora-dsp"]
+    board_ip = "192.168.10.3" if ultrazed else "192.168.10.2"
     wic = args.wic.resolve(strict=True)
     mcopy = shutil.which("mcopy")
     debugfs = shutil.which("debugfs") or "/usr/sbin/debugfs"
@@ -113,22 +120,22 @@ def main():
         image.seek(parts[1]["start_sector"] * 512 + 1024 + 56)
         if image.read(2) != bytes.fromhex("53ef"):
             raise ValueError("Linux partition has no ext4 superblock")
-    required_packages = {"cora-dashboard", "cora-sonar", "cora-triplet-beamformer", "cora-navigation", "cora-pwm", "cora-dsp", "cora-ofdm-acoustic", "python3-numpy", "os-release"}
+    required_packages = {"cora-dashboard", "cora-sonar", "cora-triplet-beamformer", "cora-navigation", "cora-ofdm-acoustic", "python3-numpy", "os-release", *drivers}
     packages = {line.split()[0] for line in args.manifest.read_text().splitlines() if line.split()}
     if required_packages - packages:
         raise ValueError(f"Missing sonar packages: {sorted(required_packages - packages)}")
     module_packages = {}
-    for driver in ["cora-pwm", "cora-dsp"]:
+    for driver in drivers:
         matches = sorted(name for name in packages if name.startswith(f"kernel-module-{driver}-"))
         if len(matches) != 1:
             raise ValueError(f"Expected one versioned kernel module for {driver}: {matches}")
         module_packages[driver] = matches[0]
-    report = {"wic": str(wic), "bytes": wic.stat().st_size, "sha256": sha256(wic),
+    report = {"platform": args.platform, "wic": str(wic), "bytes": wic.stat().st_size, "sha256": sha256(wic),
               "partitions": parts, "sonar_packages": sorted(required_packages),
               "kernel_module_packages": module_packages, "boot_files": {}}
     with tempfile.TemporaryDirectory(prefix="sonar-wic-verify-") as temporary:
         temp = Path(temporary)
-        for name in ["BOOT.BIN", "boot.scr", "uImage", "system.dtb"]:
+        for name in ["BOOT.BIN", "boot.scr", kernel_name, "system.dtb"]:
             output = temp / name
             subprocess.run([mcopy, "-i", f'{wic}@@{parts[0]["start_sector"] * 512}', f"::/{name}", str(output)], check=True)
             data = output.read_bytes()
@@ -139,19 +146,28 @@ def main():
                 checks.update(legacy_image(data, 2 if name == "uImage" else 6))
                 if name == "boot.scr":
                     script = data[72:].decode("utf-8")
-                    if "@@" in script or "root=/dev/${bootdev}2 ro rootwait" not in script or "console=ttyPS0,115200 earlycon" not in script:
-                        raise ValueError("SD boot script lacks the Cora console, early console, or root partition settings")
+                    root_setting = "root=PARTUUID=${sonar_root_uuid} ro rootwait" if ultrazed else "root=/dev/${bootdev}2 ro rootwait"
+                    if "@@" in script or root_setting not in script or "console=ttyPS0,115200 earlycon" not in script:
+                        raise ValueError("SD boot script lacks console, early console, or root partition settings")
+                    if ultrazed and "part uuid ${devtype} ${devnum}:2 sonar_root_uuid" not in script:
+                        raise ValueError("UltraZed boot script does not resolve the boot card's root PARTUUID")
                     checks["root_partition"] = 2
+                    checks["root_selector"] = "PARTUUID" if ultrazed else "device"
                     checks["serial_console"] = "ttyPS0,115200"
                     checks["early_console"] = True
+            elif name == "Image":
+                if len(data) < 64 or data[56:60] != b"ARM\x64":
+                    raise ValueError("Kernel lacks the ARM64 Image header")
+                checks["architecture"] = "aarch64"
+                checks["image_size"] = struct.unpack_from("<Q", data, 16)[0]
             elif name == "BOOT.BIN" and data[32:40] != bytes.fromhex("665599aa584e4c58"):
                 raise ValueError("BOOT.BIN lacks the Zynq boot header")
             elif name == "system.dtb":
                 root_compatible = fdt_root_compatible(data)
-                if "xlnx,zynq-7000" not in root_compatible:
-                    raise ValueError("Device tree root lacks xlnx,zynq-7000; Linux cannot select its Zynq platform")
+                if soc_compatible not in root_compatible:
+                    raise ValueError(f"Device tree root lacks {soc_compatible}")
                 checks["root_compatible"] = root_compatible
-                compatible = ["eldden28,cora-pwm-1.0", "eldden28,cora-dsp-2.0", "usb-nop-xceiv"]
+                compatible = ["eldden28,cora-dsp-1.0"] if ultrazed else ["eldden28,cora-pwm-1.0", "eldden28,cora-dsp-2.0", "usb-nop-xceiv"]
                 if any(value.encode() + b"\0" not in data for value in compatible):
                     raise ValueError("Device tree is missing the maintained Cora FPGA/USB policy")
                 checks["cora_compatible"] = compatible
@@ -173,15 +189,28 @@ def main():
         required_files = ["/usr/sbin/cora-sonar", "/usr/sbin/cora-dashboard", "/usr/sbin/cora-navigation",
                           "/usr/bin/cora-triplet-beamformer", "/usr/bin/cora-ofdm-acoustic",
                           "/usr/share/cora-sonar/www/index.html", "/etc/init.d/cora-dashboard"]
+        # Applications are Python scripts; check their interpreter and modules.
+        elf_files = ["/usr/bin/python3.12"]
         for driver, package in module_packages.items():
             kernel = package.removeprefix(f"kernel-module-{driver}-")
             module = driver.replace("-", "_")
             required_files += [f"/usr/lib/modules/{kernel}/updates/{module}.ko", f"/etc/modules-load.d/{module}.conf"]
+            elf_files.append(f"/usr/lib/modules/{kernel}/updates/{module}.ko")
         for filename in required_files:
             result = subprocess.run([debugfs, "-R", f"stat {filename}", str(rootfs)], capture_output=True, text=True, check=True)
             if "Inode:" not in result.stdout:
                 raise ValueError(f"Missing file in rootfs partition: {filename}")
         report["rootfs_files"] = required_files
+        report["elf_architecture"] = {}
+        for index, filename in enumerate(elf_files):
+            output = temp / f"elf-{index}"
+            subprocess.run([debugfs, "-R", f"dump {filename} {output}", str(rootfs)],
+                           capture_output=True, text=True, check=True)
+            header = output.read_bytes()[:20]
+            expected_machine = 183 if ultrazed else 40
+            if len(header) < 20 or header[:4] != b"\x7fELF" or header[4:6] != bytes([2 if ultrazed else 1, 1]) or struct.unpack_from("<H", header, 18)[0] != expected_machine:
+                raise ValueError(f"Wrong ELF CPU architecture: {filename}")
+            report["elf_architecture"][filename] = "aarch64" if ultrazed else "arm"
         report["os_release"] = subprocess.check_output([debugfs, "-R", "cat /usr/lib/os-release", str(rootfs)], stderr=subprocess.DEVNULL, text=True)
         if 'ID=sonar-edf' not in report["os_release"] and 'ID="sonar-edf"' not in report["os_release"]:
             raise ValueError("Rootfs does not identify the sonar EDF distribution")
@@ -190,11 +219,11 @@ def main():
             stderr=subprocess.DEVNULL, text=True)
         settings = {tuple(line.partition("#")[0].split()) for line in interfaces.splitlines()}
         expected = {("auto", "eth0"), ("iface", "eth0", "inet", "static"),
-                    ("address", "192.168.10.2"), ("netmask", "255.255.255.0"),
+                    ("address", board_ip), ("netmask", "255.255.255.0"),
                     ("gateway", "192.168.10.1")}
         if not expected.issubset(settings) or ("iface", "eth0", "inet", "dhcp") in settings:
-            raise ValueError("Rootfs lacks the Cora static Ethernet configuration")
-        report["ethernet"] = {"interface": "eth0", "address": "192.168.10.2/24",
+            raise ValueError("Rootfs lacks the platform's static Ethernet configuration")
+        report["ethernet"] = {"interface": "eth0", "address": board_ip + "/24",
                               "gateway": "192.168.10.1", "method": "static"}
     report_path = args.report or wic.with_suffix(".validation.json")
     report_path.write_text(json.dumps(report, indent=2) + "\n")

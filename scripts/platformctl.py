@@ -93,7 +93,8 @@ def validate_platform(path: Path, data: dict[str, Any], *, strict: bool) -> list
             continue
         sections[name] = value
         missing_fields = sorted(expected - value.keys())
-        extra_fields = sorted(value.keys() - expected)
+        optional = {"build_system"} if name == "linux" else set()
+        extra_fields = sorted(value.keys() - expected - optional)
         if missing_fields:
             errors.append(f"{name} is missing fields: {', '.join(missing_fields)}")
         if extra_fields:
@@ -113,6 +114,8 @@ def validate_platform(path: Path, data: dict[str, Any], *, strict: bool) -> list
 
     hardware = sections["hardware"]
     linux = sections["linux"]
+    if linux.get("build_system", "petalinux") not in {"petalinux", "edf"}:
+        errors.append("linux.build_system must be petalinux or edf")
     path_fields: list[tuple[str, Any, bool]] = [
         ("hardware.build_script", hardware.get("build_script"), False),
         ("hardware.xsa", hardware.get("xsa"), False),
@@ -350,6 +353,10 @@ def replace_config_value(config: Path, key: str, value: str) -> None:
 
 def command_bootstrap(args: argparse.Namespace) -> None:
     _, data = load_platform(args.platform)
+    if data["linux"].get("build_system", "petalinux") == "edf":
+        raise PlatformError("This platform uses native EDF. Follow its hardware README's "
+                            "configure-edf.py and import-edf-hardware.py commands; "
+                            "the bootstrap subcommand creates PetaLinux projects only.")
     project = repository_path(data["linux"]["project"])
     xsa = repository_path(data["hardware"]["xsa"])
     overlay = repository_path(data["linux"]["platform_overlay"])

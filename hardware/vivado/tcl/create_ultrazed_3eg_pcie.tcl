@@ -1,9 +1,18 @@
 set script_path [file normalize [info script]]
 set repository_root [file normalize [file join [file dirname $script_path] .. .. ..]]
 set board_repository [file join $repository_root third_party avnet-vivado-boards]
-set output_directory [file join $repository_root build vivado ultrazed-3eg-pcie]
-set export_directory [file join $repository_root hardware export ultrazed-3eg-pcie]
-set report_directory [file join $repository_root build reports ultrazed-3eg-pcie]
+set platform ultrazed-3eg-pcie
+if {[info exists ::env(ULTRAZED_PLATFORM)]} {
+    set platform $::env(ULTRAZED_PLATFORM)
+}
+switch -- $platform {
+    ultrazed-3eg-pcie {set board_part avnet-tria:ultrazed_eg_pciecc_production:part0:1.4}
+    ultrazed-3eg-iocc {set board_part avnet-tria:ultrazed_eg_iocc_production:part0:1.3}
+    default {error "Unsupported UltraZed platform: $platform"}
+}
+set output_directory [file join $repository_root build vivado $platform]
+set export_directory [file join $repository_root hardware export $platform]
+set report_directory [file join $repository_root build reports $platform]
 set ip_project_directory [file join $output_directory ip_packager]
 set ip_repository [file join $output_directory ip_repository]
 set spectral_filter_ip_directory [file join $ip_repository axis_spectral_filter]
@@ -21,9 +30,8 @@ if {$argc == 1} {
     }
 }
 
-set project_name ultrazed_3eg_pcie
+set project_name [string map {- _} $platform]
 set design_name system
-set board_part avnet-tria:ultrazed_eg_pciecc_production:part0:1.4
 set device_part xczu3eg-sfva625-1-i
 
 set spectral_filter_core_file [file join $repository_root hardware rtl axis_spectral_filter axis_spectral_filter.sv]
@@ -279,7 +287,7 @@ if {$worst_setup_slack < 0.0} {
     exit 5
 }
 
-set xsa_file [file join $export_directory ultrazed-3eg-pcie.xsa]
+set xsa_file [file join $export_directory ${platform}.xsa]
 write_hw_platform -fixed -include_bit -force -file $xsa_file
 
 puts "WORST_SETUP_SLACK_NS=$worst_setup_slack"

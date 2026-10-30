@@ -1,0 +1,16 @@
+# Invoked by U-Boot's distro scan of the card that contains this script.
+# eMMC and SD numbering can differ between U-Boot and Linux; use PARTUUID.
+if test -z "${devtype}" || test -z "${devnum}"; then
+    echo "Missing boot device context"
+    exit
+fi
+echo "Booting UltraZed I/O carrier from ${devtype} ${devnum}"
+if fatload ${devtype} ${devnum}:1 @@KERNEL_LOAD_ADDRESS@@ Image; then
+    if fatload ${devtype} ${devnum}:1 @@DEVICETREE_ADDRESS@@ system.dtb; then
+        if part uuid ${devtype} ${devnum}:2 sonar_root_uuid; then
+            setenv bootargs @@KERNEL_COMMAND_APPEND@@ root=PARTUUID=${sonar_root_uuid} ro rootwait
+            booti @@KERNEL_LOAD_ADDRESS@@ - @@DEVICETREE_ADDRESS@@
+        fi
+    fi
+fi
+echo "UltraZed SD boot failed"
