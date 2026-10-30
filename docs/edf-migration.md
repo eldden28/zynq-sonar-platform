@@ -180,9 +180,11 @@ record in the deploy directory now describe this corrected image. Initial
 reports are archived in `workspace/logs/boot-fix-20261030/`.
 
 Source fixes are committed as `57fece8` (Linux platform selection and early
-console) and `3b56f54` (static Ethernet). The corrected WIC has not yet been
-written to the user's card. The successful board boot used the initial card
-with the temporary commands below.
+console) and `3b56f54` (static Ethernet). The corrected WIC has been written
+to the user's card, its entire image length read back with direct I/O, and
+its SHA-256 verified against the source. The card was safely powered off.
+Automatic boot of this corrected card still needs testing; the successful
+board boot so far used the initial card with the temporary commands below.
 
 ## Initial image and evidence (2026-10-29, superseded)
 
