@@ -5,6 +5,9 @@ LICENSE = "MIT"
 # machine's system emulators and runqemu helpers as image dependencies.
 IMAGE_CLASSES:remove = "qemuboot-xilinx image-types-xilinx-qemu"
 EXTRA_IMAGEDEPENDS:remove = "qemu-devicetrees-native qemu-system-native qemu-helper-native:do_addto_recipe_sysroot"
+# Its uEnv generator recursively depends on the machine's QEMU image tools.
+# This board boots through our PARTUUID-aware boot.scr and does not use uEnv.
+EXTRA_IMAGEDEPENDS:remove:ultrazed-3eg-iocc = "u-boot-xlnx-uenv"
 inherit core-image
 
 COMPATIBLE_MACHINE = "^(cora-z7-10-edf|ultrazed-3eg-iocc-edf)$"
