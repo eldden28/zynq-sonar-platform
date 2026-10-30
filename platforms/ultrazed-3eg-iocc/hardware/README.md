@@ -68,6 +68,41 @@ python3 "$SONAR_REPO/scripts/verify-edf-wic.py" \
   --manifest "$EDF_WORKSPACE/build/tmp/deploy/images/ultrazed-3eg-iocc-edf/sonar-edf-image-ultrazed-3eg-iocc-edf.rootfs.manifest"
 ```
 
+## Built image
+
+The corrected 2026-10-30 build, from source commit `699aa4a`, completed all
+11,007 tasks successfully, reusing 9,657. The 82 nonfatal warnings concern
+empty ROS layers, disabled QEMU PMU-ROM support, and deferred multiconfig tasks
+that BitBake resolved automatically.
+
+Artifacts are under
+`software/edf/workspace/ultrazed-3eg-iocc/build/tmp/deploy/images/ultrazed-3eg-iocc-edf/`:
+
+- Raw SD image: `sonar-edf-image-ultrazed-3eg-iocc-edf.rootfs-20261030202735.wic`
+  (884,664,320 bytes).
+- Compressed image: the same filename with `.gz` (84,428,797 bytes).
+- Block map: the same filename with `.bmap`; checksums: `SHA256SUMS`.
+
+Raw WIC SHA-256:
+
+```text
+e2eda070ddfedd8e91e27126514b265e426aec40a0f88390e5087cc9254192fd
+```
+
+Image inspection passed for the partition table, boot-file headers and CRCs,
+raw ARM64 kernel, ZynqMP device-tree compatibility, ARM64 Python and DSP module,
+application files, hostname, and static Ethernet configuration. The deployed
+device tree contains all eight required CEVA SATA timing properties. Bootgen
+readback confirms FSBL, PMU firmware, FPGA bitstream, TF-A, device tree, and
+U-Boot in the boot image.
+
+The gzip expands to the same WIC hash, all 15 block-map ranges passed their
+checksums, and the four boot files extracted from the WIC match their deployed
+sources. Validation JSON, Bootgen readback, the build log, and source provenance
+are saved alongside the image. Provenance records the inherited local
+application changes included in this build. Board boot and peripheral runtime
+tests remain pending.
+
 ## Board settings
 
 The serial console uses PS UART0 through J11's enhanced USB-UART port, at
