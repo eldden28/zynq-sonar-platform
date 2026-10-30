@@ -1,5 +1,8 @@
 // Cora board policy, applied after SDT domain generation.
 / {
+	/* ARM Linux selects its machine support using the SoC fallback. */
+	compatible = "xlnx,cora-z7-10", "xlnx,zynq-7000";
+
 	/*
 	 * USB0 uses an external USB3320 ULPI transceiver whose reset is wired
 	 * to PS GPIO/MIO 46.  Linux 6.12's Zynq ChipIdea glue requires a

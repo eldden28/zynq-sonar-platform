@@ -1,8 +1,11 @@
 # EDF migration on Linux
 
-Status: the Cora Z7-10 sonar WIC has been built with native EDF 25.05 on Linux
-and passed offline image verification. Board boot and hardware runtime checks
-remain; no board was flashed or restarted.
+Status: the Cora Z7-10 sonar WIC has been built with native EDF 25.05 on Linux.
+The initial image passed offline checks and SD-card readback verification, but
+the first board boot stopped after `Starting kernel ...`. Investigation found
+a missing Zynq platform identifier in the Linux device tree. The board policy
+now supplies that identifier, and the image verifier requires it. Hardware
+boot and runtime validation of the corrected image remain pending.
 
 ## Starting point
 
@@ -146,11 +149,11 @@ mtools. EDF keeps the default `amd-edf` account: first login uses the serial
 console and requires setting a password before password-based SSH access.
 
 
-## Completed image and evidence (2026-10-29)
+## Initial image and evidence (2026-10-29, superseded)
 
 Outputs are under `software/edf/workspace/build/tmp/deploy/images/cora-z7-10-edf/`.
-The final image is `sonar-edf-image-cora-z7-10-edf.rootfs-20261029223652.wic`;
-the unversioned `.rootfs.wic` symlink points to it. It is 794,968,064 bytes
+The initial image is `sonar-edf-image-cora-z7-10-edf.rootfs-20261029223652.wic`.
+It is 794,968,064 bytes
 (about 758 MiB). A `.wic.gz` and `.wic.bmap` are also provided.
 
 Raw WIC SHA-256:
@@ -199,6 +202,42 @@ also uses inherited local application changes in the shared layer; source
 hashes and a tracked-source patch are retained with provenance. This is not
 proof that every input is already committed on GitHub. A clean-clone hardware
 rebuild must include those changes and regenerate the XSA.
+
+## First boot investigation (2026-10-30)
+
+The initial WIC was written to the user's 7.5 GiB removable microSD and its
+entire image length read back with direct I/O. The SHA-256 matched the source.
+U-Boot then loaded the script, kernel, and DTB successfully and verified the
+kernel CRC, but no Linux messages appeared after `Starting kernel ...`.
+
+The deployed Linux DTB's root `compatible` contained only `xlnx,cora-z7-10`.
+The built kernel's Zynq machine descriptor matches `xlnx,zynq-7000`, so that
+DTB did not select the Zynq platform's initialization callbacks. Maintained
+`cora-board.dtsi` now provides both identifiers. `KERNEL_COMMAND_APPEND` also
+adds `earlycon` while keeping the existing 115200-baud console. The verifier
+parses the root property and requires the SoC identifier, and checks that the
+boot script enables early console output. Offline tests exercised the original
+and corrected DTBs, plus truncated blobs. Board testing is still needed to
+establish how far the corrected image boots.
+
+The `Loading Environment from FAT` / `bad env area` warning means U-Boot is
+using its compiled defaults because it found no valid saved environment. The
+subsequent successful script and kernel loads show this did not prevent the
+boot attempt. `FDT_ERR_NOTFOUND` comes from the script reading an absent
+`/chosen/bootargs`; it subsequently supplies console and root arguments.
+
+To test the compatibility correction on the initial card without saving any
+environment or rewriting the SD card, stop autoboot and run:
+
+```text
+fatload mmc 0:1 0x00300000 uImage
+fatload mmc 0:1 0x00200000 system.dtb
+fdt addr 0x00200000
+fdt resize 0x1000
+fdt set / compatible "xlnx,cora-z7-10" "xlnx,zynq-7000"
+setenv bootargs console=ttyPS0,115200 earlycon root=/dev/mmcblk0p2 ro rootwait
+bootm 0x00300000 - 0x00200000
+```
 
 ## Remaining board validation
 

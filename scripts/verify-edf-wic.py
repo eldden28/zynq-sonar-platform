@@ -33,6 +33,53 @@ def legacy_image(data, expected_type):
     return {"payload_bytes": size, "load": hex(load), "entry": hex(entry), "type": kind}
 
 
+def fdt_root_compatible(data):
+    """Read the root compatible property, rather than matching arbitrary strings."""
+    if len(data) < 40:
+        raise ValueError("Truncated device tree header")
+    magic, total, structure, strings, _, _, _, _, strings_size, structure_size = struct.unpack(
+        ">10I", data[:40])
+    if magic != 0xD00DFEED or total != len(data):
+        raise ValueError("Invalid device tree blob header")
+    end = structure + structure_size
+    if end > total or strings + strings_size > total:
+        raise ValueError("Device tree blocks extend outside the blob")
+    names = data[strings:strings + strings_size]
+    cursor, depth = structure, 0
+    while cursor + 4 <= end:
+        token, = struct.unpack_from(">I", data, cursor)
+        cursor += 4
+        if token == 1:  # FDT_BEGIN_NODE
+            terminator = data.find(b"\0", cursor, end)
+            if terminator < 0:
+                raise ValueError("Unterminated device tree node name")
+            cursor = (terminator + 4) & ~3
+            depth += 1
+        elif token == 2:  # FDT_END_NODE
+            depth -= 1
+        elif token == 3:  # FDT_PROP
+            if cursor + 8 > end:
+                raise ValueError("Truncated device tree property")
+            length, name_offset = struct.unpack_from(">II", data, cursor)
+            cursor += 8
+            name_end = names.find(b"\0", name_offset)
+            if cursor + length > end or name_end < 0:
+                raise ValueError("Invalid device tree property bounds")
+            if depth == 1 and names[name_offset:name_end] == b"compatible":
+                value = data[cursor:cursor + length]
+                if not value.endswith(b"\0"):
+                    raise ValueError("Unterminated root compatible property")
+                return value[:-1].decode("ascii").split("\0")
+            cursor = (cursor + length + 3) & ~3
+        elif token == 4:  # FDT_NOP
+            continue
+        elif token == 9:  # FDT_END
+            break
+        else:
+            raise ValueError(f"Invalid device tree token: {token}")
+    raise ValueError("Device tree lacks a root compatible property")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("wic", type=Path)
@@ -92,16 +139,18 @@ def main():
                 checks.update(legacy_image(data, 2 if name == "uImage" else 6))
                 if name == "boot.scr":
                     script = data[72:].decode("utf-8")
-                    if "@@" in script or "root=/dev/${bootdev}2 ro rootwait" not in script or "console=ttyPS0,115200" not in script:
-                        raise ValueError("SD boot script lacks the Cora console/root partition settings")
+                    if "@@" in script or "root=/dev/${bootdev}2 ro rootwait" not in script or "console=ttyPS0,115200 earlycon" not in script:
+                        raise ValueError("SD boot script lacks the Cora console, early console, or root partition settings")
                     checks["root_partition"] = 2
                     checks["serial_console"] = "ttyPS0,115200"
+                    checks["early_console"] = True
             elif name == "BOOT.BIN" and data[32:40] != bytes.fromhex("665599aa584e4c58"):
                 raise ValueError("BOOT.BIN lacks the Zynq boot header")
             elif name == "system.dtb":
-                magic, total = struct.unpack(">II", data[:8])
-                if magic != 0xD00DFEED or total != len(data):
-                    raise ValueError("Invalid device tree blob header")
+                root_compatible = fdt_root_compatible(data)
+                if "xlnx,zynq-7000" not in root_compatible:
+                    raise ValueError("Device tree root lacks xlnx,zynq-7000; Linux cannot select its Zynq platform")
+                checks["root_compatible"] = root_compatible
                 compatible = ["eldden28,cora-pwm-1.0", "eldden28,cora-dsp-2.0", "usb-nop-xceiv"]
                 if any(value.encode() + b"\0" not in data for value in compatible):
                     raise ValueError("Device tree is missing the maintained Cora FPGA/USB policy")
