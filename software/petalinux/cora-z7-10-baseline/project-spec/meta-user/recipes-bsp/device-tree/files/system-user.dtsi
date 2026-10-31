@@ -30,9 +30,14 @@
 };
 
 &axis_spectral_filter_0 {
-	compatible = "eldden28,cora-dsp-1.0";
+	status = "disabled";
+};
+
+&axis_acomms_router_0 {
+	compatible = "eldden28,cora-dsp-2.0";
 	dmas = <&axi_dma_dsp 0>, <&axi_dma_dsp 1>;
 	dma-names = "tx", "rx";
+	eldden28,spectral-filter = <&axis_spectral_filter_0>;
 	status = "okay";
 };
 

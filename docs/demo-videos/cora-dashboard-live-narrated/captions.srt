@@ -1,0 +1,27 @@
+1
+00:00:00,700 --> 00:00:19,004
+We begin on the live Cora sonar dashboard. Each image is formed from simulated multichannel time-series data, followed by matched filtering and delay-and-sum beamforming. I can zoom the fan, switch to range-versus-angle coordinates, and return to the normal view without stopping the processor.
+
+2
+00:00:20,904 --> 00:00:39,592
+The controls stage a new array configuration before processing. Here I choose sixty-four elements, a six-hundred-kilohertz center frequency, and one-point-two-five millimeter pitch. Applying the settings runs a new time-series simulation, and the updated channel count appears with the new sonar result.
+
+3
+00:00:41,492 --> 00:00:59,327
+The scene editor changes the geometry that drives the next simulated receive buffers. I select the first target, rename it, move it to seven-point-two-five meters and twelve degrees, then apply the scene. The dashboard runs another ping and confirms that the custom scene was processed.
+
+4
+00:01:01,227 --> 00:01:19,573
+Next is the independent acoustic O F D M text terminal. I clear the old receiver, enter a short message, and select the F P G A A X I stream loopback. Transmit sends the generated samples through the Cora D M A path, and the validated receiver reconstructs the same text.
+
+5
+00:01:21,473 --> 00:01:40,204
+The conventional modem remains separate from O F D M. Its menu offers B P S K, Q P S K, two-tone F S K, and multi-tone F S K. For this live example I use Q P S K at five hundred symbols per second and pass the waveform through the same hardware loopback.
+
+6
+00:01:42,104 --> 00:02:01,773
+The JANUS page exercises the open first-contact waveform using the reference implementation. I select the hardware loopback, keep parameter set one, and transmit an application-type-three packet. The decoded class, type, application data, and green C R C result provide visible end-to-end evidence.
+
+7
+00:02:03,673 --> 00:02:23,385
+These pages now share a clear test progression. Use the software channel for modem development, the two-hundred-fifty-kilosample hardware loopback for D M A and programmable-logic bring-up, and USB audio when physical transducers are attached. The visible JANUS result closes this live board-backed tour.

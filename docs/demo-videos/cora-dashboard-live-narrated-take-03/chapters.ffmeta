@@ -1,0 +1,38 @@
+;FFMETADATA1
+title=Cora live dashboard walkthrough
+comment=Live application capture; AI narration.
+[CHAPTER]
+TIMEBASE=1/1000
+START=0
+END=20204
+title=Live forward-looking sonar
+[CHAPTER]
+TIMEBASE=1/1000
+START=20204
+END=40792
+title=Array and frequency controls
+[CHAPTER]
+TIMEBASE=1/1000
+START=40792
+END=60527
+title=Edit and process a scene
+[CHAPTER]
+TIMEBASE=1/1000
+START=60527
+END=80773
+title=OFDM text through programmable logic
+[CHAPTER]
+TIMEBASE=1/1000
+START=80773
+END=101404
+title=Conventional modulation
+[CHAPTER]
+TIMEBASE=1/1000
+START=101404
+END=122973
+title=JANUS interoperability packet
+[CHAPTER]
+TIMEBASE=1/1000
+START=122973
+END=144585
+title=Choose the path for the test

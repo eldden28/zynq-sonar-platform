@@ -1,0 +1,42 @@
+[
+  {
+    "id": "main-dashboard",
+    "title": "Authenticated hardware dashboard",
+    "text": "The main dashboard on port 8080 uses HTTP Basic authentication. Once signed in, it is the board-health page: CPU load, memory, Ethernet, FPGA state, and XADC monitor readings are visible in one authenticated session.",
+    "evidence": "The authenticated page displayed the live CPU meter and XADC monitor table.",
+    "start_s": 0.0,
+    "duration_s": 18.369333333333334,
+    "speech_start_s": 0.7,
+    "speech_duration_s": 16.469333333333335
+  },
+  {
+    "id": "web-terminal",
+    "title": "Built-in web terminal",
+    "text": "The same protected page includes a browser terminal running as the unprivileged petalinux user. Here it runs hostname and uptime, which confirms the session is attached to the live Cora board without exposing any credentials.",
+    "evidence": "The PTY terminal returned the Cora hostname and current uptime.",
+    "start_s": 18.369333333333334,
+    "duration_s": 16.108,
+    "speech_start_s": 19.069333333333333,
+    "speech_duration_s": 14.208
+  },
+  {
+    "id": "ofdm-image",
+    "title": "Progressive OFDM image page",
+    "text": "Port 8081 is the separate progressive OFDM image-transfer dashboard. It is independently addressable, with its own transfer controls, payload progress, retry status, and reconstructed image view, while the main dashboard remains available.",
+    "evidence": "The independently hosted 8081 OFDM image dashboard loaded successfully.",
+    "start_s": 34.477333333333334,
+    "duration_s": 17.558666666666667,
+    "speech_start_s": 35.17733333333333,
+    "speech_duration_s": 15.658666666666667
+  },
+  {
+    "id": "simultaneous",
+    "title": "Concurrent dashboards",
+    "text": "These two live board pages can be open together. On the left, 8080 continues monitoring CPU and XADC health. On the right, the OFDM text terminal on 8082 remains ready for modem work. The services are independent but deployed on the same Cora image.",
+    "evidence": "Live 8080 and 8082 frames were captured side by side from separate active browser pages.",
+    "start_s": 52.036,
+    "duration_s": 20.46,
+    "speech_start_s": 52.736,
+    "speech_duration_s": 18.56
+  }
+]

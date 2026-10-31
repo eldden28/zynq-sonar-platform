@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cora JANUS Interoperability Modem</title>
+  <style>
+    :root{color-scheme:dark;--bg:#061017;--panel:#0b1a24;--line:#294757;--ink:#eafaff;--muted:#8faab7;--cyan:#4de0d0;--blue:#62a8ff;--amber:#ffc857;--red:#ff6c7f}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 14% 0,#153e51,transparent 36%),linear-gradient(150deg,#040b10,#081720 62%,#071119);color:var(--ink);font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}
+    header{padding:19px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px;background:#06111ae8;position:sticky;top:0;z-index:2}h1{margin:0;font-size:19px;letter-spacing:.07em;text-transform:uppercase}.sub,.muted{color:var(--muted)}.badge{padding:7px 12px;border:1px solid var(--line);border-radius:99px;text-transform:uppercase;color:var(--muted)}.badge.running,.badge.warming{color:var(--amber)}.badge.complete{color:var(--cyan)}.badge.failed,.badge.unavailable{color:var(--red)}
+    main{max-width:1320px;margin:auto;padding:20px;display:grid;gap:16px}.panel{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#091721e6;box-shadow:0 16px 45px #0005}.bar{padding:10px 14px;border-bottom:1px solid var(--line);color:var(--muted);background:#0d202b}.controls{padding:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}select,input,button{font:700 13px inherit;color:var(--ink);background:#102a39;border:1px solid #3a5c6e;border-radius:8px;padding:10px 12px}input[type=number],input[type=text]{width:125px}button{cursor:pointer}button.primary{background:linear-gradient(135deg,#126688,#177b72)}button:disabled,select:disabled,input:disabled{opacity:.42;cursor:not-allowed}.field{display:flex;align-items:center;gap:6px;color:var(--muted)}.flags{display:flex;flex-wrap:wrap;gap:14px;padding:0 15px 15px}.flags label{display:flex;align-items:center;gap:6px;color:var(--muted)}.flags input{width:auto}
+    .notice{padding:0 15px 14px;min-height:34px;color:var(--amber)}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line)}.stat{padding:13px;background:#091720}.stat span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.07em}.stat strong{display:block;margin-top:5px;color:var(--cyan);font-size:14px;word-break:break-word}.plots{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}.plot{background:#050e14;padding:12px}canvas{display:block;width:100%;height:230px;background:#02070a;border:1px solid #263f50}.explain{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:18px}.explain h2{font-size:13px;color:var(--cyan);margin:0 0 7px}.explain p{margin:0;color:var(--muted)}.foot{padding:12px 15px;border-top:1px solid var(--line);color:#678a99;font-size:11px}
+    @media(max-width:850px){.plots,.explain{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:540px){main{padding:9px}header{padding:13px}.sub{display:none}.stats{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header><div><h1>JANUS Interoperability Modem</h1><div class="sub">STANAG 4748 / ANEP-87 · open underwater first-contact waveform</div></div><div id="status" class="badge">connecting</div></header>
+<main>
+  <section class="panel">
+    <div class="bar">Baseline packet controls</div>
+    <div class="controls">
+      <select id="backend"><option value="loopback">Colored-channel simulation</option><option value="pl-loopback">FPGA AXIS loopback · 250 ksample/s</option><option value="air">Speaker → microphone</option></select>
+      <label class="field">Band <select id="pset"><option value="1">PSET 1 · 11.52 kHz</option><option value="2">PSET 2 · 1.20 kHz</option><option value="3">PSET 3 · 4.096 kHz</option><option value="4">PSET 4 · 8.192 kHz</option></select></label>
+      <label class="field">Class ID <input id="class-id" type="number" min="0" max="255" value="16"></label>
+      <label class="field">App type <input id="app-type" type="number" min="0" max="63" value="3"></label>
+      <label class="field">34-bit app data <input id="app-data" type="text" value="0x12345" spellcheck="false"></label>
+      <button id="send" class="primary">Transmit packet</button><button id="reset">Reset</button>
+    </div>
+    <div class="flags"><label><input id="mobility" type="checkbox">mobile node</label><label><input id="txrx" type="checkbox" checked>TX/RX capable</label><label><input id="forward" type="checkbox">forwarding capable</label><label><input id="wut" type="checkbox">wake-up tones</label></div>
+    <div id="notice" class="notice">Checking the JANUS reference implementation…</div>
+    <div class="stats">
+      <div class="stat"><span>Parameter set</span><strong id="parameter">—</strong></div>
+      <div class="stat"><span>Occupied band</span><strong id="band">—</strong></div>
+      <div class="stat"><span>Base packet</span><strong>64 bits + CRC</strong></div>
+      <div class="stat"><span>Waveform duration</span><strong id="duration">0.00 s</strong></div>
+      <div class="stat"><span>Decode</span><strong id="decode">—</strong></div>
+      <div class="stat"><span>RX class / type</span><strong id="identity">—</strong></div>
+      <div class="stat"><span>RX app data</span><strong id="decoded-data">—</strong></div>
+      <div class="stat"><span>Doppler speed</span><strong id="speed">—</strong></div>
+      <div class="stat"><span>RSSI</span><strong id="rssi">—</strong></div>
+      <div class="stat"><span>SNR</span><strong id="snr">—</strong></div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="plots">
+      <div class="plot"><div class="bar">JANUS transmit waveform</div><canvas id="wave" width="620" height="230"></canvas></div>
+      <div class="plot"><div class="bar">Transmit spectrum</div><canvas id="spectrum" width="620" height="230"></canvas></div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="explain"><div><h2>What this sends</h2><p>A standards-compatible JANUS baseline packet generated and decoded by the CMRE reference implementation. The class, application type, capability flags, and 34-bit application-data field are exposed directly. Class 16 types 0 and 1 use registered codecs, so this raw-field UI accepts only zero data for those types.</p></div><div><h2>What this does not claim</h2><p>JANUS is intended for discovery and initial contact. Arbitrary text cargo requires a registered application definition and its codec plug-in; high-throughput data should switch to another negotiated waveform.</p></div></div>
+    <div class="foot">48 ksample/s audio · four reference parameter sets below Nyquist · Doppler correction enabled in the receiver · JANUS reference implementation remains a separate GPLv3 component.</div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);let air=false;
+function setStatus(s){$('status').textContent=s;$('status').className=`badge ${s}`}
+function line(canvas,values,color,min,max){const c=$(canvas),x=c.getContext('2d'),w=c.width,h=c.height;x.clearRect(0,0,w,h);x.strokeStyle='#1e3543';x.beginPath();for(let i=1;i<5;i++){x.moveTo(0,i*h/5);x.lineTo(w,i*h/5)}x.stroke();if(!values.length)return;x.strokeStyle=color;x.lineWidth=1.5;x.beginPath();values.forEach((v,i)=>{const px=i*w/Math.max(1,values.length-1),py=h-(v-min)*h/(max-min);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke()}
+function show(value,suffix=''){return value==null?'—':`${Number(value).toFixed(2)}${suffix}`}
+function render(s){setStatus(s.status);air=s.air_enabled;$('backend').querySelector('[value="air"]').disabled=!air;const active=s.process_running;for(const id of ['backend','pset','class-id','app-type','app-data','mobility','txrx','forward','wut','send'])$(id).disabled=active;$('parameter').textContent=`PSET ${s.parameter_set_id} · ${(s.center_frequency_hz/1000).toFixed(3)} kHz`;$('band').textContent=s.occupied_band_hz?.length?`${(s.occupied_band_hz[0]/1000).toFixed(3)}–${(s.occupied_band_hz[1]/1000).toFixed(3)} kHz`:'—';$('duration').textContent=`${Number(s.waveform_duration_s||0).toFixed(3)} s`;$('decode').textContent=s.decoded_valid==null?'—':(s.decoded_valid?'CRC valid':'failed');$('identity').textContent=s.decoded_class_id==null?'—':`${s.decoded_class_id} / ${s.decoded_application_type}`;$('decoded-data').textContent=s.decoded_application_data_hex||'—';$('speed').textContent=show(s.speed_mps,' m/s');$('rssi').textContent=show(s.rssi);$('snr').textContent=show(s.snr_db,' dB');$('notice').textContent=s.error||({idle:'Ready to generate a standards-compatible JANUS packet.',running:'Generating, channeling, and decoding the JANUS packet…',warming:'Starting USB audio capture…',complete:'CRC-valid JANUS packet decoded.',failed:'JANUS decoder did not validate a packet.',unavailable:'The JANUS reference implementation is not installed.'}[s.status]||s.status);line('wave',s.waveform_preview||[],'#4de0d0',-0.3,0.3);line('spectrum',s.spectrum_db||[],'#ffc857',-100,0)}
+async function status(){try{const r=await fetch('/api/status',{cache:'no-store'});render(await r.json())}catch(e){setStatus('offline')}}
+async function post(path,data={}){const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Cora-Request':'1'},body:JSON.stringify(data)});const j=await r.json();if(!r.ok)throw new Error(j.error||`HTTP ${r.status}`);return j}
+$('send').onclick=async()=>{try{await post('/api/start',{backend:$('backend').value,parameter_set_id:Number($('pset').value),class_id:Number($('class-id').value),application_type:Number($('app-type').value),application_data:$('app-data').value,mobility:$('mobility').checked,tx_rx_capable:$('txrx').checked,forwarding_capable:$('forward').checked,wake_up_tones:$('wut').checked});await status()}catch(e){$('notice').textContent=e.message}};
+$('reset').onclick=async()=>{try{await post('/api/reset');await status()}catch(e){$('notice').textContent=e.message}};
+status();setInterval(status,400);
+</script>
+</body>
+</html>

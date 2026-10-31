@@ -1,0 +1,41 @@
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'docs/demo-videos/cora-operations-addendum-narrated.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    title           : Cora operations and concurrent dashboards
+    encoder         : Lavf61.1.100
+    comment         : Live application capture; AI narration.
+  Duration: 00:01:12.50, start: 0.000000, bitrate: 324 kb/s
+  Chapters:
+    Chapter #0:0: start 0.000000, end 18.369000
+      Metadata:
+        title           : Authenticated hardware dashboard
+    Chapter #0:1: start 18.369000, end 34.477000
+      Metadata:
+        title           : Built-in web terminal
+    Chapter #0:2: start 34.477000, end 52.036000
+      Metadata:
+        title           : Progressive OFDM image page
+    Chapter #0:3: start 52.036000, end 72.496000
+      Metadata:
+        title           : Concurrent dashboards
+  Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(progressive), 1920x1080, 155 kb/s, 20 fps, 20 tbr, 10240 tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.3.100 libx264
+  Stream #0:1[0x2](eng): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, mono, fltp, 162 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+  Stream #0:2[0x3](eng): Subtitle: mov_text (tx3g / 0x67337874), 0 kb/s (default)
+      Metadata:
+        handler_name    : SubtitleHandler
+  Stream #0:3[0x4](eng): Data: bin_data (text / 0x74786574), 0 kb/s
+      Metadata:
+        handler_name    : SubtitleHandler
+At least one output file must be specified
+
+Expected duration: 72.496s; final: 72.500s
+Full video/audio decode: PASS

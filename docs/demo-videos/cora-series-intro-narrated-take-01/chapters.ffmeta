@@ -1,0 +1,13 @@
+;FFMETADATA1
+title=Cora integrated demo series
+comment=Live application capture; AI narration.
+[CHAPTER]
+TIMEBASE=1/1000
+START=0
+END=20716
+title=Cora demo series agenda
+[CHAPTER]
+TIMEBASE=1/1000
+START=20716
+END=44099
+title=One Cora board, simultaneous services

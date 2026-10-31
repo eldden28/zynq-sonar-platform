@@ -1,0 +1,48 @@
+{
+  "capture": "live browser",
+  "preview": true,
+  "segments": [
+    {
+      "segment": 1,
+      "url": "http://192.168.10.2:8085/",
+      "start_s": 0.0,
+      "duration_s": 8.0,
+      "checks": {
+        "checks": [
+          {
+            "scene": "sonar_live",
+            "action": "click",
+            "selector": "#zoom-in",
+            "expectation_checked": true,
+            "elapsed_s": 3.585113100707531
+          }
+        ],
+        "frames": 160,
+        "duration_s": 8.0,
+        "preview": true,
+        "failure": null,
+        "browser_errors": [],
+        "visited_scenes": [
+          "sonar_live"
+        ],
+        "encoder_exit_code": 0
+      },
+      "scene_evidence": [
+        {
+          "id": "sonar_live",
+          "evidence": "The live status is running, the sonar image is populated, zoom reaches 156 percent, and both view buttons respond."
+        },
+        {
+          "id": "sonar_array",
+          "evidence": "The live controls show 64 channels, 600 kilohertz, 1.25 millimeters, and the server confirms the updated configuration."
+        },
+        {
+          "id": "sonar_scene",
+          "evidence": "The real editor fields change and the board service reports that the custom scene was applied."
+        }
+      ]
+    }
+  ],
+  "duration_s": 8.0,
+  "all_action_expectations_passed": true
+}

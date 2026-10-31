@@ -27,10 +27,24 @@ import time
 from urllib.parse import urlparse
 
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 MAX_REQUEST = 4096
 MAX_WS_MESSAGE = 65536
 SIOCGIFADDR = 0x8915
+
+# Only these installed SysV services can be switched from the dashboard.
+# Navigation uses 8087 for its acoustic view so it can coexist with the
+# conventional modem on 8084 in the combined image.
+FEATURES = (
+    {"id": "sonar", "name": "Forward sonar", "service": "cora-sonar", "links": [("Sonar", 8085)]},
+    {"id": "triplet", "name": "Triplet beamforming", "service": "cora-triplet-btr", "links": [("Bearing-time display", 8088)]},
+    {"id": "navigation", "name": "Navigation", "service": "cora-navigation", "links": [("DVL", 8083), ("LBL / iUSBL", 8087)]},
+    {"id": "ofdm_image", "name": "OFDM image modem", "service": "cora-ofdm-dashboard", "links": [("Image transfer", 8081)]},
+    {"id": "ofdm_text", "name": "OFDM acoustic text modem", "service": "cora-ofdm-text-dashboard", "links": [("Text terminal", 8082)]},
+    {"id": "conventional", "name": "Conventional acoustic modem", "service": "cora-conventional-dashboard", "links": [("BPSK / QPSK / FSK", 8084)]},
+    {"id": "janus", "name": "JANUS modem", "service": "cora-janus-dashboard", "links": [("JANUS", 8086)]},
+)
+FEATURE_BY_ID = {feature["id"]: feature for feature in FEATURES}
 
 # External channels are appended by the Xilinx XADC IIO driver in device-tree
 # order.  system-user.dtsi deliberately uses this order so the otherwise
@@ -81,6 +95,51 @@ class DashboardState:
         self.previous_cpu = None
         self.previous_network = {}
         self.terminal_slots = threading.BoundedSemaphore(args.max_terminals)
+        self.feature_lock = threading.Lock()
+
+    @staticmethod
+    def _feature_status(feature: dict) -> dict:
+        service = feature["service"]
+        script = Path("/etc/init.d") / service
+        installed = script.is_file() and os.access(script, os.X_OK)
+        running = False
+        if installed:
+            pid_text = read_text(Path("/var/run") / f"{service}.pid")
+            if pid_text.isdecimal():
+                command = format_cmdline(Path("/proc") / pid_text / "cmdline")
+                running = service in command
+        return {
+            "id": feature["id"], "name": feature["name"],
+            "installed": installed, "running": running,
+            "links": [{"label": label, "port": port} for label, port in feature["links"]],
+        }
+
+    def _set_feature(self, feature_id: str, enabled: bool) -> str:
+        feature = FEATURE_BY_ID.get(feature_id)
+        if feature is None:
+            raise ValueError("Unknown feature")
+        with self.feature_lock:
+            status = self._feature_status(feature)
+            if not status["installed"]:
+                raise RuntimeError(f"{feature['name']} is not installed in this image")
+            if status["running"] == enabled:
+                return f"{feature['name']} is already {'running' if enabled else 'stopped'}"
+            command = [f"/etc/init.d/{feature['service']}", "start" if enabled else "stop"]
+            try:
+                result = subprocess.run(command, capture_output=True, text=True, timeout=20, check=False)
+            except subprocess.TimeoutExpired as error:
+                raise RuntimeError(f"{feature['name']} service command timed out") from error
+            if result.returncode:
+                detail = (result.stderr or result.stdout).strip()
+                raise RuntimeError(f"{feature['name']}: {detail or 'service command failed'}")
+            for _ in range(10):
+                if self._feature_status(feature)["running"] == enabled:
+                    break
+                time.sleep(0.2)
+            if self._feature_status(feature)["running"] != enabled:
+                raise RuntimeError(f"{feature['name']} did not {'start' if enabled else 'stop'}")
+            print(f"dashboard feature: {feature_id} {'on' if enabled else 'off'}", flush=True)
+            return f"{feature['name']} {'started' if enabled else 'stopped'}"
 
     def _load_or_create_token(self, path: Path) -> str:
         token = read_text(path)
@@ -341,6 +400,7 @@ class DashboardState:
             "iio": self._iio(),
             "pwm": self._pwm(),
             "remote_io": {"running": bool(pids), "pids": pids},
+            "features": [self._feature_status(feature) for feature in FEATURES],
         }
 
     def _start_remote(self) -> str:
@@ -379,6 +439,14 @@ class DashboardState:
         return f"PWM {attribute.replace('_', ' ')} requested"
 
     def control(self, action: str) -> str:
+        if action.startswith("feature:"):
+            parts = action.split(":")
+            if len(parts) != 3:
+                raise ValueError("Invalid feature action")
+            _, feature_id, state = parts
+            if state not in ("on", "off"):
+                raise ValueError("Invalid feature action")
+            return self._set_feature(feature_id, state == "on")
         actions = {
             "remote_start": self._start_remote,
             "remote_stop": self._stop_remote,

@@ -1,0 +1,3 @@
+# JANUS parameter set 1 occupies 9.44-13.60 kHz and fits the 48 ksample/s
+# USB audio path. Air mode is available when a supported USB codec is present.
+DASHBOARD_ARGS="--bind 0.0.0.0 --port 8086 --noise-dbfs -60 --output-amplitude 0.25 --allow-air --playback-device plughw:0,0 --capture-device plughw:0,0"

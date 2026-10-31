@@ -36,6 +36,7 @@
     "common_components": [
       "cora-dashboard",
       "cora-conventional-acoustic",
+      "cora-janus-acoustic",
       "cora-navigation",
       "cora-ofdm",
       "cora-ofdm-acoustic",

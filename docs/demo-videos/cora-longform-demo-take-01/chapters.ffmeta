@@ -1,0 +1,33 @@
+;FFMETADATA1
+title=Cora Z7-10 unified demo series
+comment=Assembly of verified live Cora demonstrations.
+[CHAPTER]
+TIMEBASE=1/1000
+START=0
+END=44100
+title=1. Series introduction
+[CHAPTER]
+TIMEBASE=1/1000
+START=44100
+END=188750
+title=2. Main dashboard
+[CHAPTER]
+TIMEBASE=1/1000
+START=188750
+END=261250
+title=3. Operations and concurrent dashboards
+[CHAPTER]
+TIMEBASE=1/1000
+START=261250
+END=406950
+title=4. Vivado block design
+[CHAPTER]
+TIMEBASE=1/1000
+START=406950
+END=539650
+title=5. Modem summary and benchmarks
+[CHAPTER]
+TIMEBASE=1/1000
+START=539650
+END=641550
+title=6. Navigation and mission dashboard

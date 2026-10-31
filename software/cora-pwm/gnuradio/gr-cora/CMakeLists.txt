@@ -95,6 +95,7 @@ install(PROGRAMS
     examples/cora-adc-to-pwm
     examples/cora-adc-fft-pwm
     examples/cora-dsp-benchmark
+    examples/cora-axis-loopback-test
     examples/cora-remote-io
     DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

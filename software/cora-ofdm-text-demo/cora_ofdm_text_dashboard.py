@@ -21,6 +21,7 @@ from cora_ofdm_text_transfer import (
     DEFAULT_BURST_PACKETS,
     DEFAULT_CHUNK_BYTES,
     MAX_TEXT_BYTES,
+    PlAxisLoopbackBackend,
     TransferStopped,
     transfer_text,
 )
@@ -45,6 +46,8 @@ def idle_state(
     air_enabled: bool,
     port: int,
     output_channel: str = "left",
+    pl_enabled: bool = False,
+    pl_sample_rate: int = 250_000,
 ) -> dict:
     cfg = make_acoustic_config(
         DEFAULT_MODEM_VERSION,
@@ -76,6 +79,8 @@ def idle_state(
         "data_subcarriers": int(cfg.data_bins.size),
         "gross_bit_rate": cfg.gross_bit_rate,
         "air_enabled": air_enabled,
+        "pl_enabled": pl_enabled,
+        "pl_sample_rate": pl_sample_rate,
         "burst_packets": 0,
         "dashboard_port": port,
         "max_text_bytes": MAX_TEXT_BYTES,
@@ -206,10 +211,14 @@ class TextDemoController:
         self.received = bytearray()
         self.spectrum = ReceiverSpectrumMonitor()
         self.output_channel = getattr(args, "output_channel", "left")
+        self.pl_device = getattr(args, "pl_device", "/dev/cora-dsp0")
+        self.pl_sample_rate = getattr(args, "pl_sample_rate", 250_000)
         self.state = idle_state(
             args.allow_air,
             args.port,
             self.output_channel,
+            Path(self.pl_device).exists(),
+            self.pl_sample_rate,
         )
         self.state["burst_packets"] = args.burst_packets
 
@@ -253,8 +262,10 @@ class TextDemoController:
                 f"text is {encoded_size} UTF-8 bytes; maximum is "
                 f"{MAX_TEXT_BYTES}"
             )
-        if backend_name not in ("loopback", "air"):
-            raise ValueError("backend must be loopback or air")
+        if backend_name not in ("loopback", "pl-loopback", "air"):
+            raise ValueError("backend must be loopback, pl-loopback, or air")
+        if backend_name == "pl-loopback" and not Path(self.pl_device).exists():
+            raise ValueError("acoustic PL loopback device is unavailable")
         if backend_name == "air" and not self.args.allow_air:
             raise ValueError(
                 "air mode is disabled until a speaker is connected and "
@@ -282,6 +293,8 @@ class TextDemoController:
                 self.args.allow_air,
                 self.args.port,
                 self.output_channel,
+                Path(self.pl_device).exists(),
+                self.pl_sample_rate,
             )
             self.state.update(
                 {
@@ -342,6 +355,13 @@ class TextDemoController:
                 cfg=cfg,
                 capture_callback=self.spectrum.ingest_pcm,
                 output_channel=output_channel,
+            )
+        elif backend_name == "pl-loopback":
+            backend = PlAxisLoopbackBackend(
+                cfg=cfg,
+                capture_callback=self.spectrum.ingest_pcm,
+                device=self.pl_device,
+                pl_sample_rate=self.pl_sample_rate,
             )
         else:
             backend = ColoredRoomBackend(
@@ -414,6 +434,8 @@ class TextDemoController:
                 self.args.allow_air,
                 self.args.port,
                 self.output_channel,
+                Path(self.pl_device).exists(),
+                self.pl_sample_rate,
             )
             self.state["burst_packets"] = self.args.burst_packets
 
@@ -606,6 +628,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_BURST_PACKETS,
     )
     parser.add_argument("--allow-air", action="store_true")
+    parser.add_argument("--pl-device", default="/dev/cora-dsp0")
+    parser.add_argument("--pl-sample-rate", type=int, default=250_000)
     args = parser.parse_args(argv)
     if not (1 <= args.port <= 65535):
         parser.error("port must be between 1 and 65535")

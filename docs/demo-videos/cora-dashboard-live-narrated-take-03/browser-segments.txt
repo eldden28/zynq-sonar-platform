@@ -1,0 +1,4 @@
+file '/home/eldden28/code/test-project/docs/demo-videos/cora-dashboard-live-narrated-take-03/browser-segment-01/screen-only.mp4'
+file '/home/eldden28/code/test-project/docs/demo-videos/cora-dashboard-live-narrated-take-03/browser-segment-02/screen-only.mp4'
+file '/home/eldden28/code/test-project/docs/demo-videos/cora-dashboard-live-narrated-take-03/browser-segment-03/screen-only.mp4'
+file '/home/eldden28/code/test-project/docs/demo-videos/cora-dashboard-live-narrated-take-03/browser-segment-04/screen-only.mp4'

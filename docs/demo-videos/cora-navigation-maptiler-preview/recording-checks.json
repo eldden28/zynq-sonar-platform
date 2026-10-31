@@ -1,0 +1,41 @@
+{
+  "checks": [
+    {
+      "scene": "navigation_satellite",
+      "action": "select",
+      "selector": "#basemapControl",
+      "expectation_checked": false,
+      "elapsed_s": 0.6922323401086032
+    },
+    {
+      "scene": "navigation_satellite",
+      "action": "wait",
+      "selector": "#notice",
+      "expectation_checked": true,
+      "elapsed_s": 2.8989948239177465
+    },
+    {
+      "scene": "navigation_satellite",
+      "action": "click",
+      "selector": "#mapFit",
+      "expectation_checked": false,
+      "elapsed_s": 4.114062841050327
+    },
+    {
+      "scene": "navigation_satellite",
+      "action": "click",
+      "selector": "#mapFollow",
+      "expectation_checked": true,
+      "elapsed_s": 5.821000311989337
+    }
+  ],
+  "frames": 160,
+  "duration_s": 8.0,
+  "preview": true,
+  "failure": null,
+  "browser_errors": [],
+  "visited_scenes": [
+    "navigation_satellite"
+  ],
+  "encoder_exit_code": 0
+}

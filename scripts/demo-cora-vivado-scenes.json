@@ -1,0 +1,51 @@
+[
+  {
+    "id": "vivado_project",
+    "title": "The generated Cora project",
+    "text": "This is the actual Vivado twenty-twenty-five-point-one project generated for the Cora Z seven dash ten. The system block design is open in the real Vivado G U I, so the cells, interfaces, clocks, resets, and address-connected peripherals shown here are the implementation source, not a presentation diagram.",
+    "actions": [{"at_fraction": 0.10, "action": "overview"}],
+    "evidence": "Vivado opens the generated XPR and system.bd, and every named demonstration cell exists."
+  },
+  {
+    "id": "vivado_dma",
+    "title": "Host memory and streaming DMA",
+    "text": "The highlighted A X I D M A block is the software-facing entrance and exit for acoustic samples. Its memory-to-stream channel feeds the acoustic router, while stream-to-memory returns each completed frame. Linux therefore keeps one stable device interface even when the processing chain in programmable logic changes.",
+    "actions": [{"at_fraction": 0.16, "action": "highlight", "cells": ["/axi_dma_dsp", "/data_interconnect"]}],
+    "evidence": "Vivado resolves and highlights axi_dma_dsp and the data interconnect in the open block design."
+  },
+  {
+    "id": "vivado_router",
+    "title": "Known-good AXIS loopback",
+    "text": "The acoustic router is the bring-up anchor. In loopback mode it returns the D M A stream directly while preserving valid, ready, and last signaling. That gives new hardware a known-good test before any algorithm core is enabled, and software selects the path without rebuilding the block design.",
+    "actions": [{"at_fraction": 0.16, "action": "highlight", "cells": ["/axis_acomms_router_0"]}],
+    "evidence": "The real axis_acomms_router_0 cell is selected and highlighted."
+  },
+  {
+    "id": "vivado_accelerator",
+    "title": "Installed accelerator chain",
+    "text": "The alternate route passes through the forward F F T, the spectral-filter example, and the inverse F F T before returning to the router. This chain demonstrates the insertion contract with a working accelerator while keeping the direct loopback beside it for diagnosis.",
+    "actions": [{"at_fraction": 0.15, "action": "highlight", "cells": ["/fft_forward", "/axis_spectral_filter_0", "/fft_inverse"]}],
+    "evidence": "Vivado highlights the three installed accelerator cells in sequence on the actual canvas."
+  },
+  {
+    "id": "vivado_control",
+    "title": "Control, clocks, and reset",
+    "text": "A X I Lite control reaches the router and spectral filter through the control interconnect. The streaming path uses the one-hundred-megahertz fabric clock and its matching reset network. A custom core should share this domain, or add explicit clock conversion when its interface requires another rate.",
+    "actions": [{"at_fraction": 0.15, "action": "highlight", "cells": ["/control_interconnect", "/reset_100", "/axis_acomms_router_0", "/axis_spectral_filter_0"]}],
+    "evidence": "The highlighted control and reset cells exist and connect to the two controlled streaming blocks."
+  },
+  {
+    "id": "vivado_insert",
+    "title": "Where custom IP connects",
+    "text": "To insert your own processing, keep the router and replace the example chain between its accelerator output and accelerator return interfaces. Match the thirty-two-bit A X I stream width, propagate backpressure and T last, then assign any new A X I Lite registers a non-overlapping address before validating the design.",
+    "actions": [{"at_fraction": 0.12, "action": "highlight", "cells": ["/axis_acomms_router_0", "/fft_forward", "/axis_spectral_filter_0", "/fft_inverse"]}],
+    "evidence": "The highlighted router and replaceable example chain identify the concrete insertion region."
+  },
+  {
+    "id": "vivado_finish",
+    "title": "Return to the complete design",
+    "text": "Returning to the full canvas shows why this structure is reusable: software and D M A remain fixed, loopback remains available, and only the accelerator segment changes. The checked-in Tcl script regenerates this project, while the exported X S A carries the result into the common PetaLinux build.",
+    "actions": [{"at_fraction": 0.10, "action": "overview"}],
+    "evidence": "The complete live system block design is visible again in Vivado."
+  }
+]

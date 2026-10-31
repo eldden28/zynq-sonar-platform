@@ -10,8 +10,10 @@
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/of.h>
+#include <linux/of_address.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
+#include <linux/sizes.h>
 #include <linux/uaccess.h>
 
 #include "cora_dsp_ioctl.h"
@@ -31,13 +33,32 @@
 #define DSP_CORE_ID_REG 0x28
 #define DSP_CORE_VERSION_REG 0x2c
 
+#define ACOMMS_CONTROL 0x00
+#define ACOMMS_DIVIDER 0x04
+#define ACOMMS_SAMPLE_RATE 0x08
+#define ACOMMS_SAMPLES_LO 0x10
+#define ACOMMS_SAMPLES_HI 0x14
+#define ACOMMS_FRAMES_LO 0x18
+#define ACOMMS_FRAMES_HI 0x1c
+#define ACOMMS_CORE_ID_REG 0x20
+#define ACOMMS_CORE_VERSION_REG 0x24
+#define ACOMMS_CLOCK_HZ 0x28
+#define ACOMMS_CORE_ID 0x41434f4dU
+#define ACOMMS_CLEAR_STATS (1U << 1)
+
+static unsigned long router_phys;
+module_param(router_phys, ulong, 0444);
+MODULE_PARM_DESC(router_phys,
+	"optional acoustic-router physical address for live legacy-DT bring-up");
+
 #define CORA_DSP_USER_BYTES (CORA_DSP_FFT_LENGTH * sizeof(s16))
 #define CORA_DSP_DMA_BYTES (CORA_DSP_FFT_LENGTH * sizeof(u32))
 #define CORA_DSP_TIMEOUT_MS 1000
 
 struct cora_dsp_dev {
 	struct device *dev;
-	void __iomem *regs;
+	void __iomem *filter_regs;
+	void __iomem *router_regs;
 	struct dma_chan *tx_chan;
 	struct dma_chan *rx_chan;
 	struct device *dma_dev;
@@ -54,13 +75,15 @@ struct cora_dsp_dev {
 	atomic_t opened;
 	u32 low_bin;
 	u32 high_bin;
+	u32 path;
+	u32 sample_rate;
 	bool result_ready;
 	u64 completed_frames;
 	u64 failed_frames;
 	u64 accelerator_time_ns;
 };
 
-static u64 cora_dsp_read_counter(struct cora_dsp_dev *dsp, u32 low_reg,
+static u64 cora_dsp_read_counter(void __iomem *regs, u32 low_reg,
 				 u32 high_reg)
 {
 	u32 high_before;
@@ -68,9 +91,9 @@ static u64 cora_dsp_read_counter(struct cora_dsp_dev *dsp, u32 low_reg,
 	u32 high_after;
 
 	do {
-		high_before = readl(dsp->regs + high_reg);
-		low = readl(dsp->regs + low_reg);
-		high_after = readl(dsp->regs + high_reg);
+		high_before = readl(regs + high_reg);
+		low = readl(regs + low_reg);
+		high_after = readl(regs + high_reg);
 	} while (high_before != high_after);
 
 	return ((u64)high_after << 32) | low;
@@ -155,16 +178,16 @@ static int cora_dsp_process(struct cora_dsp_dev *dsp)
 		rx_status = dmaengine_tx_status(
 			dsp->rx_chan, rx_cookie, NULL);
 		hardware_frames = cora_dsp_read_counter(
-			dsp, DSP_FRAMES_LO, DSP_FRAMES_HI);
+			dsp->filter_regs, DSP_FRAMES_LO, DSP_FRAMES_HI);
 		hardware_samples = cora_dsp_read_counter(
-			dsp, DSP_SAMPLES_LO, DSP_SAMPLES_HI);
+			dsp->filter_regs, DSP_SAMPLES_LO, DSP_SAMPLES_HI);
 		dev_err(dsp->dev,
 			"transaction failed %d: tx_completion=%d tx_status=%d "
 			"rx_completion=%d rx_status=%d filter_bin=%u "
 			"filter_frames=%llu filter_samples=%llu\n",
 			ret, completion_done(&dsp->tx_complete), tx_status,
 			completion_done(&dsp->rx_complete), rx_status,
-			readl(dsp->regs + DSP_STATUS_BIN),
+			readl(dsp->filter_regs + DSP_STATUS_BIN),
 			hardware_frames, hardware_samples);
 		dmaengine_terminate_sync(dsp->tx_chan);
 		dmaengine_terminate_sync(dsp->rx_chan);
@@ -266,11 +289,15 @@ static long cora_dsp_ioctl(struct file *file, unsigned int command,
 	case CORA_DSP_IOC_GET_INFO: {
 		struct cora_dsp_info info = {
 			.abi_version = CORA_DSP_ABI_VERSION,
-			.core_id = readl(dsp->regs + DSP_CORE_ID_REG),
-			.core_version = readl(dsp->regs + DSP_CORE_VERSION_REG),
+			.core_id = readl(dsp->filter_regs + DSP_CORE_ID_REG),
+			.core_version = readl(dsp->filter_regs + DSP_CORE_VERSION_REG),
 			.fft_length = CORA_DSP_FFT_LENGTH,
 			.sample_bytes = sizeof(s16),
 			.dma_sample_bytes = sizeof(u32),
+			.sample_rate = dsp->sample_rate,
+			.capabilities = dsp->router_regs ?
+				CORA_DSP_CAP_AXIS_ROUTER |
+				CORA_DSP_CAP_SAMPLE_PACING : 0,
 		};
 
 		return copy_to_user(user_argument, &info, sizeof(info)) ?
@@ -288,8 +315,8 @@ static long cora_dsp_ioctl(struct file *file, unsigned int command,
 		mutex_lock(&dsp->lock);
 		dsp->low_bin = config.low_bin;
 		dsp->high_bin = config.high_bin;
-		writel(dsp->low_bin, dsp->regs + DSP_LOW_BIN);
-		writel(dsp->high_bin, dsp->regs + DSP_HIGH_BIN);
+		writel(dsp->low_bin, dsp->filter_regs + DSP_LOW_BIN);
+		writel(dsp->high_bin, dsp->filter_regs + DSP_HIGH_BIN);
 		mutex_unlock(&dsp->lock);
 		return 0;
 	}
@@ -305,7 +332,7 @@ static long cora_dsp_ioctl(struct file *file, unsigned int command,
 			.failed_frames = dsp->failed_frames,
 			.accelerator_time_ns = dsp->accelerator_time_ns,
 			.filtered_bins = cora_dsp_read_counter(
-				dsp, DSP_FILTERED_BINS_LO,
+				dsp->filter_regs, DSP_FILTERED_BINS_LO,
 				DSP_FILTERED_BINS_HI),
 		};
 		mutex_unlock(&dsp->lock);
@@ -317,9 +344,61 @@ static long cora_dsp_ioctl(struct file *file, unsigned int command,
 		dsp->completed_frames = 0;
 		dsp->failed_frames = 0;
 		dsp->accelerator_time_ns = 0;
-		writel(1, dsp->regs + DSP_COMMAND);
+		writel(1, dsp->filter_regs + DSP_COMMAND);
+		if (dsp->router_regs)
+			writel(dsp->path | ACOMMS_CLEAR_STATS,
+			       dsp->router_regs + ACOMMS_CONTROL);
 		mutex_unlock(&dsp->lock);
 		return 0;
+	case CORA_DSP_IOC_SET_PATH: {
+		struct cora_dsp_path_config config;
+		u32 clock_hz;
+		u32 divider;
+
+		if (!dsp->router_regs)
+			return -EOPNOTSUPP;
+		if (copy_from_user(&config, user_argument, sizeof(config)))
+			return -EFAULT;
+		if (config.path > CORA_DSP_PATH_ACCELERATOR ||
+		    config.sample_rate == 0)
+			return -EINVAL;
+		clock_hz = readl(dsp->router_regs + ACOMMS_CLOCK_HZ);
+		if (config.sample_rate > clock_hz)
+			return -EINVAL;
+		divider = DIV_ROUND_CLOSEST(clock_hz, config.sample_rate);
+		if (!divider)
+			return -EINVAL;
+
+		mutex_lock(&dsp->lock);
+		writel(divider, dsp->router_regs + ACOMMS_DIVIDER);
+		writel(clock_hz / divider,
+		       dsp->router_regs + ACOMMS_SAMPLE_RATE);
+		writel(config.path, dsp->router_regs + ACOMMS_CONTROL);
+		dsp->path = config.path;
+		dsp->sample_rate = readl(dsp->router_regs + ACOMMS_SAMPLE_RATE);
+		mutex_unlock(&dsp->lock);
+		return 0;
+	}
+	case CORA_DSP_IOC_GET_ACOMMS_STATUS: {
+		struct cora_dsp_acomms_status status;
+
+		if (!dsp->router_regs)
+			return -EOPNOTSUPP;
+		mutex_lock(&dsp->lock);
+		status = (struct cora_dsp_acomms_status) {
+			.path = dsp->path,
+			.sample_rate = dsp->sample_rate,
+			.clock_hz = readl(dsp->router_regs + ACOMMS_CLOCK_HZ),
+			.sample_divider = readl(dsp->router_regs + ACOMMS_DIVIDER),
+			.samples = cora_dsp_read_counter(dsp->router_regs,
+				ACOMMS_SAMPLES_LO, ACOMMS_SAMPLES_HI),
+			.frames = cora_dsp_read_counter(dsp->router_regs,
+				ACOMMS_FRAMES_LO, ACOMMS_FRAMES_HI),
+		};
+		mutex_unlock(&dsp->lock);
+		return copy_to_user(user_argument, &status, sizeof(status)) ?
+			-EFAULT : 0;
+	}
 	default:
 		return -ENOTTY;
 	}
@@ -341,6 +420,9 @@ static const struct file_operations cora_dsp_fops = {
 static int cora_dsp_probe(struct platform_device *platform)
 {
 	struct cora_dsp_dev *dsp;
+	struct device_node *filter_node;
+	struct resource filter_resource;
+	bool has_router;
 	u32 core_id;
 	int ret;
 
@@ -349,10 +431,50 @@ static int cora_dsp_probe(struct platform_device *platform)
 		return -ENOMEM;
 	dsp->dev = &platform->dev;
 
-	dsp->regs = devm_platform_ioremap_resource(platform, 0);
-	if (IS_ERR(dsp->regs))
-		return PTR_ERR(dsp->regs);
-	core_id = readl(dsp->regs + DSP_CORE_ID_REG);
+	has_router = of_device_is_compatible(platform->dev.of_node,
+					     "eldden28,cora-dsp-2.0");
+	if (has_router) {
+		dsp->router_regs = devm_platform_ioremap_resource(platform, 0);
+		if (IS_ERR(dsp->router_regs))
+			return PTR_ERR(dsp->router_regs);
+		core_id = readl(dsp->router_regs + ACOMMS_CORE_ID_REG);
+		if (core_id != ACOMMS_CORE_ID)
+			return dev_err_probe(&platform->dev, -ENODEV,
+				"unexpected ACOMMS router core ID 0x%08x\n",
+				core_id);
+
+		filter_node = of_parse_phandle(platform->dev.of_node,
+					      "eldden28,spectral-filter", 0);
+		if (!filter_node)
+			return dev_err_probe(&platform->dev, -EINVAL,
+				"missing eldden28,spectral-filter phandle\n");
+		ret = of_address_to_resource(filter_node, 0, &filter_resource);
+		of_node_put(filter_node);
+		if (ret)
+			return dev_err_probe(&platform->dev, ret,
+				"failed to resolve spectral-filter registers\n");
+		dsp->filter_regs = devm_ioremap_resource(
+			&platform->dev, &filter_resource);
+		if (IS_ERR(dsp->filter_regs))
+			return PTR_ERR(dsp->filter_regs);
+	} else {
+		dsp->filter_regs = devm_platform_ioremap_resource(platform, 0);
+		if (IS_ERR(dsp->filter_regs))
+			return PTR_ERR(dsp->filter_regs);
+		if (router_phys) {
+			dsp->router_regs = devm_ioremap(&platform->dev, router_phys,
+						   SZ_64K);
+			if (!dsp->router_regs)
+				return dev_err_probe(&platform->dev, -ENOMEM,
+					"failed to map live ACOMMS router override\n");
+			core_id = readl(dsp->router_regs + ACOMMS_CORE_ID_REG);
+			if (core_id != ACOMMS_CORE_ID)
+				return dev_err_probe(&platform->dev, -ENODEV,
+					"unexpected live ACOMMS router ID 0x%08x\n",
+					core_id);
+		}
+	}
+	core_id = readl(dsp->filter_regs + DSP_CORE_ID_REG);
 	if (core_id != CORA_DSP_CORE_ID)
 		return dev_err_probe(&platform->dev, -ENODEV,
 				     "unexpected DSP core ID 0x%08x\n", core_id);
@@ -403,9 +525,14 @@ static int cora_dsp_probe(struct platform_device *platform)
 	atomic_set(&dsp->opened, 0);
 	dsp->low_bin = 0;
 	dsp->high_bin = CORA_DSP_FFT_LENGTH / 2;
-	writel(dsp->low_bin, dsp->regs + DSP_LOW_BIN);
-	writel(dsp->high_bin, dsp->regs + DSP_HIGH_BIN);
-	writel(1, dsp->regs + DSP_COMMAND);
+	writel(dsp->low_bin, dsp->filter_regs + DSP_LOW_BIN);
+	writel(dsp->high_bin, dsp->filter_regs + DSP_HIGH_BIN);
+	writel(1, dsp->filter_regs + DSP_COMMAND);
+	if (dsp->router_regs) {
+		dsp->path = CORA_DSP_PATH_ACCELERATOR;
+		dsp->sample_rate = readl(dsp->router_regs + ACOMMS_SAMPLE_RATE);
+		writel(dsp->path, dsp->router_regs + ACOMMS_CONTROL);
+	}
 
 	dsp->miscdev.minor = MISC_DYNAMIC_MINOR;
 	dsp->miscdev.name = "cora-dsp0";
@@ -418,8 +545,9 @@ static int cora_dsp_probe(struct platform_device *platform)
 		goto free_output_dma;
 	platform_set_drvdata(platform, dsp);
 	dev_info(&platform->dev,
-		 "registered /dev/%s, %u-point FFT/filter/IFFT accelerator\n",
-		 dsp->miscdev.name, CORA_DSP_FFT_LENGTH);
+		 "registered /dev/%s, %u-point accelerator%s\n",
+		 dsp->miscdev.name, CORA_DSP_FFT_LENGTH,
+		 dsp->router_regs ? " with AXIS loopback/router" : "");
 	return 0;
 
 free_output_dma:
@@ -451,6 +579,7 @@ static void cora_dsp_remove(struct platform_device *platform)
 }
 
 static const struct of_device_id cora_dsp_of_match[] = {
+	{ .compatible = "eldden28,cora-dsp-2.0" },
 	{ .compatible = "eldden28,cora-dsp-1.0" },
 	{ }
 };

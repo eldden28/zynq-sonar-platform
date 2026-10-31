@@ -29,7 +29,7 @@ SRC_URI = " \
 S = "${WORKDIR}"
 
 INITSCRIPT_NAME = "cora-ofdm-dashboard"
-INITSCRIPT_PARAMS = "start 82 2 3 4 5 . stop 18 0 1 6 ."
+INITSCRIPT_PARAMS = "stop 18 0 1 2 3 4 5 6 ."
 
 do_install() {
     install -d ${D}${bindir} ${D}${sbindir}

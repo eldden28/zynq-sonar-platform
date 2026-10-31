@@ -10,7 +10,7 @@ destroys all existing data on the selected device.
 
 ## Write the card
 
-### GUI helper
+### Linux GUI helper
 
 Launch the repository's safety-oriented writer:
 
@@ -22,6 +22,25 @@ It selects the current Cora `.wic` by default, lists removable USB/SD drives,
 checks that the image fits, requires `ERASE` plus a final confirmation,
 unmounts mounted partitions, and opens the normal system authorization prompt
 for the write. Internal non-removable drives are not offered.
+
+### Windows GUI helper
+
+Copy these two files to the Windows machine along with the `.wic` image:
+
+- `scripts/write-sd-image-windows.cmd`
+- `scripts/sd-image-writer-windows.ps1`
+
+Keep the two scripts in the same directory, then double-click
+`write-sd-image-windows.cmd`. The launcher opens the writer through the normal
+Windows UAC administrator prompt. Select `petalinux-sdimage.wic`, select the
+SD card, type `ERASE`, and accept the final confirmation.
+
+The Windows writer lists only non-system disks whose bus type is USB, SD, or
+MMC. It checks the image size, revalidates the disk immediately before the
+write, locks and dismounts mounted card volumes, writes through to the whole
+physical disk, and performs a byte-for-byte verification. Close File Explorer
+windows that are viewing the card before starting. If Windows offers to format
+the Linux partition after writing, choose **Cancel**.
 
 ### Command line
 
@@ -62,9 +81,12 @@ Use a serial terminal at 115200 baud, 8 data bits, no parity, and 1 stop bit.
 This development image has OpenSSH and a static Ethernet address of
 `192.168.10.2/24`. The directly connected host should use
 `192.168.10.1/24`; the board uses that host address as its gateway. The
-bring-up login is `petalinux` with password `root`. Those credentials are
-intentionally insecure and must be changed before the system is placed on an
-untrusted network or used as a production image.
+bring-up login is `petalinux` with password `root`. On the flashed demo image,
+SSH required a password change before it would accept commands, even after the
+authorized SSH key was restored. Complete that first-login change through the
+serial console to enable SSH deployment. Those credentials are intentionally
+insecure and must be changed before the system is placed on an untrusted
+network or used as a production image.
 
 For example, after identifying the host interface with `ip link`, configure
 it temporarily (replace `enp3s0` with the actual interface name):

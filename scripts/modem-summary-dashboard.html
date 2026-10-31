@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cora Modem Performance Summary</title>
+<style>
+  :root{color-scheme:dark;--bg:#061018;--panel:#0d1c27;--line:#274052;--text:#e9f3f7;--muted:#9bb2bf;--cyan:#41d9d0;--blue:#5aaeff;--amber:#ffb454;--red:#ff6f76;--green:#6be3a3}
+  *{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 82% -10%,#12364b 0,transparent 36%),var(--bg);font:16px/1.35 Inter,ui-sans-serif,system-ui,sans-serif;color:var(--text)}
+  main{width:min(1760px,calc(100vw - 48px));margin:0 auto;padding:22px 0 28px}.eyebrow{font:700 12px/1.2 ui-monospace,monospace;letter-spacing:.16em;color:var(--cyan);text-transform:uppercase}.top{display:flex;align-items:flex-end;justify-content:space-between;gap:28px;margin-bottom:17px}h1{font-size:38px;line-height:1.02;margin:7px 0 4px;letter-spacing:-.035em}.subtitle{color:var(--muted);margin:0;font-size:15px}.stamp{font:600 12px ui-monospace,monospace;color:#bed2dc;border:1px solid var(--line);background:#0b1922;border-radius:999px;padding:9px 13px;white-space:nowrap}
+  nav{display:flex;gap:10px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:15px}.tab{appearance:none;border:1px solid var(--line);background:#0c1a24;color:#a9bdc8;border-radius:9px;padding:10px 17px;font-weight:750;cursor:pointer}.tab[aria-selected=true]{background:#153743;border-color:var(--cyan);color:#f2ffff;box-shadow:0 0 0 1px #41d9d033 inset}.status-key{margin-left:auto;display:flex;align-items:center;gap:16px;color:var(--muted);font-size:12px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.measured{background:var(--green)}.predicted{background:var(--amber)}
+  .view{display:none}.view.active{display:block}.grid{display:grid;grid-template-columns:1.38fr .82fr;gap:15px}.panel{background:linear-gradient(145deg,#0f202c,#0a1720);border:1px solid var(--line);border-radius:14px;padding:17px;box-shadow:0 14px 32px #0004}.panel h2{font-size:17px;margin:0 0 4px}.panel p{color:var(--muted);margin:0}.meta{font:600 11px ui-monospace,monospace;color:var(--cyan);text-transform:uppercase;letter-spacing:.09em}.chart{margin-top:15px;display:grid;gap:8px}.bar-row{display:grid;grid-template-columns:320px 1fr 78px;gap:11px;align-items:center}.bar-label{font-size:12px;color:#d6e4ea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.track{height:24px;border-radius:6px;background:#07121a;border:1px solid #1e3441;overflow:hidden}.bar{height:100%;width:0;background:linear-gradient(90deg,#2c7cff,var(--cyan));border-radius:5px;transition:width .9s cubic-bezier(.2,.8,.2,1)}.bar.bad{background:linear-gradient(90deg,#9b5a35,var(--amber))}.rate{font:750 13px ui-monospace,monospace;text-align:right}
+  table{border-collapse:collapse;width:100%;margin-top:13px;font-size:12px}th{text-align:left;color:#86a6b6;font:700 10px ui-monospace,monospace;letter-spacing:.07em;text-transform:uppercase;padding:8px;border-bottom:1px solid var(--line)}td{padding:8px;border-bottom:1px solid #1c303c;color:#d7e5eb}td:nth-child(n+2){font-family:ui-monospace,monospace}.pass{color:var(--green);font-weight:800}.warn{color:var(--amber);font-weight:800}.callout{padding:12px 14px;border-left:3px solid var(--amber);background:#251e14;border-radius:6px;margin-top:12px;color:#eedcc5;font-size:13px}.fail-list{display:grid;gap:9px;margin-top:14px}.fail{padding:11px;border:1px solid #55353a;background:#24161b;border-radius:9px;color:#f0c6c9;font-size:13px}.hero-rate{display:flex;align-items:baseline;gap:12px;margin:13px 0 7px}.hero-rate strong{font:800 48px/1 ui-monospace,monospace;color:var(--cyan);letter-spacing:-.05em}.hero-rate span{font:700 15px ui-monospace,monospace;color:#bad0da}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:14px}.card{padding:14px;border:1px solid var(--line);border-radius:11px;background:#091620}.card .value{font:800 22px ui-monospace,monospace;color:#f3fbff;margin:5px 0 2px}.card .label{font-size:11px;color:var(--muted)}.hash{font:11px ui-monospace,monospace;color:#a9c2cc;background:#061119;border-radius:7px;padding:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:11px}.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:10px;margin-top:18px}.node{border:1px solid #2f6570;background:#102a32;border-radius:10px;padding:14px;text-align:center}.arrow{font-size:26px;color:var(--cyan)}
+  .forecast{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:15px}.forecast-card{position:relative;overflow:hidden;padding:17px;border:1px solid var(--line);border-radius:13px;background:#0a1822}.forecast-card:before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--amber)}.forecast-card strong{display:block;font:800 30px ui-monospace,monospace;margin:9px 0 3px}.forecast-card small{color:var(--muted)}.ceiling{margin-top:12px;color:#c7d7df;font-size:12px}.assumptions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}.assumption{background:#08151e;border:1px solid var(--line);border-radius:9px;padding:12px}.assumption b{display:block;font:800 18px ui-monospace,monospace;color:var(--amber)}.assumption span{font-size:11px;color:var(--muted)}.risk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.risk{padding:13px;border:1px solid var(--line);border-radius:10px;background:#08151e}.risk b{color:#f6fbfd}.risk p{font-size:12px;margin-top:5px}.footer-note{margin-top:13px;color:#839eac;font-size:11px}.tag{display:inline-block;border:1px solid #355161;border-radius:999px;padding:4px 8px;font:700 10px ui-monospace,monospace;letter-spacing:.04em;margin-right:6px}.tag.green{border-color:#2b7251;color:var(--green)}.tag.amber{border-color:#7c5a2e;color:var(--amber)}
+  @media(max-width:1100px){.grid{grid-template-columns:1fr}.bar-row{grid-template-columns:260px 1fr 70px}}
+</style>
+</head>
+<body>
+<main id="app">
+  <header class="top"><div><div class="eyebrow">Cora Z7-10 · acoustic communications</div><h1>Modem performance summary</h1><p class="subtitle">Measured USB audio and FPGA loopback results, followed by a clearly labeled underwater engineering projection.</p></div><div class="stamp" id="stamp">LOADING VERIFIED DATA…</div></header>
+  <nav aria-label="Summary sections">
+    <button class="tab" id="tab-usb" data-view="usb" aria-selected="true">USB audio benchmarks</button>
+    <button class="tab" id="tab-axis" data-view="axis" aria-selected="false">FPGA loopback peak</button>
+    <button class="tab" id="tab-water" data-view="water" aria-selected="false">30 kHz in-water estimate</button>
+    <div class="status-key"><span><i class="dot measured"></i>measured</span><span><i class="dot predicted"></i>predicted</span></div>
+  </nav>
+
+  <section class="view active" id="view-usb">
+    <div class="grid">
+      <article class="panel"><span class="tag green">MEASURED · USB AIR PATH</span><h2 style="margin-top:9px">Validated payload throughput by OFDM setting</h2><p>Live speaker-to-lapel-microphone transfers. Bars show delivered payload, not coded line rate.</p><div class="chart" id="usb-chart"></div></article>
+      <aside class="panel"><div class="meta">Fastest reliable USB result</div><div class="hero-rate"><strong id="usb-best">—</strong><span>bit/s</span></div><p>8‑PSK, rate‑1/2 FEC, FFT‑256, 1.5–15 kHz. The 6,450-byte payload passed with zero retries and a matching SHA‑256.</p><div class="callout"><b>Current board check:</b> no USB soundcard is attached, so these are preserved physical-path test records—not a simulated rerun.</div><h2 style="margin-top:17px">Useful negative results</h2><div class="fail-list" id="fail-list"></div></aside>
+    </div>
+  </section>
+
+  <section class="view" id="view-axis">
+    <div class="grid">
+      <article class="panel"><span class="tag green">MEASURED TODAY · REAL FPGA</span><h2 style="margin-top:9px">Sustained AXI-stream transport</h2><div class="hero-rate"><strong id="axis-rate">—</strong><span>sample/s host throughput</span></div><p>The loop ran long enough to amortize startup: 2,048 frames and 1,048,576 samples. Every signed 16-bit sample returned byte-exact.</p><div class="cards"><div class="card"><div class="label">PL pacing</div><div class="value">250,000</div><div class="label">sample/s · 100 MHz ÷ 400</div></div><div class="card"><div class="label">Fixed DMA transaction</div><div class="value">512</div><div class="label">samples per frame</div></div><div class="card"><div class="label">Data checked</div><div class="value">1.049 M</div><div class="label">samples · byte-exact</div></div></div><div class="callout">250 ksps is the hardware stream timing. 148.5 ksps is sustained application throughput after one Linux write/read transaction per 512-sample frame.</div></article>
+      <aside class="panel"><div class="meta">Fastest long modem loopback</div><div class="hero-rate"><strong id="modem-rate">—</strong><span>bit/s payload</span></div><p>16,384 bytes through waveform generation, 48→250 ksps resampling, FPGA AXIS loopback, 250→48 ksps resampling, synchronization, demodulation, Viterbi decoding, and CRC validation.</p><div class="cards"><div class="card"><div class="label">Packets</div><div class="value">43 / 43</div><div class="label">validated</div></div><div class="card"><div class="label">Elapsed</div><div class="value">43.52 s</div><div class="label">wall clock</div></div><div class="card"><div class="label">Retries / errors</div><div class="value">0 / 0</div><div class="label">clean pass</div></div></div><div class="hash" id="hash">SHA-256 —</div></aside>
+    </div>
+    <article class="panel" style="margin-top:15px"><div class="flow"><div class="node"><b>16 KiB source</b><br><small>8‑PSK R1/2 · FFT256</small></div><div class="arrow">→</div><div class="node"><b>250 ksps FPGA AXIS</b><br><small>512-sample paced frames</small></div><div class="arrow">→</div><div class="node"><b>16 KiB validated</b><br><small>matching SHA‑256</small></div></div></article>
+  </section>
+
+  <section class="view" id="view-water">
+    <div class="grid">
+      <article class="panel"><span class="tag amber">ENGINEERING ESTIMATE · NOT YET WATER-TESTED</span><h2 style="margin-top:9px">Expected validated payload with a 20–40 kHz acoustic band</h2><p>Projection for 250 ksps, 30 kHz center, FFT‑1024, CP‑256, and 74 data carriers. Ranges include framing allowance and channel margin.</p><div class="forecast" id="forecast"></div><div class="assumptions"><div class="assumption"><b>250 ksps</b><span>converter / PL rate</span></div><div class="assumption"><b>30 kHz</b><span>acoustic center</span></div><div class="assumption"><b>20 kHz</b><span>assumed usable band</span></div><div class="assumption"><b>244 Hz</b><span>subcarrier spacing</span></div></div></article>
+      <aside class="panel"><div class="meta">Recommended first field target</div><div class="hero-rate"><strong>5–12</strong><span>kbit/s</span></div><p>Start with QPSK rate‑1/2 and adaptive band selection. Move to rate‑2/3 or 8‑PSK only after measured per-carrier SNR and packet error rate justify it.</p><div class="risk-grid"><div class="risk"><b>Absorption</b><p>Thorp estimate: 8.28 dB/km at 30 kHz. Across 20–40 kHz, absorption changes by about 8.8 dB/km.</p></div><div class="risk"><b>Doppler</b><p>1 m/s radial motion shifts a 30 kHz carrier by roughly 20 Hz. Wideband resampling should precede pilot correction.</p></div><div class="risk"><b>Multipath</b><p>Harbor measurements have shown tens of milliseconds of delay spread—well beyond a 1.024 ms CP.</p></div></div><div class="callout">If the real transducer chain supports only 10 kHz of useful bandwidth, expect roughly half these rates.</div></aside>
+    </div>
+    <p class="footer-note">Research context: Socheleau et al., 2012 (real-channel OFDM capacity); Ebihara et al., 2018 (mobile harbor delay and Doppler); MinhHai et al., 2016 (7.5 kbit/s, 8 kHz band, moving 30 m link). Final rates require tank and field channel sounding.</p>
+  </section>
+</main>
+<script>
+const $=s=>document.querySelector(s); const fmt=n=>new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(n);
+async function load(){
+  const response=await fetch('/docs/benchmark-results/cora-modem-summary-2026-09-15.json');
+  if(!response.ok)throw Error(`benchmark data ${response.status}`); const data=await response.json();
+  const results=data.usb_audio.results; const max=Math.max(...results.map(x=>x.payload_bps));
+  $('#usb-chart').innerHTML=results.map((x,i)=>`<div class="bar-row"><div class="bar-label" title="${x.label}">${x.label}</div><div class="track"><div class="bar ${x.retries?'bad':''}" data-width="${100*x.payload_bps/max}"></div></div><div class="rate">${fmt(x.payload_bps)}</div></div>`).join('');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelectorAll('.bar').forEach(x=>x.style.width=x.dataset.width+'%')));
+  $('#usb-best').textContent=fmt(max); $('#fail-list').innerHTML=data.usb_audio.negative_results.map(x=>`<div class="fail">${x}</div>`).join('');
+  $('#axis-rate').textContent=fmt(data.axis_loopback.measured_sample_throughput_sps); $('#modem-rate').textContent=fmt(data.modem_loopback.payload_bps);
+  $('#hash').textContent='SHA-256 source = output · '+data.modem_loopback.source_sha256;
+  $('#forecast').innerHTML=data.underwater_projection.profiles.map(x=>`<div class="forecast-card"><div class="meta">${x.label}</div><strong>${x.expected_validated_payload_bps[0]/1000}–${x.expected_validated_payload_bps[1]/1000} kb/s</strong><small>${x.use}</small><div class="ceiling">Calculated body ceiling: ${(x.body_ceiling_bps/1000).toFixed(1)} kb/s</div></div>`).join('');
+  $('#stamp').textContent='DATA LOADED · CORA · 2026-09-15'; $('#app').dataset.ready='true';
+}
+document.querySelectorAll('.tab').forEach(button=>button.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected','false')); button.setAttribute('aria-selected','true');
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active')); $('#view-'+button.dataset.view).classList.add('active');
+}));
+load().catch(error=>{$('#stamp').textContent='DATA ERROR · '+error;});
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+From 6c54b78d4a71dbe4d8f01bc02cbe82d734748ea8 Mon Sep 17 00:00:00 2001
+From: Zynq Sonar Platform <noreply@example.invalid>
+Date: Thu, 20 Aug 2026 12:00:00 -0400
+Subject: [PATCH] cmake: avoid regex replacement on absolute paths
+
+Yocto work directories may contain a plus sign in the package version. The
+unescaped absolute path is interpreted as a regular expression. This breaks
+both module discovery and the installed header destination. Use path-aware
+CMake operations before removing the fixed Find prefix.
+
+Upstream-Status: Pending
+---
+ CMakeLists.txt     | 5 +++--
+ cmake/Macros.cmake | 4 ++--
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f8790de..125bd99 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -212,9 +212,10 @@ install(TARGETS ${JANUS_LIB} janus-tx janus-rx
+ 
+ # Installation of headers.
+ foreach(header ${JANUS_HDRS})
+-  string(REGEX REPLACE "${PROJECT_SOURCE_DIR}/" "" header ${header})
+-  string(REGEX REPLACE "src/c" "include" destination ${header})
++  file(RELATIVE_PATH header_relative "${PROJECT_SOURCE_DIR}/src/c" "${header}")
++  set(destination "include/${header_relative}")
+   get_filename_component(destination ${destination} PATH)
++  set(header "${PROJECT_SOURCE_DIR}/src/c/${header_relative}")
+   install(FILES ${header} DESTINATION ${destination})
+ endforeach(header ${JANUS_HDRS})
+ 
+
+diff --git a/cmake/Macros.cmake b/cmake/Macros.cmake
+index a34e334..0368bde 100644
+--- a/cmake/Macros.cmake
++++ b/cmake/Macros.cmake
+@@ -1639,8 +1639,8 @@ macro(JANUS_PROBE_SYSTEM)
+   set(CMAKE_MODULE_SUFFIX ".cmake")
+   file(GLOB cmake_modules ${CMAKE_MODULE_PREFIX}*${CMAKE_MODULE_SUFFIX})
+   foreach(cmake_module ${cmake_modules})
+-    string(REGEX REPLACE ${CMAKE_MODULE_PREFIX} "" cmake_module ${cmake_module})
+-    string(REGEX REPLACE ${CMAKE_MODULE_SUFFIX} "" cmake_module ${cmake_module})
++    get_filename_component(cmake_module ${cmake_module} NAME_WE)
++    string(REGEX REPLACE "^Find" "" cmake_module ${cmake_module})
+     find_package(${cmake_module})
+   endforeach(cmake_module ${cmake_modules})
+ 
+-- 
+2.34.1

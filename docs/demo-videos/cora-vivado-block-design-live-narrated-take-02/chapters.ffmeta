@@ -1,0 +1,38 @@
+;FFMETADATA1
+title=Cora Vivado block design walkthrough
+comment=Live application capture; AI narration.
+[CHAPTER]
+TIMEBASE=1/1000
+START=0
+END=22124
+title=The generated Cora project
+[CHAPTER]
+TIMEBASE=1/1000
+START=22124
+END=44077
+title=Host memory and streaming DMA
+[CHAPTER]
+TIMEBASE=1/1000
+START=44077
+END=64068
+title=Known-good AXIS loopback
+[CHAPTER]
+TIMEBASE=1/1000
+START=64068
+END=82501
+title=Installed accelerator chain
+[CHAPTER]
+TIMEBASE=1/1000
+START=82501
+END=102705
+title=Control, clocks, and reset
+[CHAPTER]
+TIMEBASE=1/1000
+START=102705
+END=124573
+title=Where custom IP connects
+[CHAPTER]
+TIMEBASE=1/1000
+START=124573
+END=145695
+title=Return to the complete design

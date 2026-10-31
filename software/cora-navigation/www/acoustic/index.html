@@ -52,9 +52,9 @@
       <select id="basemapControl" aria-label="Map background"><option value="street">Street map</option><option value="satellite">Satellite imagery</option><option value="local">Offline local grid</option></select>
       <button id="mapFollow" class="warn">Follow: OFF</button><button id="mapFit">Fit mission</button>
       <span id="mapReadout" class="map-readout">Waiting for position…</span>
-      <details id="mapKeySettings" class="map-settings"><summary>Satellite setup</summary>
+      <details id="mapKeySettings" class="map-settings"><summary>Optional MapTiler setup</summary>
         <div class="map-key-row"><input id="maptilerKey" type="password" autocomplete="off" placeholder="MapTiler API key · stored only on this browser"><button id="saveMapKey">Save key</button><button id="clearMapKey" class="warn">Clear</button></div>
-        <div>Get a key from <a class="map-key-help" href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener">MapTiler</a>. The key stays in this browser and is never written to the Cora image.</div>
+        <div>Without a key, satellite view uses public USGS National Map imagery. A saved <a class="map-key-help" href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener">MapTiler</a> key takes precedence and stays only in this browser.</div>
       </details>
     </div>
     <div id="navMap" role="application" aria-label="Cora navigation mission map"></div>

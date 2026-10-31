@@ -1,0 +1,143 @@
+{
+  "checks": [
+    {
+      "scene": "navigation_live",
+      "action": "scroll",
+      "selector": "#navMap",
+      "expectation_checked": false,
+      "elapsed_s": 1.0804340848699212
+    },
+    {
+      "scene": "navigation_live",
+      "action": "click",
+      "selector": "#mapFit",
+      "expectation_checked": true,
+      "elapsed_s": 4.377982696052641
+    },
+    {
+      "scene": "navigation_street",
+      "action": "select",
+      "selector": "#basemapControl",
+      "expectation_checked": true,
+      "elapsed_s": 22.248808791860938
+    },
+    {
+      "scene": "navigation_street",
+      "action": "click",
+      "selector": "#mapFit",
+      "expectation_checked": false,
+      "elapsed_s": 24.826426303945482
+    },
+    {
+      "scene": "navigation_street",
+      "action": "click",
+      "selector": "#mapFollow",
+      "expectation_checked": true,
+      "elapsed_s": 35.131792577914894
+    },
+    {
+      "scene": "navigation_controls",
+      "action": "scroll",
+      "selector": "#modeControl",
+      "expectation_checked": false,
+      "elapsed_s": 42.91188259096816
+    },
+    {
+      "scene": "navigation_controls",
+      "action": "select",
+      "selector": "#modeControl",
+      "expectation_checked": false,
+      "elapsed_s": 46.19424417801201
+    },
+    {
+      "scene": "navigation_controls",
+      "action": "select",
+      "selector": "#waveControl",
+      "expectation_checked": false,
+      "elapsed_s": 48.5608595428057
+    },
+    {
+      "scene": "navigation_controls",
+      "action": "click",
+      "selector": "#apply",
+      "expectation_checked": true,
+      "elapsed_s": 51.9962165299803
+    },
+    {
+      "scene": "navigation_controls",
+      "action": "wait",
+      "selector": "#mode",
+      "expectation_checked": true,
+      "elapsed_s": 57.51279745111242
+    },
+    {
+      "scene": "navigation_pause",
+      "action": "click",
+      "selector": "button[data-action='pause']",
+      "expectation_checked": true,
+      "elapsed_s": 63.536733305081725
+    },
+    {
+      "scene": "navigation_pause",
+      "action": "click",
+      "selector": "button[data-action='resume']",
+      "expectation_checked": true,
+      "elapsed_s": 68.38652627775446
+    },
+    {
+      "scene": "navigation_pause",
+      "action": "scroll",
+      "selector": "#navMap",
+      "expectation_checked": false,
+      "elapsed_s": 72.2503463360481
+    },
+    {
+      "scene": "navigation_pause",
+      "action": "click",
+      "selector": "#mapFit",
+      "expectation_checked": false,
+      "elapsed_s": 74.83163724606857
+    },
+    {
+      "scene": "navigation_satellite",
+      "action": "select",
+      "selector": "#basemapControl",
+      "expectation_checked": false,
+      "elapsed_s": 81.60355259291828
+    },
+    {
+      "scene": "navigation_satellite",
+      "action": "wait",
+      "selector": "#notice",
+      "expectation_checked": true,
+      "elapsed_s": 87.54815119504929
+    },
+    {
+      "scene": "navigation_satellite",
+      "action": "click",
+      "selector": "#mapFit",
+      "expectation_checked": false,
+      "elapsed_s": 90.49031665083021
+    },
+    {
+      "scene": "navigation_satellite",
+      "action": "click",
+      "selector": "#mapFollow",
+      "expectation_checked": true,
+      "elapsed_s": 95.66754932608455
+    }
+  ],
+  "frames": 2037,
+  "duration_s": 101.85,
+  "preview": false,
+  "failure": null,
+  "browser_errors": [],
+  "visited_scenes": [
+    "navigation_controls",
+    "navigation_live",
+    "navigation_pause",
+    "navigation_satellite",
+    "navigation_street"
+  ],
+  "encoder_exit_code": 0
+}

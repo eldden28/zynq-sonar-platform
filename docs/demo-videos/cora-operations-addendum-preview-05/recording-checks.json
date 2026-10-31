@@ -1,0 +1,11 @@
+{
+  "checks": [
+    {
+      "check": "authenticated dashboard",
+      "result": "CPU and XADC visible"
+    }
+  ],
+  "frames": 60,
+  "duration_s": 3.0,
+  "encoder_exit_code": 0
+}

@@ -1,0 +1,23 @@
+;FFMETADATA1
+title=Cora operations and concurrent dashboards
+comment=Live application capture; AI narration.
+[CHAPTER]
+TIMEBASE=1/1000
+START=0
+END=18369
+title=Authenticated hardware dashboard
+[CHAPTER]
+TIMEBASE=1/1000
+START=18369
+END=34477
+title=Built-in web terminal
+[CHAPTER]
+TIMEBASE=1/1000
+START=34477
+END=52036
+title=Progressive OFDM image page
+[CHAPTER]
+TIMEBASE=1/1000
+START=52036
+END=72496
+title=Concurrent dashboards

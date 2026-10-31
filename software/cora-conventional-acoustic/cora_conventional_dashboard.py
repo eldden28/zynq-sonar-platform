@@ -17,6 +17,8 @@ from urllib.parse import urlparse
 
 import numpy as np
 
+from cora_acomms_pl import DEFAULT_PL_SAMPLE_RATE, roundtrip_waveform
+
 from cora_conventional_acoustic import (
     SAMPLE_RATE,
     colored_acoustic_channel,
@@ -33,7 +35,12 @@ MAX_TEXT_BYTES = 512
 MAX_REQUEST_BYTES = MAX_TEXT_BYTES * 4 + 4096
 
 
-def _idle_state(air_enabled: bool, port: int) -> dict:
+def _idle_state(
+    air_enabled: bool,
+    port: int,
+    pl_enabled: bool = False,
+    pl_sample_rate: int = DEFAULT_PL_SAMPLE_RATE,
+) -> dict:
     cfg = make_config()
     low_hz, high_hz = cfg.occupied_band_hz
     return {
@@ -53,6 +60,8 @@ def _idle_state(air_enabled: bool, port: int) -> dict:
         "occupied_band_hz": [low_hz, high_hz],
         "backend": None,
         "air_enabled": air_enabled,
+        "pl_enabled": pl_enabled,
+        "pl_sample_rate": pl_sample_rate,
         "dashboard_port": port,
         "max_text_bytes": MAX_TEXT_BYTES,
         "payload_bytes": 0,
@@ -93,9 +102,18 @@ def _preview(samples: np.ndarray) -> tuple[list[float], list[float], list[float]
 class ConventionalController:
     def __init__(self, args: argparse.Namespace):
         self.args = args
+        self.pl_device = getattr(args, "pl_device", "/dev/cora-dsp0")
+        self.pl_sample_rate = getattr(
+            args, "pl_sample_rate", DEFAULT_PL_SAMPLE_RATE
+        )
         self.lock = threading.Lock()
         self.worker: threading.Thread | None = None
-        self.state = _idle_state(args.allow_air, args.port)
+        self.state = _idle_state(
+            args.allow_air,
+            args.port,
+            Path(self.pl_device).exists(),
+            self.pl_sample_rate,
+        )
 
     def status(self) -> dict:
         with self.lock:
@@ -109,7 +127,12 @@ class ConventionalController:
         with self.lock:
             if self.worker is not None and self.worker.is_alive():
                 raise RuntimeError("cannot reset while a transfer is running")
-            self.state = _idle_state(self.args.allow_air, self.args.port)
+            self.state = _idle_state(
+                self.args.allow_air,
+                self.args.port,
+                Path(self.pl_device).exists(),
+                self.pl_sample_rate,
+            )
 
     def start(
         self,
@@ -126,8 +149,10 @@ class ConventionalController:
             raise ValueError("text cannot be empty")
         if len(payload) > MAX_TEXT_BYTES:
             raise ValueError(f"text exceeds {MAX_TEXT_BYTES} UTF-8 bytes")
-        if backend not in ("loopback", "air"):
-            raise ValueError("backend must be loopback or air")
+        if backend not in ("loopback", "pl-loopback", "air"):
+            raise ValueError("backend must be loopback, pl-loopback, or air")
+        if backend == "pl-loopback" and not Path(self.pl_device).exists():
+            raise ValueError("acoustic PL loopback device is unavailable")
         if backend == "air" and not self.args.allow_air:
             raise ValueError("air backend is disabled by the service")
         cfg = make_config(
@@ -217,6 +242,16 @@ class ConventionalController:
                     colored_acoustic_channel(
                         packet.samples,
                         noise_dbfs=self.args.noise_dbfs,
+                    ),
+                ))
+            elif backend == "pl-loopback":
+                recording = np.concatenate((
+                    np.zeros(997),
+                    roundtrip_waveform(
+                        packet.samples,
+                        cfg.sample_rate,
+                        device=self.pl_device,
+                        pl_sample_rate=self.pl_sample_rate,
                     ),
                 ))
             else:
@@ -335,6 +370,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--playback-device", default="plughw:0,0")
     parser.add_argument("--capture-device", default="plughw:0,0")
     parser.add_argument("--allow-air", action="store_true")
+    parser.add_argument("--pl-device", default="/dev/cora-dsp0")
+    parser.add_argument(
+        "--pl-sample-rate", type=int, default=DEFAULT_PL_SAMPLE_RATE
+    )
     args = parser.parse_args(argv)
     if not 1 <= args.port <= 65535:
         parser.error("port must be between 1 and 65535")

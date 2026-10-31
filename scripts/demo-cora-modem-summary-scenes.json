@@ -1,0 +1,122 @@
+[
+  {
+    "id": "usb-results",
+    "title": "Tested USB audio results",
+    "text": "First, these are preserved live USB speaker-to-microphone tests, not simulations. The fastest clean physical-path run delivered 8,131 payload bits per second using 8 P S K, rate-one-half coding, F F T 256, and a 1.5-to-15-kilohertz band.",
+    "url": "http://127.0.0.1:8765/scripts/modem-summary-dashboard.html",
+    "ready": "#app[data-ready='true']",
+    "actions": [
+      {
+        "at_fraction": 0.16,
+        "action": "wait",
+        "selector": "#usb-best",
+        "expect": {"selector": "#usb-best", "text": "8,131"}
+      }
+    ],
+    "evidence": "The data-backed viewer loaded the recorded USB results and displayed 8,131 bit/s as the fastest validated run."
+  },
+  {
+    "id": "usb-tradeoffs",
+    "title": "Bandwidth and reliability tradeoffs",
+    "text": "The comparison also records failures. Wider bands and weaker coding were not consistently better: Q P S K rate two-thirds failed in one wide profile, while 8 P S K rate two-thirds became marginal. The reliable 8 P S K result retained rate-one-half forward error correction.",
+    "url": "http://127.0.0.1:8765/scripts/modem-summary-dashboard.html",
+    "ready": "#app[data-ready='true']",
+    "actions": [
+      {
+        "at_fraction": 0.18,
+        "action": "wait",
+        "selector": "#fail-list",
+        "expect": {"selector": "#fail-list", "text": "marginal"}
+      }
+    ],
+    "evidence": "The viewer displayed the stored failed and marginal USB test outcomes beside the successful throughput bars."
+  },
+  {
+    "id": "axis-peak",
+    "title": "Sustained FPGA loopback",
+    "text": "For the raw hardware path, I sent 1,048,576 deterministic samples in 2,048 frames. Every sample returned byte-exact. The P L is paced at 250,000 samples per second; sustained host throughput measured 148,498 after fixed 512-sample Linux and D M A transaction overhead.",
+    "url": "http://127.0.0.1:8765/scripts/modem-summary-dashboard.html",
+    "ready": "#app[data-ready='true']",
+    "actions": [
+      {
+        "at_fraction": 0.10,
+        "action": "click",
+        "selector": "#tab-axis",
+        "expect": {"selector": "#axis-rate", "text": "148,498"}
+      },
+      {
+        "at_fraction": 0.62,
+        "action": "wait",
+        "selector": "#modem-rate",
+        "expect": {"selector": "#modem-rate", "text": "3,012"}
+      }
+    ],
+    "evidence": "The results viewer showed the million-sample byte-exact benchmark and the completed 16 KiB modem loopback."
+  },
+  {
+    "id": "live-cora-proof",
+    "title": "Live Cora end-to-end result",
+    "text": "Here is the live Cora dashboard retaining the longest peak-setting run: 16,384 bytes, 43 of 43 packets, zero retries, zero packet errors, and a matching source and receive S H A 256. Useful payload throughput was 3.01 kilobits per second.",
+    "url": "http://192.168.10.2:8082/",
+    "ready": "#send",
+    "actions": [
+      {
+        "at_fraction": 0.08,
+        "action": "scroll",
+        "selector": "#rate",
+        "expect": {"selector": "#status", "text": "complete"}
+      },
+      {
+        "at_fraction": 0.50,
+        "action": "wait",
+        "selector": "#version",
+        "expect": {"selector": "#rate", "text": "3.01 kbit/s"}
+      },
+      {
+        "at_fraction": 0.68,
+        "action": "wait",
+        "selector": "#version",
+        "expect": {"selector": "#version", "text": "8PSK"}
+      }
+    ],
+    "evidence": "The actual board dashboard reported COMPLETE, 43/43 packets, 3.01 kbit/s, zero errors and 8PSK R1/2."
+  },
+  {
+    "id": "water-estimate",
+    "title": "250 ksps at 30 kHz",
+    "text": "The water numbers are an engineering projection, not a benchmark. Assuming a transducer chain that truly passes 20 to 40 kilohertz, F F T 1024 and a 256-sample prefix, expected validated payload spans about 7 to 18 kilobits per second across the three profiles.",
+    "url": "http://127.0.0.1:8765/scripts/modem-summary-dashboard.html",
+    "ready": "#app[data-ready='true']",
+    "actions": [
+      {
+        "at_fraction": 0.10,
+        "action": "click",
+        "selector": "#tab-water",
+        "expect": {"selector": "#forecast", "text": "11–18 kb/s"}
+      }
+    ],
+    "evidence": "The projection view visibly labeled the numbers as estimates and displayed assumptions, body ceilings, and payload ranges."
+  },
+  {
+    "id": "field-target",
+    "title": "Practical first-water target",
+    "text": "I would plan the first field trial around 5 to 12 kilobits per second using Q P S K rate one-half and adaptive carriers. At 30 kilohertz, absorption is about 8.3 decibels per kilometer, and one meter per second of motion creates roughly 20 hertz of Doppler shift.",
+    "url": "http://127.0.0.1:8765/scripts/modem-summary-dashboard.html",
+    "ready": "#app[data-ready='true']",
+    "actions": [
+      {
+        "at_fraction": 0.14,
+        "action": "wait",
+        "selector": ".risk-grid",
+        "expect": {"selector": ".risk-grid", "text": "20 Hz"}
+      },
+      {
+        "at_fraction": 0.58,
+        "action": "wait",
+        "selector": ".footer-note",
+        "expect": {"selector": ".footer-note", "text": "field channel sounding"}
+      }
+    ],
+    "evidence": "The viewer displayed the recommended 5–12 kbit/s field target and the absorption, Doppler, multipath, and bandwidth caveats."
+  }
+]

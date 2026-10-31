@@ -1,0 +1,27 @@
+{
+  "checks": [
+    {
+      "scene": "navigation_live",
+      "action": "scroll",
+      "selector": "#navMap",
+      "expectation_checked": false,
+      "elapsed_s": 1.3424266129732132
+    },
+    {
+      "scene": "navigation_live",
+      "action": "click",
+      "selector": "#mapFit",
+      "expectation_checked": true,
+      "elapsed_s": 4.34570269100368
+    }
+  ],
+  "frames": 160,
+  "duration_s": 8.0,
+  "preview": true,
+  "failure": null,
+  "browser_errors": [],
+  "visited_scenes": [
+    "navigation_live"
+  ],
+  "encoder_exit_code": 0
+}

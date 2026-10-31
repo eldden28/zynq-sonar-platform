@@ -1,0 +1,20 @@
+{
+  "checks": [
+    {
+      "scene": "agenda",
+      "action": "wait",
+      "selector": "#status",
+      "expectation_checked": true,
+      "elapsed_s": 3.4021361940540373
+    }
+  ],
+  "frames": 160,
+  "duration_s": 8.0,
+  "preview": true,
+  "failure": null,
+  "browser_errors": [],
+  "visited_scenes": [
+    "agenda"
+  ],
+  "encoder_exit_code": 0
+}

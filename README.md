@@ -1,5 +1,7 @@
 # Zynq Sonar Platform
 
+For the single-image Cora demonstration, service switches, and dashboard ports, see [Combined Cora demonstration](docs/cora-combined-demo.md).
+
 Zynq Sonar Platform is a multi-board FPGA/Linux laboratory for forward-looking
 sonar, acoustic OFDM and conventional communication, underwater navigation,
 remote dashboards, and reusable streaming DSP accelerators. It keeps
@@ -25,19 +27,39 @@ Vivado implementation and timing but has not yet been booted on its target.
   QPSK plus noncoherent 2-FSK and configurable 4/8/16-FSK. It shares no OFDM
   modulation or receiver path. See
   [`docs/conventional-acoustic-modulations.md`](docs/conventional-acoustic-modulations.md).
+- A separate JANUS STANAG 4748 / ANEP-87 interoperability modem backed by the
+  pinned CMRE reference implementation, with simulated and USB-audio dashboard
+  paths for standards-compatible first-contact packets. See
+  [`software/cora-janus-acoustic/README.md`](software/cora-janus-acoustic/README.md).
 - DVL and LBL/iUSBL navigation simulations and browser dashboards.
-- Reusable AXI4-Stream RTL for PWM and a 512-bin spectral filter.
+- Reusable AXI4-Stream RTL for PWM, a 512-bin spectral filter, and a
+  runtime-selectable 250 ksample/s acoustic loopback/accelerator slot. See
+  [`docs/axis-acomms-loopback.md`](docs/axis-acomms-loopback.md).
 - Vivado Tcl builds with pinned Digilent and Avnet board definitions.
 - A common PetaLinux/Yocto application layer shared by ARMv7-A and AArch64
   targets.
 - Platform descriptions, release manifests, snapshots, and a documented path
   for adding a custom carrier without Codex access.
 
+## Demo videos
+
+- [Narrated live Cora dashboard walkthrough](docs/demo-videos/cora-dashboard-live-narrated.mp4)
+  operates the sonar, OFDM text, conventional-modulation, and JANUS pages on
+  the board and verifies the 250 ksample/s FPGA AXIS loopback results.
+- [Narrated Vivado block-design walkthrough](docs/demo-videos/cora-vivado-block-design-live-narrated.mp4)
+  uses the actual Vivado GUI to highlight the DMA path, loopback router,
+  installed FFT chain, clocks and resets, and custom streaming-IP insertion
+  points in the generated Cora project.
+- [Narrated simulated navigation mission](docs/demo-videos/cora-navigation-mission-live-narrated.mp4)
+  operates the live Cora mission dashboard, shows the two-dimensional street
+  map and satellite imagery over the West Branch Susquehanna River, switches
+  to iUSBL positioning, and demonstrates pause, resume, fit, and follow.
+
 ## Platforms
 
 | Platform | SoC | State | Current programmable-logic path |
 |---|---|---|---|
-| Digilent Cora Z7-10 Rev. B | `xc7z010clg400-1` | Validated | DDR/DMA, 512-point FFT, spectral filter, IFFT, PWM |
+| Digilent Cora Z7-10 Rev. B | `xc7z010clg400-1` | Validated | DDR/DMA, selectable 250 ksample/s AXIS loopback or FFT/filter/IFFT, PWM |
 | Avnet UltraZed-EG 3EG + `AES-ZU-PCIECC-G` | `xczu3eg-sfva625-1-i` | Development | DDR/DMA, 512-point FFT, spectral filter, IFFT |
 
 The platform registry is under [`platforms/`](platforms/). Run
@@ -315,9 +337,10 @@ Generated images appear under:
 software/petalinux/cora-z7-10-baseline/images/linux/
 ```
 
-Use [`docs/sd-image.md`](docs/sd-image.md) or the guarded
-`scripts/write-sd-image-gui` helper to write the `.wic` image. Writing an SD
-image destroys the selected device, so verify the whole-device path carefully.
+Use [`docs/sd-image.md`](docs/sd-image.md), the guarded Linux
+`scripts/write-sd-image-gui` helper, or the double-clickable Windows
+`scripts/write-sd-image-windows.cmd` helper to write the `.wic` image. Writing
+an SD image destroys the selected device, so verify the target carefully.
 
 ### New UltraZed project
 

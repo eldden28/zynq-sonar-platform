@@ -1,0 +1,106 @@
+[
+  {
+    "id": "sonar_live",
+    "title": "Live forward-looking sonar",
+    "text": "We begin on the live Cora sonar dashboard. Each image is formed from simulated multichannel time-series data, followed by matched filtering and delay-and-sum beamforming. I can zoom the fan, switch to range-versus-angle coordinates, and return to the normal view without stopping the processor.",
+    "url": "http://192.168.10.2:8085/",
+    "ready": "#status",
+    "actions": [
+      {"at_fraction": 0.16, "action": "click", "selector": "#zoom-in", "expect": {"selector": "#zoom-level", "text": "156%"}},
+      {"at_fraction": 0.45, "action": "click", "selector": "button[data-view='matrix']"},
+      {"at_fraction": 0.76, "action": "click", "selector": "button[data-view='fan']"}
+    ],
+    "evidence": "The live status is running, the sonar image is populated, zoom reaches 156 percent, and both view buttons respond."
+  },
+  {
+    "id": "sonar_array",
+    "title": "Array and frequency controls",
+    "text": "The controls stage a new array configuration before processing. Here I choose sixty-four elements, a six-hundred-kilohertz center frequency, and one-point-two-five millimeter pitch. Applying the settings runs a new time-series simulation, and the updated channel count appears with the new sonar result.",
+    "url": "http://192.168.10.2:8085/",
+    "ready": "#status",
+    "actions": [
+      {"at_fraction": 0.06, "action": "scroll", "selector": "#scenario"},
+      {"at_fraction": 0.17, "action": "range", "selector": "#elements", "value": 64, "duration_s": 1.1, "expect": {"selector": "#elements-value", "text": "64 ch"}},
+      {"at_fraction": 0.36, "action": "range", "selector": "#frequency", "value": 600, "duration_s": 1.0, "expect": {"selector": "#frequency-value", "text": "600 kHz"}},
+      {"at_fraction": 0.53, "action": "range", "selector": "#pitch", "value": 1.25, "duration_s": 1.0, "expect": {"selector": "#pitch-value", "text": "1.25 mm"}},
+      {"at_fraction": 0.69, "action": "click", "selector": "#apply"},
+      {"at_fraction": 0.88, "action": "wait", "selector": "#frame-copy", "expect": {"selector": "#frame-copy", "text": "64 elements"}}
+    ],
+    "evidence": "The live controls show 64 channels, 600 kilohertz, 1.25 millimeters, and the server confirms the updated configuration."
+  },
+  {
+    "id": "sonar_scene",
+    "title": "Edit and process a scene",
+    "text": "The scene editor changes the geometry that drives the next simulated receive buffers. I select the first target, rename it, move it to seven-point-two-five meters and twelve degrees, then apply the scene. The dashboard runs another ping and confirms that the custom scene was processed.",
+    "url": "http://192.168.10.2:8085/",
+    "ready": "#scene-editor",
+    "actions": [
+      {"at_fraction": 0.06, "action": "scroll", "selector": "#scene-editor"},
+      {"at_fraction": 0.17, "action": "fill", "selector": "#target-label", "value": "narrated-demo-target"},
+      {"at_fraction": 0.30, "action": "fill", "selector": "#target-range", "value": "7.25"},
+      {"at_fraction": 0.43, "action": "fill", "selector": "#target-elevation", "value": "12.0"},
+      {"at_fraction": 0.60, "action": "click", "selector": "#apply-scene"},
+      {"at_fraction": 0.90, "action": "wait", "selector": "#editor-notice", "expect": {"selector": "#editor-notice", "text": "Custom scene applied"}}
+    ],
+    "evidence": "The real editor fields change and the board service reports that the custom scene was applied."
+  },
+  {
+    "id": "ofdm_text",
+    "title": "OFDM text through programmable logic",
+    "text": "Next is the independent acoustic O F D M text terminal. I clear the old receiver, enter a short message, and select the F P G A A X I stream loopback. Transmit sends the generated samples through the Cora D M A path, and the validated receiver reconstructs the same text.",
+    "url": "http://192.168.10.2:8082/",
+    "ready": "#backend",
+    "actions": [
+      {"at_fraction": 0.04, "action": "click", "selector": "#reset"},
+      {"at_fraction": 0.14, "action": "fill", "selector": "#tx", "value": "Live AXIS loopback demonstration."},
+      {"at_fraction": 0.25, "action": "select", "selector": "#backend", "value": "pl-loopback"},
+      {"at_fraction": 0.34, "action": "select", "selector": "#modulation", "value": "qpsk"},
+      {"at_fraction": 0.45, "action": "click", "selector": "#send", "expect": {"selector": "#notice", "text": "Transfer complete"}}
+    ],
+    "evidence": "The actual terminal reports transfer complete and displays the reconstructed text from the PL loopback."
+  },
+  {
+    "id": "conventional",
+    "title": "Conventional modulation",
+    "text": "The conventional modem remains separate from O F D M. Its menu offers B P S K, Q P S K, two-tone F S K, and multi-tone F S K. For this live example I use Q P S K at five hundred symbols per second and pass the waveform through the same hardware loopback.",
+    "url": "http://192.168.10.2:8084/",
+    "ready": "#backend",
+    "actions": [
+      {"at_fraction": 0.04, "action": "click", "selector": "#reset"},
+      {"at_fraction": 0.14, "action": "fill", "selector": "#tx", "value": "Hardware loopback passed."},
+      {"at_fraction": 0.25, "action": "select", "selector": "#backend", "value": "pl-loopback"},
+      {"at_fraction": 0.35, "action": "select", "selector": "#modulation", "value": "qpsk"},
+      {"at_fraction": 0.43, "action": "select", "selector": "#symbol-rate", "value": "500"},
+      {"at_fraction": 0.55, "action": "click", "selector": "#send"},
+      {"at_fraction": 0.82, "action": "wait", "selector": "#notice", "expect": {"selector": "#notice", "text": "Frame decoded and payload CRC passed."}}
+    ],
+    "evidence": "The hardware backend stays selected and the CRC-validated receive panel reproduces the QPSK message."
+  },
+  {
+    "id": "janus",
+    "title": "JANUS interoperability packet",
+    "text": "The JANUS page exercises the open first-contact waveform using the reference implementation. I select the hardware loopback, keep parameter set one, and transmit an application-type-three packet. The decoded class, type, application data, and green C R C result provide visible end-to-end evidence.",
+    "url": "http://192.168.10.2:8086/",
+    "ready": "#backend",
+    "actions": [
+      {"at_fraction": 0.04, "action": "click", "selector": "#reset"},
+      {"at_fraction": 0.16, "action": "select", "selector": "#backend", "value": "pl-loopback"},
+      {"at_fraction": 0.26, "action": "select", "selector": "#pset", "value": "1"},
+      {"at_fraction": 0.36, "action": "fill", "selector": "#app-type", "value": "3"},
+      {"at_fraction": 0.45, "action": "fill", "selector": "#app-data", "value": "0x12345"},
+      {"at_fraction": 0.57, "action": "click", "selector": "#send", "expect": {"selector": "#decode", "text": "CRC valid"}}
+    ],
+    "evidence": "The live JANUS decoder displays CRC valid and the expected class, type, and application data."
+  },
+  {
+    "id": "dashboard_finish",
+    "title": "Choose the path for the test",
+    "text": "These pages now share a clear test progression. Use the software channel for modem development, the two-hundred-fifty-kilosample hardware loopback for D M A and programmable-logic bring-up, and USB audio when physical transducers are attached. The visible JANUS result closes this live board-backed tour.",
+    "url": "http://192.168.10.2:8086/",
+    "ready": "#decode",
+    "actions": [
+      {"at_fraction": 0.12, "action": "scroll", "selector": "#decode"}
+    ],
+    "evidence": "The final live page retains the CRC-valid hardware-loopback result."
+  }
+]

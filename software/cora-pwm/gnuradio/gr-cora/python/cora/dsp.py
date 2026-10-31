@@ -16,6 +16,12 @@ _CORA_DSP_SET_FILTER = 0x40084401
 _CORA_DSP_GET_INFO = 0x80204400
 _CORA_DSP_GET_STATUS = 0x80304402
 _CORA_DSP_CLEAR_STATS = 0x00004403
+_CORA_DSP_SET_PATH = 0x40084404
+_CORA_DSP_GET_ACOMMS_STATUS = 0x80204405
+
+PATH_LOOPBACK = 0
+PATH_ACCELERATOR = 1
+DEFAULT_PL_SAMPLE_RATE = 250_000
 
 
 def _write_all(fd: int, data: memoryview) -> None:
@@ -45,12 +51,21 @@ class HwFftFilterDevice:
         device_path: str = "/dev/cora-dsp0",
         low_bin: int = 0,
         high_bin: int = 256,
+        path: int = PATH_ACCELERATOR,
+        sample_rate: int = DEFAULT_PL_SAMPLE_RATE,
     ):
         if not 0 <= low_bin <= high_bin <= FFT_LENGTH // 2:
             raise ValueError("filter bins must satisfy 0 <= low <= high <= 256")
         self.device_path = device_path
         self.low_bin = int(low_bin)
         self.high_bin = int(high_bin)
+        if path not in (PATH_LOOPBACK, PATH_ACCELERATOR):
+            raise ValueError("path must be PATH_LOOPBACK or PATH_ACCELERATOR")
+        if sample_rate <= 0:
+            raise ValueError("sample_rate must be positive")
+        self.path = int(path)
+        self.sample_rate = int(sample_rate)
+        self.capabilities = 0
         self._fd: int | None = None
 
     def open(self) -> None:
@@ -60,13 +75,24 @@ class HwFftFilterDevice:
         info = bytearray(32)
         fcntl.ioctl(self._fd, _CORA_DSP_GET_INFO, info, True)
         abi, core_id, _version, fft_length = struct.unpack_from("<4I", info)
-        if abi != 1 or core_id != 0x44535031 or fft_length != FFT_LENGTH:
+        if abi not in (1, 2) or core_id != 0x44535031 or fft_length != FFT_LENGTH:
             os.close(self._fd)
             self._fd = None
             raise RuntimeError(
                 f"unexpected Cora DSP ABI/core: abi={abi}, "
                 f"core=0x{core_id:08x}, fft_length={fft_length}"
             )
+        if abi >= 2:
+            _sample_bytes, _dma_sample_bytes, reported_rate, capabilities = (
+                struct.unpack_from("<4I", info, 16)
+            )
+            self.capabilities = capabilities
+            self.sample_rate = reported_rate or self.sample_rate
+            self.set_path(self.path, self.sample_rate)
+        elif self.path != PATH_ACCELERATOR:
+            os.close(self._fd)
+            self._fd = None
+            raise RuntimeError("this Cora DSP image does not provide AXIS loopback")
         self.set_filter(self.low_bin, self.high_bin)
 
     def close(self) -> None:
@@ -98,6 +124,39 @@ class HwFftFilterDevice:
             raise RuntimeError("Cora DSP device is not open")
         fcntl.ioctl(self._fd, _CORA_DSP_CLEAR_STATS)
 
+    def set_path(self, path: int, sample_rate: int | None = None) -> None:
+        if path not in (PATH_LOOPBACK, PATH_ACCELERATOR):
+            raise ValueError("path must be PATH_LOOPBACK or PATH_ACCELERATOR")
+        rate = self.sample_rate if sample_rate is None else int(sample_rate)
+        if rate <= 0:
+            raise ValueError("sample_rate must be positive")
+        self.path = int(path)
+        self.sample_rate = rate
+        if self._fd is not None:
+            fcntl.ioctl(
+                self._fd,
+                _CORA_DSP_SET_PATH,
+                struct.pack("<2I", self.path, self.sample_rate),
+            )
+            self.sample_rate = self.acomms_status()["sample_rate"]
+
+    def acomms_status(self) -> dict[str, int]:
+        if self._fd is None:
+            raise RuntimeError("Cora DSP device is not open")
+        raw = bytearray(32)
+        fcntl.ioctl(self._fd, _CORA_DSP_GET_ACOMMS_STATUS, raw, True)
+        path, rate, clock_hz, divider, samples, frames = struct.unpack(
+            "<4I2Q", raw
+        )
+        return {
+            "path": path,
+            "sample_rate": rate,
+            "clock_hz": clock_hz,
+            "sample_divider": divider,
+            "samples": samples,
+            "frames": frames,
+        }
+
     def status(self) -> dict[str, int]:
         if self._fd is None:
             raise RuntimeError("Cora DSP device is not open")
@@ -126,6 +185,23 @@ class HwFftFilterDevice:
         _write_all(self._fd, memoryview(frame).cast("B"))
         result = _read_exact(self._fd, FFT_LENGTH * 2)
         return numpy.frombuffer(result, dtype="<i2").copy()
+
+
+class HwAxisLoopbackDevice(HwFftFilterDevice):
+    """Byte-exact, sample-paced AXI DMA loopback for acoustic PL bring-up."""
+
+    def __init__(
+        self,
+        device_path: str = "/dev/cora-dsp0",
+        sample_rate: int = DEFAULT_PL_SAMPLE_RATE,
+    ):
+        super().__init__(
+            device_path=device_path,
+            low_bin=0,
+            high_bin=FFT_LENGTH // 2,
+            path=PATH_LOOPBACK,
+            sample_rate=sample_rate,
+        )
 
 
 class hw_fft_filter(gr.sync_block):

@@ -1,0 +1,28 @@
+;FFMETADATA1
+title=Cora simulated navigation mission walkthrough
+comment=Live application capture; AI narration.
+[CHAPTER]
+TIMEBASE=1/1000
+START=0
+END=20353
+title=Live simulated river mission
+[CHAPTER]
+TIMEBASE=1/1000
+START=20353
+END=41645
+title=Two-dimensional mission map
+[CHAPTER]
+TIMEBASE=1/1000
+START=41645
+END=61956
+title=Mission and positioning controls
+[CHAPTER]
+TIMEBASE=1/1000
+START=61956
+END=79600
+title=Pause and resume the mission
+[CHAPTER]
+TIMEBASE=1/1000
+START=79600
+END=102343
+title=Satellite view of the river

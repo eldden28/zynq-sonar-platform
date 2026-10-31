@@ -61,6 +61,21 @@ reports/
 .env
 local.env
 
+# Local document-rendering scratch data
+/.codex-build/
+/.codex-finalizer/
+/tmp/
+
+# Keep final demo videos and textual sidecars, not duplicate capture/audio renders.
+/docs/demo-videos/*/*
+!/docs/demo-videos/*/*.md
+!/docs/demo-videos/*/*.json
+!/docs/demo-videos/*/*.srt
+!/docs/demo-videos/*/*.txt
+!/docs/demo-videos/*/*.tcl
+!/docs/demo-videos/*/*.ffmeta
+!/docs/demo-videos/*/*.ffconcat
+
 # Reproducibly fetched third-party source trees
 third_party/digilent-vivado-boards/
 third_party/avnet-vivado-boards/

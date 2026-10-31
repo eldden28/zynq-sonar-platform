@@ -1,0 +1,50 @@
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'docs/demo-videos/cora-vivado-block-design-live-narrated.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    title           : Cora Vivado block design walkthrough
+    encoder         : Lavf61.1.100
+    comment         : Live application capture; AI narration.
+  Duration: 00:02:25.70, start: 0.000000, bitrate: 313 kb/s
+  Chapters:
+    Chapter #0:0: start 0.000000, end 22.124000
+      Metadata:
+        title           : The generated Cora project
+    Chapter #0:1: start 22.124000, end 44.077000
+      Metadata:
+        title           : Host memory and streaming DMA
+    Chapter #0:2: start 44.077000, end 64.068000
+      Metadata:
+        title           : Known-good AXIS loopback
+    Chapter #0:3: start 64.068000, end 82.501000
+      Metadata:
+        title           : Installed accelerator chain
+    Chapter #0:4: start 82.501000, end 102.705000
+      Metadata:
+        title           : Control, clocks, and reset
+    Chapter #0:5: start 102.705000, end 124.573000
+      Metadata:
+        title           : Where custom IP connects
+    Chapter #0:6: start 124.573000, end 145.695000
+      Metadata:
+        title           : Return to the complete design
+  Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(progressive), 1920x1080, 141 kb/s, 20 fps, 20 tbr, 10240 tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.3.100 libx264
+  Stream #0:1[0x2](eng): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, mono, fltp, 165 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+  Stream #0:2[0x3](eng): Subtitle: mov_text (tx3g / 0x67337874), 0 kb/s (default)
+      Metadata:
+        handler_name    : SubtitleHandler
+  Stream #0:3[0x4](eng): Data: bin_data (text / 0x74786574), 0 kb/s
+      Metadata:
+        handler_name    : SubtitleHandler
+At least one output file must be specified
+
+Expected duration: 145.695s; final: 145.700s
+Full video/audio decode: PASS

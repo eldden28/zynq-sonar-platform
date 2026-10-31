@@ -13,6 +13,7 @@
       this.lastAcousticTimestamp = -1;
       this.activeBase = null;
       this.satelliteLayer = null;
+      this.satelliteProvider = null;
       this.baseSwitchToken = 0;
 
       this.map = L.map("navMap", {
@@ -188,18 +189,33 @@
     satellite() {
       if (this.satelliteLayer) return this.satelliteLayer;
       const key = this.storageGet("cora-maptiler-key");
-      if (!key) return null;
-      this.satelliteLayer = L.tileLayer(
-        "https://api.maptiler.com/maps/satellite-v4/256/{z}/{x}/{y}.jpg?key=" +
-          encodeURIComponent(key),
-        {
-          maxZoom: 20,
-          tileSize: 256,
-          crossOrigin: true,
-          attribution:
-            '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
-        },
-      );
+      if (key) {
+        this.satelliteProvider = "MapTiler";
+        this.satelliteLayer = L.tileLayer(
+          "https://api.maptiler.com/maps/satellite-v4/256/{z}/{x}/{y}.jpg?key=" +
+            encodeURIComponent(key),
+          {
+            maxZoom: 20,
+            tileSize: 256,
+            crossOrigin: true,
+            attribution:
+              '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+          },
+        );
+      } else {
+        this.satelliteProvider = "USGS National Map";
+        this.satelliteLayer = L.tileLayer(
+          "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}",
+          {
+            maxZoom: 20,
+            maxNativeZoom: 16,
+            tileSize: 256,
+            crossOrigin: true,
+            attribution:
+              'Map services and data available from <a href="https://www.usgs.gov/programs/national-geospatial-program/national-map">U.S. Geological Survey, National Geospatial Program</a>',
+          },
+        );
+      }
       return this.satelliteLayer;
     }
 
@@ -261,7 +277,7 @@
           if (token !== this.baseSwitchToken) return;
           cleanup();
           this.activateBase("satellite", layer);
-          this.notice("Satellite imagery loaded.");
+          this.notice(`Satellite imagery loaded from ${this.satelliteProvider}.`);
         };
         const failed = () => {
           if (token !== this.baseSwitchToken || fallbackTimer !== null) return;
@@ -272,7 +288,7 @@
             this.satelliteLayer = null;
             this.activateBase(previousName, previousLayer);
             this.notice(
-              "Satellite imagery could not load. Restored the previous map; check the MapTiler key and its allowed origins.",
+              "Satellite imagery could not load. Restored the previous map; check network access or the configured MapTiler key.",
             );
           }, 1200);
         };

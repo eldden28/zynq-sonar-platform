@@ -1,0 +1,26 @@
+[
+  {
+    "id": "main-dashboard",
+    "title": "Authenticated hardware dashboard",
+    "text": "The main dashboard on port 8080 uses HTTP Basic authentication. Once signed in, it is the board-health page: CPU load, memory, Ethernet, FPGA state, and XADC monitor readings are visible in one authenticated session.",
+    "evidence": "The authenticated page displayed the live CPU meter and XADC monitor table."
+  },
+  {
+    "id": "web-terminal",
+    "title": "Built-in web terminal",
+    "text": "The same protected page includes a browser terminal running as the unprivileged petalinux user. Here it runs hostname and uptime, which confirms the session is attached to the live Cora board without exposing any credentials.",
+    "evidence": "The PTY terminal returned the Cora hostname and current uptime."
+  },
+  {
+    "id": "ofdm-image",
+    "title": "Progressive OFDM image page",
+    "text": "Port 8081 is the separate progressive OFDM image-transfer dashboard. It is independently addressable, with its own transfer controls, payload progress, retry status, and reconstructed image view, while the main dashboard remains available.",
+    "evidence": "The independently hosted 8081 OFDM image dashboard loaded successfully."
+  },
+  {
+    "id": "simultaneous",
+    "title": "Concurrent dashboards",
+    "text": "These two live board pages can be open together. On the left, 8080 continues monitoring CPU and XADC health. On the right, the OFDM text terminal on 8082 remains ready for modem work. The services are independent but deployed on the same Cora image.",
+    "evidence": "Live 8080 and 8082 frames were captured side by side from separate active browser pages."
+  }
+]

@@ -1,0 +1,361 @@
+{
+  "capture": "live browser",
+  "preview": false,
+  "segments": [
+    {
+      "segment": 1,
+      "url": "http://192.168.10.2:8085/",
+      "start_s": 0.0,
+      "duration_s": 60.55,
+      "checks": {
+        "checks": [
+          {
+            "scene": "sonar_live",
+            "action": "click",
+            "selector": "#zoom-in",
+            "expectation_checked": true,
+            "elapsed_s": 3.567031379789114
+          },
+          {
+            "scene": "sonar_live",
+            "action": "click",
+            "selector": "button[data-view='matrix']",
+            "expectation_checked": false,
+            "elapsed_s": 9.417132079135627
+          },
+          {
+            "scene": "sonar_live",
+            "action": "click",
+            "selector": "button[data-view='fan']",
+            "expectation_checked": false,
+            "elapsed_s": 15.691903500817716
+          },
+          {
+            "scene": "sonar_array",
+            "action": "scroll",
+            "selector": "#scenario",
+            "expectation_checked": false,
+            "elapsed_s": 21.5846268767491
+          },
+          {
+            "scene": "sonar_array",
+            "action": "range",
+            "selector": "#elements",
+            "expectation_checked": true,
+            "elapsed_s": 26.20128096314147
+          },
+          {
+            "scene": "sonar_array",
+            "action": "range",
+            "selector": "#frequency",
+            "expectation_checked": true,
+            "elapsed_s": 29.454448455944657
+          },
+          {
+            "scene": "sonar_array",
+            "action": "range",
+            "selector": "#pitch",
+            "expectation_checked": true,
+            "elapsed_s": 33.196693860925734
+          },
+          {
+            "scene": "sonar_array",
+            "action": "click",
+            "selector": "#apply",
+            "expectation_checked": false,
+            "elapsed_s": 34.45794847095385
+          },
+          {
+            "scene": "sonar_array",
+            "action": "wait",
+            "selector": "#frame-copy",
+            "expectation_checked": true,
+            "elapsed_s": 38.33093344513327
+          },
+          {
+            "scene": "sonar_scene",
+            "action": "scroll",
+            "selector": "#scene-editor",
+            "expectation_checked": false,
+            "elapsed_s": 42.17408718587831
+          },
+          {
+            "scene": "sonar_scene",
+            "action": "fill",
+            "selector": "#target-label",
+            "expectation_checked": false,
+            "elapsed_s": 44.206956406123936
+          },
+          {
+            "scene": "sonar_scene",
+            "action": "fill",
+            "selector": "#target-range",
+            "expectation_checked": false,
+            "elapsed_s": 46.74562999373302
+          },
+          {
+            "scene": "sonar_scene",
+            "action": "fill",
+            "selector": "#target-elevation",
+            "expectation_checked": false,
+            "elapsed_s": 49.28397660609335
+          },
+          {
+            "scene": "sonar_scene",
+            "action": "click",
+            "selector": "#apply-scene",
+            "expectation_checked": false,
+            "elapsed_s": 52.708419885952026
+          },
+          {
+            "scene": "sonar_scene",
+            "action": "wait",
+            "selector": "#editor-notice",
+            "expectation_checked": true,
+            "elapsed_s": 58.838679305743426
+          }
+        ],
+        "frames": 1211,
+        "duration_s": 60.55,
+        "preview": false,
+        "failure": null,
+        "browser_errors": [],
+        "visited_scenes": [
+          "sonar_array",
+          "sonar_live",
+          "sonar_scene"
+        ],
+        "encoder_exit_code": 0
+      },
+      "scene_evidence": [
+        {
+          "id": "sonar_live",
+          "evidence": "The live status is running, the sonar image is populated, zoom reaches 156 percent, and both view buttons respond."
+        },
+        {
+          "id": "sonar_array",
+          "evidence": "The live controls show 64 channels, 600 kilohertz, 1.25 millimeters, and the server confirms the updated configuration."
+        },
+        {
+          "id": "sonar_scene",
+          "evidence": "The real editor fields change and the board service reports that the custom scene was applied."
+        }
+      ]
+    },
+    {
+      "segment": 2,
+      "url": "http://192.168.10.2:8082/",
+      "start_s": 60.55,
+      "duration_s": 20.25,
+      "checks": {
+        "checks": [
+          {
+            "scene": "ofdm_text",
+            "action": "click",
+            "selector": "#reset",
+            "expectation_checked": false,
+            "elapsed_s": 0.9752746098674834
+          },
+          {
+            "scene": "ofdm_text",
+            "action": "fill",
+            "selector": "#tx",
+            "expectation_checked": false,
+            "elapsed_s": 2.854685017839074
+          },
+          {
+            "scene": "ofdm_text",
+            "action": "select",
+            "selector": "#backend",
+            "expectation_checked": false,
+            "elapsed_s": 5.165335877798498
+          },
+          {
+            "scene": "ofdm_text",
+            "action": "select",
+            "selector": "#modulation",
+            "expectation_checked": false,
+            "elapsed_s": 6.895888136699796
+          },
+          {
+            "scene": "ofdm_text",
+            "action": "click",
+            "selector": "#send",
+            "expectation_checked": true,
+            "elapsed_s": 10.086072866804898
+          }
+        ],
+        "frames": 405,
+        "duration_s": 20.25,
+        "preview": false,
+        "failure": null,
+        "browser_errors": [],
+        "visited_scenes": [
+          "ofdm_text"
+        ],
+        "encoder_exit_code": 0
+      },
+      "scene_evidence": [
+        {
+          "id": "ofdm_text",
+          "evidence": "The actual terminal reports transfer complete and displays the reconstructed text from the PL loopback."
+        }
+      ]
+    },
+    {
+      "segment": 3,
+      "url": "http://192.168.10.2:8084/",
+      "start_s": 80.8,
+      "duration_s": 20.65,
+      "checks": {
+        "checks": [
+          {
+            "scene": "conventional",
+            "action": "click",
+            "selector": "#reset",
+            "expectation_checked": false,
+            "elapsed_s": 1.0563660780899227
+          },
+          {
+            "scene": "conventional",
+            "action": "fill",
+            "selector": "#tx",
+            "expectation_checked": false,
+            "elapsed_s": 3.0162672069855034
+          },
+          {
+            "scene": "conventional",
+            "action": "select",
+            "selector": "#backend",
+            "expectation_checked": false,
+            "elapsed_s": 5.1704058912582695
+          },
+          {
+            "scene": "conventional",
+            "action": "select",
+            "selector": "#modulation",
+            "expectation_checked": false,
+            "elapsed_s": 7.324620729312301
+          },
+          {
+            "scene": "conventional",
+            "action": "select",
+            "selector": "#symbol-rate",
+            "expectation_checked": false,
+            "elapsed_s": 8.914797666948289
+          },
+          {
+            "scene": "conventional",
+            "action": "click",
+            "selector": "#send",
+            "expectation_checked": false,
+            "elapsed_s": 11.463143133092672
+          },
+          {
+            "scene": "conventional",
+            "action": "wait",
+            "selector": "#notice",
+            "expectation_checked": true,
+            "elapsed_s": 17.001016784925014
+          }
+        ],
+        "frames": 413,
+        "duration_s": 20.65,
+        "preview": false,
+        "failure": null,
+        "browser_errors": [],
+        "visited_scenes": [
+          "conventional"
+        ],
+        "encoder_exit_code": 0
+      },
+      "scene_evidence": [
+        {
+          "id": "conventional",
+          "evidence": "The hardware backend stays selected and the CRC-validated receive panel reproduces the QPSK message."
+        }
+      ]
+    },
+    {
+      "segment": 4,
+      "url": "http://192.168.10.2:8086/",
+      "start_s": 101.44999999999999,
+      "duration_s": 43.2,
+      "checks": {
+        "checks": [
+          {
+            "scene": "janus",
+            "action": "click",
+            "selector": "#reset",
+            "expectation_checked": false,
+            "elapsed_s": 0.9325138293206692
+          },
+          {
+            "scene": "janus",
+            "action": "select",
+            "selector": "#backend",
+            "expectation_checked": false,
+            "elapsed_s": 3.489812719170004
+          },
+          {
+            "scene": "janus",
+            "action": "select",
+            "selector": "#pset",
+            "expectation_checked": false,
+            "elapsed_s": 5.617022046353668
+          },
+          {
+            "scene": "janus",
+            "action": "fill",
+            "selector": "#app-type",
+            "expectation_checked": false,
+            "elapsed_s": 7.877808202058077
+          },
+          {
+            "scene": "janus",
+            "action": "fill",
+            "selector": "#app-data",
+            "expectation_checked": false,
+            "elapsed_s": 9.77287963218987
+          },
+          {
+            "scene": "janus",
+            "action": "click",
+            "selector": "#send",
+            "expectation_checked": true,
+            "elapsed_s": 15.106871243100613
+          },
+          {
+            "scene": "dashboard_finish",
+            "action": "scroll",
+            "selector": "#decode",
+            "expectation_checked": false,
+            "elapsed_s": 24.192397087346762
+          }
+        ],
+        "frames": 864,
+        "duration_s": 43.2,
+        "preview": false,
+        "failure": null,
+        "browser_errors": [],
+        "visited_scenes": [
+          "dashboard_finish",
+          "janus"
+        ],
+        "encoder_exit_code": 0
+      },
+      "scene_evidence": [
+        {
+          "id": "janus",
+          "evidence": "The live JANUS decoder displays CRC valid and the expected class, type, and application data."
+        },
+        {
+          "id": "dashboard_finish",
+          "evidence": "The final live page retains the CRC-valid hardware-loopback result."
+        }
+      ]
+    }
+  ],
+  "duration_s": 144.64999999999998,
+  "all_action_expectations_passed": true
+}

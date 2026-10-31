@@ -1,0 +1,123 @@
+1
+00:00:00,700 --> 00:00:19,516
+Welcome to the Cora acoustic and navigation demo series. This opening is an agenda for the clips that follow: beamformed forward sonar, O F D M and conventional modems, JANUS interoperability, a simulated navigation mission, the Vivado block design, and measured modem performance.
+
+2
+00:00:21,416 --> 00:00:42,899
+This live check shows six board-hosted services responding together on the same Cora Z7-10: sonar, O F D M, conventional modulation, JANUS, and the two navigation views. The Vivado clip explains their common A X I stream hardware path. The later combined video will retain each chapter's evidence and context.
+
+3
+00:00:44,800 --> 00:01:03,104
+We begin on the live Cora sonar dashboard. Each image is formed from simulated multichannel time-series data, followed by matched filtering and delay-and-sum beamforming. I can zoom the fan, switch to range-versus-angle coordinates, and return to the normal view without stopping the processor.
+
+4
+00:01:05,004 --> 00:01:23,692
+The controls stage a new array configuration before processing. Here I choose sixty-four elements, a six-hundred-kilohertz center frequency, and one-point-two-five millimeter pitch. Applying the settings runs a new time-series simulation, and the updated channel count appears with the new sonar result.
+
+5
+00:01:25,592 --> 00:01:43,427
+The scene editor changes the geometry that drives the next simulated receive buffers. I select the first target, rename it, move it to seven-point-two-five meters and twelve degrees, then apply the scene. The dashboard runs another ping and confirms that the custom scene was processed.
+
+6
+00:01:45,327 --> 00:02:03,673
+Next is the independent acoustic O F D M text terminal. I clear the old receiver, enter a short message, and select the F P G A A X I stream loopback. Transmit sends the generated samples through the Cora D M A path, and the validated receiver reconstructs the same text.
+
+7
+00:02:05,573 --> 00:02:24,304
+The conventional modem remains separate from O F D M. Its menu offers B P S K, Q P S K, two-tone F S K, and multi-tone F S K. For this live example I use Q P S K at five hundred symbols per second and pass the waveform through the same hardware loopback.
+
+8
+00:02:26,204 --> 00:02:45,873
+The JANUS page exercises the open first-contact waveform using the reference implementation. I select the hardware loopback, keep parameter set one, and transmit an application-type-three packet. The decoded class, type, application data, and green C R C result provide visible end-to-end evidence.
+
+9
+00:02:47,773 --> 00:03:07,485
+These pages now share a clear test progression. Use the software channel for modem development, the two-hundred-fifty-kilosample hardware loopback for D M A and programmable-logic bring-up, and USB audio when physical transducers are attached. The visible JANUS result closes this live board-backed tour.
+
+10
+00:03:09,450 --> 00:03:25,919
+The main dashboard on port 8080 uses HTTP Basic authentication. Once signed in, it is the board-health page: CPU load, memory, Ethernet, FPGA state, and XADC monitor readings are visible in one authenticated session.
+
+11
+00:03:27,819 --> 00:03:42,027
+The same protected page includes a browser terminal running as the unprivileged petalinux user. Here it runs hostname and uptime, which confirms the session is attached to the live Cora board without exposing any credentials.
+
+12
+00:03:43,927 --> 00:03:59,586
+Port 8081 is the separate progressive OFDM image-transfer dashboard. It is independently addressable, with its own transfer controls, payload progress, retry status, and reconstructed image view, while the main dashboard remains available.
+
+13
+00:04:01,486 --> 00:04:20,046
+These two live board pages can be open together. On the left, 8080 continues monitoring CPU and XADC health. On the right, the OFDM text terminal on 8082 remains ready for modem work. The services are independent but deployed on the same Cora image.
+
+14
+00:04:21,950 --> 00:04:42,174
+This is the actual Vivado twenty-twenty-five-point-one project generated for the Cora Z seven dash ten. The system block design is open in the real Vivado G U I, so the cells, interfaces, clocks, resets, and address-connected peripherals shown here are the implementation source, not a presentation diagram.
+
+15
+00:04:44,074 --> 00:05:04,127
+The highlighted A X I D M A block is the software-facing entrance and exit for acoustic samples. Its memory-to-stream channel feeds the acoustic router, while stream-to-memory returns each completed frame. Linux therefore keeps one stable device interface even when the processing chain in programmable logic changes.
+
+16
+00:05:06,027 --> 00:05:24,118
+The acoustic router is the bring-up anchor. In loopback mode it returns the D M A stream directly while preserving valid, ready, and last signaling. That gives new hardware a known-good test before any algorithm core is enabled, and software selects the path without rebuilding the block design.
+
+17
+00:05:26,018 --> 00:05:42,551
+The alternate route passes through the forward F F T, the spectral-filter example, and the inverse F F T before returning to the router. This chain demonstrates the insertion contract with a working accelerator while keeping the direct loopback beside it for diagnosis.
+
+18
+00:05:44,451 --> 00:06:02,755
+A X I Lite control reaches the router and spectral filter through the control interconnect. The streaming path uses the one-hundred-megahertz fabric clock and its matching reset network. A custom core should share this domain, or add explicit clock conversion when its interface requires another rate.
+
+19
+00:06:04,655 --> 00:06:24,623
+To insert your own processing, keep the router and replace the example chain between its accelerator output and accelerator return interfaces. Match the thirty-two-bit A X I stream width, propagate backpressure and T last, then assign any new A X I Lite registers a non-overlapping address before validating the design.
+
+20
+00:06:26,523 --> 00:06:45,745
+Returning to the full canvas shows why this structure is reusable: software and D M A remain fixed, loopback remains available, and only the accelerator segment changes. The checked-in Tcl script regenerates this project, while the exported X S A carries the result into the common PetaLinux build.
+
+21
+00:06:47,650 --> 00:07:07,362
+First, these are preserved live USB speaker-to-microphone tests, not simulations. The fastest clean physical-path run delivered 8,131 payload bits per second using 8 P S K, rate-one-half coding, F F T 256, and a 1.5-to-15-kilohertz band.
+
+22
+00:07:09,262 --> 00:07:28,441
+The comparison also records failures. Wider bands and weaker coding were not consistently better: Q P S K rate two-thirds failed in one wide profile, while 8 P S K rate two-thirds became marginal. The reliable 8 P S K result retained rate-one-half forward error correction.
+
+23
+00:07:30,341 --> 00:07:54,703
+For the raw hardware path, I sent 1,048,576 deterministic samples in 2,048 frames. Every sample returned byte-exact. The P L is paced at 250,000 samples per second; sustained host throughput measured 148,498 after fixed 512-sample Linux and D M A transaction overhead.
+
+24
+00:07:56,603 --> 00:08:16,550
+Here is the live Cora dashboard retaining the longest peak-setting run: 16,384 bytes, 43 of 43 packets, zero retries, zero packet errors, and a matching source and receive S H A 256. Useful payload throughput was 3.01 kilobits per second.
+
+25
+00:08:18,450 --> 00:08:38,695
+The water numbers are an engineering projection, not a benchmark. Assuming a transducer chain that truly passes 20 to 40 kilohertz, F F T 1024 and a 256-sample prefix, expected validated payload spans about 7 to 18 kilobits per second across the three profiles.
+
+26
+00:08:40,595 --> 00:08:58,409
+I would plan the first field trial around 5 to 12 kilobits per second using Q P S K rate one-half and adaptive carriers. At 30 kilohertz, absorption is about 8.3 decibels per kilometer, and one meter per second of motion creates roughly 20 hertz of Doppler shift.
+
+27
+00:09:00,350 --> 00:09:18,803
+This is the live Cora navigation simulator running a synthetic mission on the West Branch Susquehanna River. The dashboard combines acoustic observations, fused inertial navigation, clock status, mission waypoints, and the vehicle attitude model while the simulated vehicle moves along the mapped route.
+
+28
+00:09:20,703 --> 00:09:40,095
+The two-dimensional street map shows the full mission in geographic coordinates. Numbered diamonds mark the upstream and return waypoints, purple markers identify the transponders, and separate overlays track simulation truth, fused I N S, bottom-lock samples, acoustic fixes, and horizontal uncertainty.
+
+29
+00:09:41,995 --> 00:10:00,406
+The mission controls let us change the positioning architecture and simulated environment without restarting the service. Here I select four-hydrophone inverted U S B L, retain the dedicated coded acoustic waveform, and apply the configuration. The live dashboard confirms the update.
+
+30
+00:10:02,306 --> 00:10:18,050
+Mission execution can be paused for inspection and resumed from the same state. The controls report each transition, while the simulator preserves the route, fused solution, and sensor settings. I then return to the map and fit the complete river mission again.
+
+31
+00:10:19,950 --> 00:10:40,281
+Switching to MapTiler satellite imagery reveals the actual river corridor, islands, bridges, roads, and shoreline beneath the same mission overlays. The browser loads the imagery directly without storing the key on Cora. Follow mode then centers the moving vehicle while preserving its planned route and navigation tracks.

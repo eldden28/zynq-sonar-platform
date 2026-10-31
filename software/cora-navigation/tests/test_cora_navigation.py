@@ -343,6 +343,11 @@ class DashboardAssetTests(unittest.TestCase):
             "https://api.maptiler.com/maps/satellite-v4/256/{z}/{x}/{y}.jpg?key=",
             map_js,
         )
+        self.assertIn(
+            "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}",
+            map_js,
+        )
+        self.assertIn("U.S. Geological Survey, National Geospatial Program", map_js)
         self.assertIn("Restored the previous map", map_js)
         self.assertIn('src="/map.js"', index)
         self.assertIn("window.navigationMap=new CoraNavigationMap", index)

@@ -70,7 +70,7 @@ cora-navigation-smoke --duration 10 --mode iusbl --waveform ofdm
 Open:
 
 - DVL laboratory: `http://192.168.10.2:8083`
-- LBL/iUSBL laboratory: `http://192.168.10.2:8084`
+- LBL/iUSBL laboratory: `http://192.168.10.2:8087`
 
 Both lab consoles show the fused INS and simulation truth. They provide
 mission pause/reset, waveform selection, noise, multipath, dropouts, clock
@@ -84,13 +84,15 @@ horizontal covariance ellipse. Use `Follow` to track the vehicle or
 be toggled from the map layer control.
 
 The street map uses OpenStreetMap tiles and the offline local-grid view needs
-no Internet connection. Satellite view uses MapTiler's `satellite-v4` tiles:
+no Internet connection. Without a configured key, satellite view uses the
+public USGS National Map `USGSImageryOnly` tile service with visible source
+attribution. An optional MapTiler `satellite-v4` key takes precedence:
 
 1. create a MapTiler API key at `https://cloud.maptiler.com/account/keys/`;
-2. open **Satellite setup** under the mission map;
+2. open **Optional MapTiler setup** under the mission map;
 3. paste and save the key, then select **Satellite imagery**.
 
-The key is stored only in that browser's local storage. It is not sent to the
+The optional key is stored only in that browser's local storage. It is not sent to the
 Cora service, written to telemetry, or embedded in the PetaLinux image. Map
 tiles are fetched by the viewing browser, so map rendering does not consume
 Cora CPU time. Leaflet 1.9.4 is vendored in the package under its BSD-2-Clause

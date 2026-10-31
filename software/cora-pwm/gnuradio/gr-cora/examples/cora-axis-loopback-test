@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""Verify the Cora acoustic AXI-stream loopback and its PL sample pacing."""
+
+import argparse
+import time
+
+import numpy
+
+try:
+    from gnuradio.cora.dsp import FFT_LENGTH, HwAxisLoopbackDevice
+except ImportError:
+    # Keep the standalone benchmark usable on deployed images where the
+    # acoustic userspace package is newer than the GNU Radio package.
+    from cora_acomms_pl import AxisLoopbackDevice as HwAxisLoopbackDevice
+    from cora_acomms_pl import FFT_LENGTH
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--device", default="/dev/cora-dsp0")
+    parser.add_argument("--frames", type=int, default=32)
+    parser.add_argument("--sample-rate", type=int, default=250_000)
+    args = parser.parse_args()
+    if args.frames <= 0 or args.sample_rate <= 0:
+        parser.error("--frames and --sample-rate must be positive")
+
+    rng = numpy.random.default_rng(0xC0A7)
+    expected = rng.integers(-32768, 32768, FFT_LENGTH, dtype=numpy.int16)
+    started = time.perf_counter()
+    with HwAxisLoopbackDevice(args.device, args.sample_rate) as loopback:
+        loopback.clear_stats()
+        for frame in range(args.frames):
+            actual = (
+                loopback.process_i16(expected)
+                if hasattr(loopback, "process_i16")
+                else loopback.process_frame(expected)
+            )
+            if not numpy.array_equal(actual, expected):
+                mismatch = int(numpy.flatnonzero(actual != expected)[0])
+                raise SystemExit(
+                    f"FAIL frame={frame} sample={mismatch} "
+                    f"expected={expected[mismatch]} actual={actual[mismatch]}"
+                )
+        status = (
+            loopback.acomms_status()
+            if hasattr(loopback, "acomms_status")
+            else loopback.status()
+        )
+    elapsed = time.perf_counter() - started
+    samples = args.frames * FFT_LENGTH
+    minimum = samples / status["sample_rate"]
+    if status["frames"] != args.frames or status["samples"] != samples:
+        raise SystemExit(f"FAIL hardware counters: {status}")
+    if elapsed < minimum * 0.95:
+        raise SystemExit(
+            f"FAIL pacing too fast: {elapsed:.6f}s < {minimum:.6f}s"
+        )
+
+    print("PASS Cora AXI-stream acoustic loopback")
+    print(f"Frames / samples:    {args.frames} / {samples}")
+    print(f"PL clock / divider:  {status['clock_hz']} / {status['sample_divider']}")
+    print(f"Configured rate:     {status['sample_rate']} sample/s")
+    print(f"Measured throughput: {samples / elapsed:.1f} sample/s")
+    print("Data integrity:      byte-exact")
+
+
+if __name__ == "__main__":
+    main()

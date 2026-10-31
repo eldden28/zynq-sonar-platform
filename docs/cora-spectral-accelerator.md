@@ -7,9 +7,11 @@ The Cora Z7-10 programmable logic contains a dedicated block-processing path:
 ```text
 512 signed real Q1.15 samples in DDR
   -> AXI DMA MM2S (32-bit complex packing)
-  -> Xilinx 512-point FFT
+  -> selectable AXI acoustic router (250 ksample/s default)
+     -> Xilinx 512-point FFT
   -> configurable symmetric spectral mask
   -> Xilinx 512-point IFFT
+     -> router return
   -> AXI DMA S2MM
   -> 512 signed real Q1.15 samples in DDR
 ```
@@ -75,8 +77,10 @@ No other process may hold `/dev/cora-dsp0` while the demo or benchmark runs.
 
 ## Hardware register map
 
-The spectral mask is mapped at `0x43c10000`; its dedicated simple-mode AXI DMA
-is mapped at `0x40410000`.
+The spectral mask is mapped at `0x43c10000`, the acoustic router at
+`0x43c20000`, and their dedicated simple-mode AXI DMA at `0x40410000`. See
+[`axis-acomms-loopback.md`](axis-acomms-loopback.md) for the router register
+map, hardware test, and custom-IP insertion procedure.
 
 | Offset | Access | Description |
 |---:|:---:|---|

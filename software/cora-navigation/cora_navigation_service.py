@@ -270,7 +270,7 @@ def parser() -> argparse.ArgumentParser:
     )
     result.add_argument("--bind", default="0.0.0.0")
     result.add_argument("--dvl-port", type=int, default=8083)
-    result.add_argument("--acoustic-port", type=int, default=8084)
+    result.add_argument("--acoustic-port", type=int, default=8087)
     result.add_argument(
         "--dvl-web-root",
         type=Path,

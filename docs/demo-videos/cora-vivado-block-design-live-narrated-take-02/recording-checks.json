@@ -1,0 +1,22 @@
+{
+  "application": "Vivado 2025.1 GUI",
+  "project": "/home/eldden28/code/test-project/build/vivado/cora-z7-10-pwm/cora_z7_10_pwm.xpr",
+  "block_design": "/home/eldden28/code/test-project/build/vivado/cora-z7-10-pwm/cora_z7_10_pwm.srcs/sources_1/bd/system/system.bd",
+  "window_resized": true,
+  "frame_count": 2914,
+  "expected_action_count": 7,
+  "logged_action_count": 14,
+  "missing_cells": [],
+  "chapter_stills": [
+    "docs/demo-videos/cora-vivado-block-design-live-narrated-take-02/chapter-01-vivado_project.png",
+    "docs/demo-videos/cora-vivado-block-design-live-narrated-take-02/chapter-02-vivado_dma.png",
+    "docs/demo-videos/cora-vivado-block-design-live-narrated-take-02/chapter-03-vivado_router.png",
+    "docs/demo-videos/cora-vivado-block-design-live-narrated-take-02/chapter-04-vivado_accelerator.png",
+    "docs/demo-videos/cora-vivado-block-design-live-narrated-take-02/chapter-05-vivado_control.png",
+    "docs/demo-videos/cora-vivado-block-design-live-narrated-take-02/chapter-06-vivado_insert.png",
+    "docs/demo-videos/cora-vivado-block-design-live-narrated-take-02/chapter-07-vivado_finish.png"
+  ],
+  "vivado_exit_code": -15,
+  "encoder_exit_code": 0,
+  "passed": true
+}

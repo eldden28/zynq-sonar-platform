@@ -28,7 +28,7 @@ SRC_URI = " \
 S = "${WORKDIR}"
 
 INITSCRIPT_NAME = "cora-sonar"
-INITSCRIPT_PARAMS = "start 85 2 3 4 5 . stop 15 0 1 6 ."
+INITSCRIPT_PARAMS = "stop 15 0 1 2 3 4 5 6 ."
 
 do_install() {
     install -d ${D}${bindir} ${D}${sbindir} ${D}${PYTHON_SITEPACKAGES_DIR}

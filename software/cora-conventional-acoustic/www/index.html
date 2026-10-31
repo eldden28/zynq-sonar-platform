@@ -19,7 +19,7 @@
   <section class="panel">
     <div class="bar">Waveform controls</div>
     <div class="controls">
-      <select id="backend"><option value="loopback">Colored-channel simulation</option><option value="air">Speaker → microphone</option></select>
+      <select id="backend"><option value="loopback">Colored-channel simulation</option><option value="pl-loopback">FPGA AXIS loopback · 250 ksample/s</option><option value="air">Speaker → microphone</option></select>
       <select id="modulation"><option value="bpsk">BPSK · coherent</option><option value="qpsk" selected>QPSK · coherent</option><option value="fsk">2-FSK · noncoherent</option><option value="mfsk">MFSK · noncoherent</option></select>
       <select id="mfsk-order" disabled><option value="4" selected>4-FSK</option><option value="8">8-FSK</option><option value="16">16-FSK</option></select>
       <label class="field">Symbols/s <select id="symbol-rate"><option>125</option><option>200</option><option selected>250</option><option>300</option><option>375</option><option>400</option><option>500</option></select></label>

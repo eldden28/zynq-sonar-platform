@@ -1,0 +1,168 @@
+{
+  "capture": "live browser",
+  "preview": false,
+  "segments": [
+    {
+      "segment": 1,
+      "url": "http://127.0.0.1:8765/scripts/modem-summary-dashboard.html",
+      "start_s": 0.0,
+      "duration_s": 68.95,
+      "checks": {
+        "checks": [
+          {
+            "scene": "usb-results",
+            "action": "wait",
+            "selector": "#usb-best",
+            "expectation_checked": true,
+            "elapsed_s": 3.506878610700369
+          },
+          {
+            "scene": "usb-tradeoffs",
+            "action": "wait",
+            "selector": "#fail-list",
+            "expectation_checked": true,
+            "elapsed_s": 25.506038883700967
+          },
+          {
+            "scene": "axis-peak",
+            "action": "click",
+            "selector": "#tab-axis",
+            "expectation_checked": true,
+            "elapsed_s": 45.35348634980619
+          },
+          {
+            "scene": "axis-peak",
+            "action": "wait",
+            "selector": "#modem-rate",
+            "expectation_checked": true,
+            "elapsed_s": 59.123789788689464
+          }
+        ],
+        "frames": 1379,
+        "duration_s": 68.95,
+        "preview": false,
+        "failure": null,
+        "browser_errors": [],
+        "visited_scenes": [
+          "axis-peak",
+          "usb-results",
+          "usb-tradeoffs"
+        ],
+        "encoder_exit_code": 0
+      },
+      "scene_evidence": [
+        {
+          "id": "usb-results",
+          "evidence": "The data-backed viewer loaded the recorded USB results and displayed 8,131 bit/s as the fastest validated run."
+        },
+        {
+          "id": "usb-tradeoffs",
+          "evidence": "The viewer displayed the stored failed and marginal USB test outcomes beside the successful throughput bars."
+        },
+        {
+          "id": "axis-peak",
+          "evidence": "The results viewer showed the million-sample byte-exact benchmark and the completed 16 KiB modem loopback."
+        }
+      ]
+    },
+    {
+      "segment": 2,
+      "url": "http://192.168.10.2:8082/",
+      "start_s": 68.95,
+      "duration_s": 21.85,
+      "checks": {
+        "checks": [
+          {
+            "scene": "live-cora-proof",
+            "action": "scroll",
+            "selector": "#rate",
+            "expectation_checked": true,
+            "elapsed_s": 1.9051746260374784
+          },
+          {
+            "scene": "live-cora-proof",
+            "action": "wait",
+            "selector": "#version",
+            "expectation_checked": true,
+            "elapsed_s": 11.04195363773033
+          },
+          {
+            "scene": "live-cora-proof",
+            "action": "wait",
+            "selector": "#version",
+            "expectation_checked": true,
+            "elapsed_s": 14.878380913753062
+          }
+        ],
+        "frames": 437,
+        "duration_s": 21.85,
+        "preview": false,
+        "failure": null,
+        "browser_errors": [],
+        "visited_scenes": [
+          "live-cora-proof"
+        ],
+        "encoder_exit_code": 0
+      },
+      "scene_evidence": [
+        {
+          "id": "live-cora-proof",
+          "evidence": "The actual board dashboard reported COMPLETE, 43/43 packets, 3.01 kbit/s, zero errors and 8PSK R1/2."
+        }
+      ]
+    },
+    {
+      "segment": 3,
+      "url": "http://127.0.0.1:8765/scripts/modem-summary-dashboard.html",
+      "start_s": 90.80000000000001,
+      "duration_s": 41.85,
+      "checks": {
+        "checks": [
+          {
+            "scene": "water-estimate",
+            "action": "click",
+            "selector": "#tab-water",
+            "expectation_checked": true,
+            "elapsed_s": 2.315772666130215
+          },
+          {
+            "scene": "field-target",
+            "action": "wait",
+            "selector": ".risk-grid",
+            "expectation_checked": true,
+            "elapsed_s": 24.930245983414352
+          },
+          {
+            "scene": "field-target",
+            "action": "wait",
+            "selector": ".footer-note",
+            "expectation_checked": true,
+            "elapsed_s": 33.63461058307439
+          }
+        ],
+        "frames": 837,
+        "duration_s": 41.85,
+        "preview": false,
+        "failure": null,
+        "browser_errors": [],
+        "visited_scenes": [
+          "field-target",
+          "water-estimate"
+        ],
+        "encoder_exit_code": 0
+      },
+      "scene_evidence": [
+        {
+          "id": "water-estimate",
+          "evidence": "The projection view visibly labeled the numbers as estimates and displayed assumptions, body ceilings, and payload ranges."
+        },
+        {
+          "id": "field-target",
+          "evidence": "The viewer displayed the recommended 5\u201312 kbit/s field target and the absorption, Doppler, multipath, and bandwidth caveats."
+        }
+      ]
+    }
+  ],
+  "duration_s": 132.65,
+  "all_action_expectations_passed": true
+}

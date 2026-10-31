@@ -1,0 +1,192 @@
+[
+  {
+    "id": "navigation_live",
+    "title": "Live simulated river mission",
+    "text": "This is the live Cora navigation simulator running a synthetic mission on the West Branch Susquehanna River. The dashboard combines acoustic observations, fused inertial navigation, clock status, mission waypoints, and the vehicle attitude model while the simulated vehicle moves along the mapped route.",
+    "actions": [
+      {
+        "at_fraction": 0.05,
+        "action": "scroll",
+        "selector": "#navMap"
+      },
+      {
+        "at_fraction": 0.2,
+        "action": "click",
+        "selector": "#mapFit",
+        "expect": {
+          "selector": "#live",
+          "text": "running"
+        }
+      }
+    ],
+    "evidence": "The live status is running, navigation values update, and the river mission and vehicle model are visible.",
+    "start_s": 0.0,
+    "duration_s": 20.35333333333333,
+    "speech_start_s": 0.7,
+    "speech_duration_s": 18.453333333333333
+  },
+  {
+    "id": "navigation_street",
+    "title": "Two-dimensional mission map",
+    "text": "The two-dimensional street map shows the full mission in geographic coordinates. Numbered diamonds mark the upstream and return waypoints, purple markers identify the transponders, and separate overlays track simulation truth, fused I N S, bottom-lock samples, acoustic fixes, and horizontal uncertainty.",
+    "actions": [
+      {
+        "at_fraction": 0.08,
+        "action": "select",
+        "selector": "#basemapControl",
+        "value": "street",
+        "expect": {
+          "selector": "#basemapControl",
+          "value": "street"
+        }
+      },
+      {
+        "at_fraction": 0.2,
+        "action": "click",
+        "selector": "#mapFit"
+      },
+      {
+        "at_fraction": 0.68,
+        "action": "click",
+        "selector": "#mapFollow",
+        "expect": {
+          "selector": "#mapFollow",
+          "text": "Follow: ON"
+        }
+      }
+    ],
+    "evidence": "The street basemap is selected, the entire mission is fitted, and follow mode visibly turns on.",
+    "start_s": 20.35333333333333,
+    "duration_s": 21.292,
+    "speech_start_s": 21.053333333333335,
+    "speech_duration_s": 19.392
+  },
+  {
+    "id": "navigation_controls",
+    "title": "Mission and positioning controls",
+    "text": "The mission controls let us change the positioning architecture and simulated environment without restarting the service. Here I select four-hydrophone inverted U S B L, retain the dedicated coded acoustic waveform, and apply the configuration. The live dashboard confirms the update.",
+    "actions": [
+      {
+        "at_fraction": 0.05,
+        "action": "scroll",
+        "selector": "#modeControl"
+      },
+      {
+        "at_fraction": 0.22,
+        "action": "select",
+        "selector": "#modeControl",
+        "value": "iusbl"
+      },
+      {
+        "at_fraction": 0.34,
+        "action": "select",
+        "selector": "#waveControl",
+        "value": "dedicated"
+      },
+      {
+        "at_fraction": 0.5,
+        "action": "click",
+        "selector": "#apply",
+        "expect": {
+          "selector": "#notice",
+          "text": "navigation configuration updated"
+        }
+      },
+      {
+        "at_fraction": 0.78,
+        "action": "wait",
+        "selector": "#mode",
+        "expect": {
+          "selector": "#mode",
+          "text": "IUSBL"
+        }
+      }
+    ],
+    "evidence": "The service acknowledges the configuration and the live acoustic mode changes to IUSBL.",
+    "start_s": 41.64533333333333,
+    "duration_s": 20.310666666666666,
+    "speech_start_s": 42.345333333333336,
+    "speech_duration_s": 18.410666666666668
+  },
+  {
+    "id": "navigation_pause",
+    "title": "Pause and resume the mission",
+    "text": "Mission execution can be paused for inspection and resumed from the same state. The controls report each transition, while the simulator preserves the route, fused solution, and sensor settings. I then return to the map and fit the complete river mission again.",
+    "actions": [
+      {
+        "at_fraction": 0.08,
+        "action": "click",
+        "selector": "button[data-action='pause']",
+        "expect": {
+          "selector": "#notice",
+          "text": "navigation simulation paused"
+        }
+      },
+      {
+        "at_fraction": 0.36,
+        "action": "click",
+        "selector": "button[data-action='resume']",
+        "expect": {
+          "selector": "#notice",
+          "text": "navigation simulation resumed"
+        }
+      },
+      {
+        "at_fraction": 0.58,
+        "action": "scroll",
+        "selector": "#navMap"
+      },
+      {
+        "at_fraction": 0.72,
+        "action": "click",
+        "selector": "#mapFit"
+      }
+    ],
+    "evidence": "Pause and resume messages are verified and the map returns with the full mission fitted.",
+    "start_s": 61.956,
+    "duration_s": 17.644,
+    "speech_start_s": 62.656,
+    "speech_duration_s": 15.744
+  },
+  {
+    "id": "navigation_satellite",
+    "title": "Satellite view of the river",
+    "text": "Switching to satellite imagery reveals the actual river corridor, islands, bridges, roads, and shoreline beneath the same mission overlays. This view uses public U S G S National Map imagery with visible attribution. Follow mode then centers the moving vehicle while preserving its planned route and navigation tracks.",
+    "actions": [
+      {
+        "at_fraction": 0.08,
+        "action": "select",
+        "selector": "#basemapControl",
+        "value": "satellite"
+      },
+      {
+        "at_fraction": 0.35,
+        "action": "wait",
+        "selector": "#notice",
+        "expect": {
+          "selector": "#notice",
+          "text": "Satellite imagery loaded from USGS National Map"
+        }
+      },
+      {
+        "at_fraction": 0.48,
+        "action": "click",
+        "selector": "#mapFit"
+      },
+      {
+        "at_fraction": 0.72,
+        "action": "click",
+        "selector": "#mapFollow",
+        "expect": {
+          "selector": "#mapFollow",
+          "text": "Follow: ON"
+        }
+      }
+    ],
+    "evidence": "Loaded USGS satellite tiles show the Susquehanna River under the live mission, and follow mode is active.",
+    "start_s": 79.6,
+    "duration_s": 22.74266666666667,
+    "speech_start_s": 80.3,
+    "speech_duration_s": 20.842666666666666
+  }
+]

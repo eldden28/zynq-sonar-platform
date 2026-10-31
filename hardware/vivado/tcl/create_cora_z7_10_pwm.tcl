@@ -8,6 +8,7 @@ set ip_project_directory [file join $output_directory ip_packager]
 set ip_repository [file join $output_directory ip_repository]
 set pwm_ip_directory [file join $ip_repository axis_pwm_s16]
 set spectral_filter_ip_directory [file join $ip_repository axis_spectral_filter]
+set acomms_router_ip_directory [file join $ip_repository axis_acomms_router]
 
 set build_mode build
 if {$argc > 1} {
@@ -31,6 +32,8 @@ set pwm_core_file [file join $repository_root hardware rtl axis_pwm_s16 axis_pwm
 set pwm_axi_file [file join $repository_root hardware rtl axis_pwm_s16 axis_pwm_s16_axi.sv]
 set spectral_filter_core_file [file join $repository_root hardware rtl axis_spectral_filter axis_spectral_filter.sv]
 set spectral_filter_axi_file [file join $repository_root hardware rtl axis_spectral_filter axis_spectral_filter_axi.sv]
+set acomms_router_core_file [file join $repository_root hardware rtl axis_acomms_router axis_acomms_router.sv]
+set acomms_router_axi_file [file join $repository_root hardware rtl axis_acomms_router axis_acomms_router_axi.sv]
 set constraint_file [file join $repository_root hardware constraints cora-z7-10-axis-pwm.xdc]
 
 if {![file isdirectory $board_repository]} {
@@ -72,6 +75,31 @@ set pwm_memory_map [ipx::add_memory_map S_AXI $packaged_core]
 set pwm_address_block [ipx::add_address_block Reg $pwm_memory_map]
 set_property range 65536 $pwm_address_block
 set_property width 32 $pwm_address_block
+set_property slave_memory_map_ref S_AXI \
+    [ipx::get_bus_interfaces S_AXI -of_objects $packaged_core]
+ipx::save_core $packaged_core
+close_project
+
+# Package the selectable, sample-paced AXI-stream acoustic insertion slot.
+create_project -force axis_acomms_router_ip_packager $ip_project_directory -part $device_part
+set_property target_language Verilog [current_project]
+add_files -norecurse [list $acomms_router_core_file $acomms_router_axi_file]
+set_property top axis_acomms_router_axi [current_fileset]
+update_compile_order -fileset sources_1
+
+ipx::package_project -root_dir $acomms_router_ip_directory \
+    -vendor eldden28.dev -library fpga -taxonomy /UserIP \
+    -import_files -set_current true
+set packaged_core [ipx::current_core]
+set_property name axis_acomms_router $packaged_core
+set_property display_name {AXI-stream acoustic accelerator slot} $packaged_core
+set_property description {Runtime loopback or accelerator path with 250 ksample/s default pacing} $packaged_core
+set_property version 1.0 $packaged_core
+
+set router_memory_map [ipx::add_memory_map S_AXI $packaged_core]
+set router_address_block [ipx::add_address_block Reg $router_memory_map]
+set_property range 65536 $router_address_block
+set_property width 32 $router_address_block
 set_property slave_memory_map_ref S_AXI \
     [ipx::get_bus_interfaces S_AXI -of_objects $packaged_core]
 ipx::save_core $packaged_core
@@ -156,7 +184,7 @@ connect_bd_net [get_bd_pins processing_system7_0/FCLK_CLK1] \
     [get_bd_pins reset_200/slowest_sync_clk]
 
 set control_interconnect [create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:* control_interconnect]
-set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI {4}] $control_interconnect
+set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI {5}] $control_interconnect
 set data_interconnect [create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:* data_interconnect]
 set_property -dict [list CONFIG.NUM_SI {4} CONFIG.NUM_MI {1}] $data_interconnect
 
@@ -216,6 +244,11 @@ set fft_inverse_config [create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:*
 set_property -dict [list CONFIG.CONST_WIDTH {16} CONFIG.CONST_VAL {0x0000}] $fft_inverse_config
 
 set spectral_filter [create_bd_cell -type ip -vlnv eldden28.dev:fpga:axis_spectral_filter:1.0 axis_spectral_filter_0]
+set acomms_router [create_bd_cell -type ip -vlnv eldden28.dev:fpga:axis_acomms_router:1.0 axis_acomms_router_0]
+set_property -dict [list \
+    CONFIG.CLOCK_HZ {100000000} \
+    CONFIG.DEFAULT_SAMPLE_RATE {250000} \
+] $acomms_router
 
 set stream_clock_converter [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_clock_converter:* stream_clock_converter]
 set_property -dict [list \
@@ -254,6 +287,8 @@ connect_bd_intf_net [get_bd_intf_pins control_interconnect/M02_AXI] \
     [get_bd_intf_pins axi_dma_dsp/S_AXI_LITE]
 connect_bd_intf_net [get_bd_intf_pins control_interconnect/M03_AXI] \
     [get_bd_intf_pins axis_spectral_filter_0/S_AXI]
+connect_bd_intf_net [get_bd_intf_pins control_interconnect/M04_AXI] \
+    [get_bd_intf_pins axis_acomms_router_0/S_AXI]
 
 connect_bd_intf_net [get_bd_intf_pins axi_dma_0/M_AXI_MM2S] \
     [get_bd_intf_pins data_interconnect/S00_AXI]
@@ -270,13 +305,17 @@ connect_bd_intf_net [get_bd_intf_pins axi_dma_0/M_AXIS_MM2S] \
 connect_bd_intf_net [get_bd_intf_pins stream_clock_converter/M_AXIS] \
     [get_bd_intf_pins axis_pwm_s16_0/S_AXIS]
 connect_bd_intf_net [get_bd_intf_pins axi_dma_dsp/M_AXIS_MM2S] \
+    [get_bd_intf_pins axis_acomms_router_0/S_AXIS_HOST]
+connect_bd_intf_net [get_bd_intf_pins axis_acomms_router_0/M_AXIS_HOST] \
+    [get_bd_intf_pins axi_dma_dsp/S_AXIS_S2MM]
+connect_bd_intf_net [get_bd_intf_pins axis_acomms_router_0/M_AXIS_ACCELERATOR] \
     [get_bd_intf_pins fft_forward/S_AXIS_DATA]
 connect_bd_intf_net [get_bd_intf_pins fft_forward/M_AXIS_DATA] \
     [get_bd_intf_pins axis_spectral_filter_0/S_AXIS]
 connect_bd_intf_net [get_bd_intf_pins axis_spectral_filter_0/M_AXIS] \
     [get_bd_intf_pins fft_inverse/S_AXIS_DATA]
 connect_bd_intf_net [get_bd_intf_pins fft_inverse/M_AXIS_DATA] \
-    [get_bd_intf_pins axi_dma_dsp/S_AXIS_S2MM]
+    [get_bd_intf_pins axis_acomms_router_0/S_AXIS_ACCELERATOR]
 
 connect_bd_net [get_bd_pins fft_forward_config/dout] \
     [get_bd_pins fft_forward/s_axis_config_tdata]
@@ -300,6 +339,7 @@ connect_bd_net [get_bd_pins processing_system7_0/FCLK_CLK0] \
     [get_bd_pins fft_forward/aclk] \
     [get_bd_pins fft_inverse/aclk] \
     [get_bd_pins axis_spectral_filter_0/aclk] \
+    [get_bd_pins axis_acomms_router_0/aclk] \
     [get_bd_pins stream_clock_converter/s_axis_aclk] \
     [get_bd_pins control_clock_converter/s_axi_aclk]
 
@@ -316,6 +356,7 @@ connect_bd_net [get_bd_pins reset_100/peripheral_aresetn] \
     [get_bd_pins fft_forward/aresetn] \
     [get_bd_pins fft_inverse/aresetn] \
     [get_bd_pins axis_spectral_filter_0/aresetn] \
+    [get_bd_pins axis_acomms_router_0/aresetn] \
     [get_bd_pins stream_clock_converter/s_axis_aresetn] \
     [get_bd_pins control_clock_converter/s_axi_aresetn]
 connect_bd_net [get_bd_pins reset_200/peripheral_aresetn] \
@@ -347,6 +388,9 @@ assign_bd_address -offset 0x40410000 -range 64K \
 assign_bd_address -offset 0x43c10000 -range 64K \
     -target_address_space [get_bd_addr_spaces processing_system7_0/Data] \
     [get_bd_addr_segs axis_spectral_filter_0/S_AXI/Reg]
+assign_bd_address -offset 0x43c20000 -range 64K \
+    -target_address_space [get_bd_addr_spaces processing_system7_0/Data] \
+    [get_bd_addr_segs axis_acomms_router_0/S_AXI/Reg]
 assign_bd_address -target_address_space [get_bd_addr_spaces axi_dma_0/Data_MM2S] \
     [get_bd_addr_segs processing_system7_0/S_AXI_HP0/HP0_DDR_LOWOCM]
 assign_bd_address -target_address_space [get_bd_addr_spaces axi_dma_0/Data_SG] \
@@ -365,6 +409,9 @@ puts "PWM_CONTROL_BASE=0x43c00000"
 puts "PWM_OUTPUT=JA1/Y18/LVCMOS33"
 puts "DSP_DMA_CONTROL_BASE=0x40410000"
 puts "SPECTRAL_FILTER_CONTROL_BASE=0x43c10000"
+puts "ACOMMS_ROUTER_CONTROL_BASE=0x43c20000"
+puts "ACOMMS_DEFAULT_SAMPLE_RATE=250000"
+puts "ACOMMS_PATHS=loopback,accelerator"
 puts "DSP_FFT_LENGTH=512"
 
 if {$build_mode eq "validate"} {

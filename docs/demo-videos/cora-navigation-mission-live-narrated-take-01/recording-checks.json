@@ -1,0 +1,143 @@
+{
+  "checks": [
+    {
+      "scene": "navigation_live",
+      "action": "scroll",
+      "selector": "#navMap",
+      "expectation_checked": false,
+      "elapsed_s": 1.355041568633169
+    },
+    {
+      "scene": "navigation_live",
+      "action": "click",
+      "selector": "#mapFit",
+      "expectation_checked": true,
+      "elapsed_s": 4.359213491901755
+    },
+    {
+      "scene": "navigation_street",
+      "action": "select",
+      "selector": "#basemapControl",
+      "expectation_checked": true,
+      "elapsed_s": 22.139458058867604
+    },
+    {
+      "scene": "navigation_street",
+      "action": "click",
+      "selector": "#mapFit",
+      "expectation_checked": false,
+      "elapsed_s": 24.726056579966098
+    },
+    {
+      "scene": "navigation_street",
+      "action": "click",
+      "selector": "#mapFollow",
+      "expectation_checked": true,
+      "elapsed_s": 34.90710828686133
+    },
+    {
+      "scene": "navigation_controls",
+      "action": "scroll",
+      "selector": "#modeControl",
+      "expectation_checked": false,
+      "elapsed_s": 42.977749097626656
+    },
+    {
+      "scene": "navigation_controls",
+      "action": "select",
+      "selector": "#modeControl",
+      "expectation_checked": false,
+      "elapsed_s": 46.15755620179698
+    },
+    {
+      "scene": "navigation_controls",
+      "action": "select",
+      "selector": "#waveControl",
+      "expectation_checked": false,
+      "elapsed_s": 48.55583286983892
+    },
+    {
+      "scene": "navigation_controls",
+      "action": "click",
+      "selector": "#apply",
+      "expectation_checked": true,
+      "elapsed_s": 51.904695217031986
+    },
+    {
+      "scene": "navigation_controls",
+      "action": "wait",
+      "selector": "#mode",
+      "expectation_checked": true,
+      "elapsed_s": 57.60265548573807
+    },
+    {
+      "scene": "navigation_pause",
+      "action": "click",
+      "selector": "button[data-action='pause']",
+      "expectation_checked": true,
+      "elapsed_s": 63.59591675084084
+    },
+    {
+      "scene": "navigation_pause",
+      "action": "click",
+      "selector": "button[data-action='resume']",
+      "expectation_checked": true,
+      "elapsed_s": 68.47154797799885
+    },
+    {
+      "scene": "navigation_pause",
+      "action": "scroll",
+      "selector": "#navMap",
+      "expectation_checked": false,
+      "elapsed_s": 72.34818028984591
+    },
+    {
+      "scene": "navigation_pause",
+      "action": "click",
+      "selector": "#mapFit",
+      "expectation_checked": false,
+      "elapsed_s": 74.88213139772415
+    },
+    {
+      "scene": "navigation_satellite",
+      "action": "select",
+      "selector": "#basemapControl",
+      "expectation_checked": false,
+      "elapsed_s": 81.4749845135957
+    },
+    {
+      "scene": "navigation_satellite",
+      "action": "wait",
+      "selector": "#notice",
+      "expectation_checked": true,
+      "elapsed_s": 87.57856099167839
+    },
+    {
+      "scene": "navigation_satellite",
+      "action": "click",
+      "selector": "#mapFit",
+      "expectation_checked": false,
+      "elapsed_s": 90.90658162673935
+    },
+    {
+      "scene": "navigation_satellite",
+      "action": "click",
+      "selector": "#mapFollow",
+      "expectation_checked": true,
+      "elapsed_s": 96.08505068067461
+    }
+  ],
+  "frames": 2047,
+  "duration_s": 102.35,
+  "preview": false,
+  "failure": null,
+  "browser_errors": [],
+  "visited_scenes": [
+    "navigation_controls",
+    "navigation_live",
+    "navigation_pause",
+    "navigation_satellite",
+    "navigation_street"
+  ],
+  "encoder_exit_code": 0
+}

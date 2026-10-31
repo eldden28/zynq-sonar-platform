@@ -5,6 +5,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 inherit python3-dir update-rc.d
 
 RDEPENDS:${PN} = " \
+    cora-acomms-pl \
     cora-ofdm-acoustic \
     python3-core \
     python3-io \
@@ -27,7 +28,7 @@ SRC_URI = " \
 S = "${WORKDIR}"
 
 INITSCRIPT_NAME = "cora-ofdm-text-dashboard"
-INITSCRIPT_PARAMS = "start 83 2 3 4 5 . stop 17 0 1 6 ."
+INITSCRIPT_PARAMS = "stop 17 0 1 2 3 4 5 6 ."
 
 do_install() {
     install -d ${D}${bindir} ${D}${sbindir} \

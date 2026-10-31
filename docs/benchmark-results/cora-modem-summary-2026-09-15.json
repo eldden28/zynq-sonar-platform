@@ -1,0 +1,145 @@
+{
+  "generated_at": "2026-09-15T16:00:00-04:00",
+  "board": "Cora Z7-10",
+  "usb_audio": {
+    "provenance": "Previously recorded live USB speaker-to-lapel-microphone tests from software/cora-ofdm-text-demo/README.md",
+    "current_hardware_state": "No USB soundcard present during the 2026-09-15 summary run",
+    "results": [
+      {
+        "label": "v2 · QPSK · FFT256 · 2.25–9.75 kHz",
+        "payload_bytes": 3072,
+        "elapsed_s": 20.41,
+        "payload_bps": 1204,
+        "errors": 0,
+        "retries": 0,
+        "result": "PASS"
+      },
+      {
+        "label": "v3 · QPSK R1/2 · FFT256 · optimized standard",
+        "payload_bytes": 3072,
+        "elapsed_s": 7.38,
+        "payload_bps": 3329,
+        "errors": 0,
+        "retries": 0,
+        "result": "PASS"
+      },
+      {
+        "label": "v3 · QPSK R2/3 · FFT256 · continuous standard",
+        "payload_bytes": 3072,
+        "elapsed_s": 5.22,
+        "payload_bps": 4706,
+        "errors": 0,
+        "retries": 0,
+        "result": "PASS · 3-run mean"
+      },
+      {
+        "label": "v3 · QPSK R2/3 · FFT256 · 2–15 kHz",
+        "payload_bytes": 16184,
+        "elapsed_s": 19.786,
+        "payload_bps": 6543.77,
+        "errors": 0,
+        "retries": 0,
+        "result": "PASS · SHA-256 match"
+      },
+      {
+        "label": "v3 · 8-PSK R1/2 · FFT256 · 1.5–15 kHz",
+        "payload_bytes": 6450,
+        "elapsed_s": 6.346,
+        "payload_bps": 8130.71,
+        "errors": 0,
+        "retries": 0,
+        "result": "PASS · SHA-256 match"
+      },
+      {
+        "label": "v3 · QPSK R1/2 · FFT512 · standard",
+        "payload_bytes": 3072,
+        "elapsed_s": 20.07,
+        "payload_bps": 1225,
+        "errors": 5,
+        "retries": 5,
+        "result": "PASS on repeat · marginal"
+      }
+    ],
+    "negative_results": [
+      "QPSK R2/3 at 1.5–12 kHz exhausted all three attempts twice.",
+      "QPSK at 1.5–15 kHz exhausted all three attempts.",
+      "8-PSK R2/3 was marginal: four packets needed one retry; an eight-packet run failed on packet three."
+    ]
+  },
+  "axis_loopback": {
+    "measured_at": "2026-09-15",
+    "command": "cora-axis-loopback-test --frames 2048 --sample-rate 250000",
+    "frames": 2048,
+    "samples": 1048576,
+    "pl_clock_hz": 100000000,
+    "sample_divider": 400,
+    "configured_sample_rate_sps": 250000,
+    "measured_sample_throughput_sps": 148497.9,
+    "data_integrity": "byte-exact",
+    "explanation": "The PL return stream is paced at 250 ksps. Measured host throughput includes one write/read transaction per fixed 512-sample DMA frame."
+  },
+  "modem_loopback": {
+    "measured_at": "2026-09-15",
+    "backend": "pl-loopback",
+    "payload_bytes": 16384,
+    "packets": 43,
+    "settings": "v3 · 8-PSK R1/2 · FFT256 · 1.5–15 kHz · 250 ksps PL",
+    "elapsed_s": 43.522802342195064,
+    "payload_bps": 3011.570784653418,
+    "retries": 0,
+    "packet_errors": 0,
+    "source_sha256": "603ae39a552a69c1394b11aef3d38380d63b9cbee0eb6fac7502d4b9882b5d4a",
+    "output_sha256": "603ae39a552a69c1394b11aef3d38380d63b9cbee0eb6fac7502d4b9882b5d4a",
+    "qpsk_control_bps": 2762.467918379986,
+    "repeat_8psk_bps": [2946.092288224403, 3011.570784653418]
+  },
+  "underwater_projection": {
+    "classification": "engineering estimate, not an in-water measurement",
+    "sample_rate_sps": 250000,
+    "center_frequency_hz": 30000,
+    "assumed_occupied_band_hz": [20000, 40000],
+    "assumed_fft": 1024,
+    "assumed_cp": 256,
+    "subcarrier_spacing_hz": 244.140625,
+    "ofdm_symbols_per_s": 195.3125,
+    "assumed_data_carriers": 74,
+    "profiles": [
+      {
+        "label": "QPSK R1/2",
+        "body_ceiling_bps": 14453.125,
+        "expected_validated_payload_bps": [7000, 12000],
+        "use": "robust starting profile"
+      },
+      {
+        "label": "QPSK R2/3",
+        "body_ceiling_bps": 19270.833333333332,
+        "expected_validated_payload_bps": [10000, 16000],
+        "use": "moderate-to-good channel"
+      },
+      {
+        "label": "8-PSK R1/2",
+        "body_ceiling_bps": 21679.6875,
+        "expected_validated_payload_bps": [11000, 18000],
+        "use": "short range / high SNR"
+      }
+    ],
+    "field_planning_range_bps": [5000, 12000],
+    "thorp_absorption_db_per_km_at_30khz": 8.28,
+    "band_edge_absorption_db_per_km": {
+      "20khz": 4.13,
+      "40khz": 12.91
+    },
+    "doppler_shift_hz_at_1mps": 20,
+    "notes": [
+      "250 ksps is the converter and PL sample rate, not the usable acoustic bandwidth.",
+      "The 20 kHz occupied band assumes the transducer, matching network, amplifier, and hydrophone support 20–40 kHz.",
+      "Apply wideband Doppler resampling before OFDM frequency correction; one metre per second produces about 20 Hz shift at 30 kHz.",
+      "A narrower 10 kHz acoustic band roughly halves these payload estimates."
+    ],
+    "research_context": [
+      "Socheleau et al. (2012) report 2–4 bit/s/Hz achievable on real underwater channels at 15–20 dB SNR under their modeled conditions.",
+      "Ebihara et al. (2018) measured up to 50 ms delay spread and 4.5 Hz Doppler spread in a mobile harbor experiment.",
+      "MinhHai et al. (2016) report 7.5 kbit/s over an 8 kHz band on a moving 30 m vertical link."
+    ]
+  }
+}

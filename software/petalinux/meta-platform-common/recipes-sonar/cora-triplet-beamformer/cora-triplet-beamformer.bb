@@ -28,7 +28,7 @@ SRC_URI = " \
 S = "${WORKDIR}"
 
 INITSCRIPT_NAME = "cora-triplet-btr"
-INITSCRIPT_PARAMS = "start 86 2 3 4 5 . stop 14 0 1 6 ."
+INITSCRIPT_PARAMS = "stop 14 0 1 2 3 4 5 6 ."
 
 do_install() {
     install -d ${D}${bindir} ${D}${sbindir} ${D}${PYTHON_SITEPACKAGES_DIR}

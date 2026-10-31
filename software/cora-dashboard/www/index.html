@@ -53,6 +53,20 @@
       word-break:break-all; font:13px/1.35 ui-monospace,SFMono-Regular,Consolas,monospace; }
     #terminal:focus { border-color:var(--cyan); box-shadow:0 0 0 2px #4ee4d222; }
     .hint { margin-top:8px; font-size:12px; color:var(--muted); }
+    .feature-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(245px,1fr)); gap:10px; }
+    .feature { border:1px solid var(--line); border-radius:10px; padding:12px; background:#0b1923; }
+    .feature-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .feature strong { font-size:14px; } .feature-state { color:var(--muted); font-size:12px; }
+    .feature-links { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .feature-links a { color:var(--cyan); text-decoration:none; font-size:12px; }
+    .feature-links a:hover { text-decoration:underline; }
+    #feature-notice { min-height:20px; margin-top:8px; color:var(--cyan); }
+    .switch { position:relative; width:44px; height:25px; flex:none; }
+    .switch input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:1; }
+    .switch span { display:block; width:100%; height:100%; background:#445664; border-radius:30px; transition:background .2s; }
+    .switch span:after { content:''; position:absolute; width:19px; height:19px; left:3px; top:3px; border-radius:50%; background:white; transition:transform .2s; }
+    .switch input:checked+span { background:#258675; } .switch input:checked+span:after { transform:translateX(19px); }
+    .switch input:disabled+span { opacity:.4; } .switch input:focus-visible+span { outline:2px solid var(--cyan); outline-offset:2px; }
     @media(max-width:1000px){.card{grid-column:span 6}.wide{grid-column:1/-1}}
     @media(max-width:620px){header{align-items:flex-start}.statusline{display:none}main{padding:12px}.card{grid-column:1/-1}.big{font-size:20px}}
   </style>
@@ -64,6 +78,8 @@
 </header>
 <main>
   <div class="grid">
+    <section class="card full"><h2>Demonstration features</h2><div id="features" class="feature-grid">Checking installed services…</div><div id="feature-notice" role="status" aria-live="polite"></div>
+      <div class="hint">Switch a feature on to open its dashboard. Links use this board's current address. Acoustic output still needs the attached speaker and microphone.</div></section>
     <section class="card"><h2>System</h2><div id="hostname" class="big">—</div><div class="row"><span>Uptime</span><span id="uptime" class="value">—</span></div><div class="row"><span>Load</span><span id="load" class="value">—</span></div></section>
     <section class="card"><h2>Processor</h2><div id="cpu" class="big">—</div><div class="meter"><span id="cpu-meter"></span></div><div class="row"><span>Temperature</span><span id="temperature" class="value">—</span></div></section>
     <section class="card"><h2>Memory</h2><div id="memory" class="big">—</div><div class="meter"><span id="memory-meter"></span></div><div class="row"><span>Available</span><span id="memory-free" class="value">—</span></div></section>
@@ -115,6 +131,7 @@ function updateAdcChart(channels){
   drawAdcChart();
 }
 function render(s){
+  renderFeatures(s.features||[]);
   byId('hostname').textContent=s.system.hostname; byId('uptime').textContent=duration(s.system.uptime_seconds);
   byId('load').textContent=s.system.load_average.join(' / '); const cpu=s.system.cpu.percent;
   byId('cpu').textContent=`${cpu.toFixed(1)}%`;byId('cpu-meter').style.width=`${Math.min(100,cpu)}%`;
@@ -135,6 +152,34 @@ function render(s){
   byId('iio-system').innerHTML=systemRows?`<table><thead><tr><th>Monitor</th><th>Raw</th><th>Scale</th></tr></thead><tbody>${systemRows}</tbody></table>`:'No internal XADC monitors detected';
   updateAdcChart(userChannels);
   pill(byId('remote'),s.remote_io.running,s.remote_io.running?'Remote I/O running':'Remote I/O stopped');pill(byId('live'),true,'Live');
+}
+let featureBusy='';
+function renderFeatures(features){
+  const container=byId('features');
+  const focus=document.activeElement?.dataset?.feature;
+  container.replaceChildren(...features.map(f=>{
+    const card=document.createElement('div');card.className='feature';
+    const top=document.createElement('div');top.className='feature-top';
+    const title=document.createElement('div');const strong=document.createElement('strong');strong.textContent=f.name;
+    const state=document.createElement('div');state.className='feature-state';state.textContent=featureBusy===f.id?'Switching…':f.installed?(f.running?'Running':'Stopped'):'Not installed';
+    title.append(strong,state);
+    const label=document.createElement('label');label.className='switch';
+    const input=document.createElement('input');input.type='checkbox';input.checked=f.running;
+    input.disabled=!f.installed||featureBusy===f.id;input.dataset.feature=f.id;
+    input.setAttribute('aria-label',`${f.running?'Disable':'Enable'} ${f.name}`);
+    input.addEventListener('change',async()=>{
+      featureBusy=f.id;input.disabled=true;byId('feature-notice').textContent=`${input.checked?'Starting':'Stopping'} ${f.name}…`;
+      try{const r=await fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json','X-Cora-Request':'1'},body:JSON.stringify({action:`feature:${f.id}:${input.checked?'on':'off'}`})});
+        const j=await r.json();if(!r.ok)throw Error(j.error||r.status);byId('feature-notice').textContent=j.message;}
+      catch(e){input.checked=!input.checked;byId('feature-notice').textContent=`${f.name}: ${e.message}`;}
+      finally{featureBusy='';await refresh();}
+    });
+    const track=document.createElement('span');label.append(input,track);top.append(title,label);card.append(top);
+    const links=document.createElement('div');links.className='feature-links';
+    for(const link of f.links){const a=document.createElement('a');a.href=`${location.protocol}//${location.hostname}:${link.port}/`;a.target='_blank';a.rel='noopener';a.textContent=`${link.label} ↗`;links.append(a)}
+    card.append(links);return card;
+  }));
+  if(focus)container.querySelector(`[data-feature="${focus}"]`)?.focus();
 }
 async function refresh(){try{const r=await fetch('/api/status',{cache:'no-store'});if(!r.ok)throw Error(r.status);render(await r.json())}catch(e){pill(byId('live'),false,'Disconnected')}}
 setInterval(refresh,1000);refresh();

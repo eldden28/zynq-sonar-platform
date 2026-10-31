@@ -18,6 +18,8 @@ import zlib
 
 import numpy as np
 
+from cora_acomms_pl import DEFAULT_PL_SAMPLE_RATE, roundtrip_waveform
+
 from cora_ofdm_acoustic import (
     AcousticConfig,
     DecodeResult,
@@ -170,6 +172,65 @@ class ColoredRoomBackend:
                 ),
             )
         )
+        self._publish_samples(samples)
+        return decode_superframe(
+            samples,
+            expected_sequences=[sequence for _payload, sequence in items],
+            slot_payload_bytes=superframe.slot_payload_bytes,
+            sync_search_samples=round(0.20 * cfg.sample_rate),
+            cfg=cfg,
+        )
+
+
+class PlAxisLoopbackBackend(ColoredRoomBackend):
+    """Run OFDM waveform samples through the paced PL AXIS loopback."""
+
+    name = "pl-loopback"
+
+    def __init__(
+        self,
+        cfg: AcousticConfig | None = None,
+        capture_callback: CaptureCallback | None = None,
+        device: str = "/dev/cora-dsp0",
+        pl_sample_rate: int = DEFAULT_PL_SAMPLE_RATE,
+    ):
+        super().__init__(noise_dbfs=-120.0, cfg=cfg, capture_callback=capture_callback)
+        self.device = device
+        self.pl_sample_rate = pl_sample_rate
+
+    def _pl_roundtrip(self, samples: np.ndarray) -> np.ndarray:
+        return roundtrip_waveform(
+            samples,
+            self.cfg.sample_rate,
+            device=self.device,
+            pl_sample_rate=self.pl_sample_rate,
+        )
+
+    def transceive(self, payload: bytes, sequence: int) -> DecodeResult:
+        packet = encode_packet(payload, sequence=sequence, cfg=self.cfg)
+        samples = np.concatenate((np.zeros(613), self._pl_roundtrip(packet.samples)))
+        self._publish_samples(samples)
+        return decode_packet(samples, cfg=self.cfg)
+
+    def transceive_batch(
+        self,
+        items: list[tuple[bytes, int]],
+    ) -> list[DecodeResult]:
+        cfg = replace(
+            self.cfg,
+            leading_silence_s=0.04,
+            trailing_silence_s=0.04,
+        )
+        superframe = encode_superframe(items, cfg=cfg)
+        samples = np.concatenate((
+            np.zeros(733),
+            roundtrip_waveform(
+                superframe.samples,
+                cfg.sample_rate,
+                device=self.device,
+                pl_sample_rate=self.pl_sample_rate,
+            ),
+        ))
         self._publish_samples(samples)
         return decode_superframe(
             samples,

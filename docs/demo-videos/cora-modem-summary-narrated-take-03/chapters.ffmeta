@@ -1,0 +1,33 @@
+;FFMETADATA1
+title=Cora modem performance summary
+comment=Live application capture; AI narration.
+[CHAPTER]
+TIMEBASE=1/1000
+START=0
+END=21612
+title=Tested USB audio results
+[CHAPTER]
+TIMEBASE=1/1000
+START=21612
+END=42691
+title=Bandwidth and reliability tradeoffs
+[CHAPTER]
+TIMEBASE=1/1000
+START=42691
+END=68953
+title=Sustained FPGA loopback
+[CHAPTER]
+TIMEBASE=1/1000
+START=68953
+END=90800
+title=Live Cora end-to-end result
+[CHAPTER]
+TIMEBASE=1/1000
+START=90800
+END=112945
+title=250 ksps at 30 kHz
+[CHAPTER]
+TIMEBASE=1/1000
+START=112945
+END=132659
+title=Practical first-water target

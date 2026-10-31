@@ -1,0 +1,28 @@
+{
+  "checks": [
+    {
+      "scene": "agenda",
+      "action": "wait",
+      "selector": "#status",
+      "expectation_checked": true,
+      "elapsed_s": 3.403840853367001
+    },
+    {
+      "scene": "same-board",
+      "action": "wait",
+      "selector": "#services",
+      "expectation_checked": true,
+      "elapsed_s": 24.466503100004047
+    }
+  ],
+  "frames": 882,
+  "duration_s": 44.1,
+  "preview": false,
+  "failure": null,
+  "browser_errors": [],
+  "visited_scenes": [
+    "agenda",
+    "same-board"
+  ],
+  "encoder_exit_code": 0
+}
